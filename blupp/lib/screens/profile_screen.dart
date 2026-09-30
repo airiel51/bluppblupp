@@ -1,9 +1,9 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../models/finance_state.dart';
 import '../models/currency_model.dart';
 import '../theme/app_theme.dart';
-import '../services/supabase_service.dart';
 import '../widgets/blupp_states.dart';
 import '../widgets/blupp_forms.dart';
 
@@ -182,17 +182,42 @@ class ProfileScreen extends StatelessWidget {
             }
           }
 
-          void verifyCode() {
-            if (codeCtrl.text.trim() == sentCode || codeCtrl.text.trim() == '123456') {
+          Future<void> verifyCode() async {
+            final entered = codeCtrl.text.trim();
+            if (entered.length != 6) {
+              setDialogState(() {
+                localErrorWhere = 'Verification PIN';
+                localErrorWhy = 'Please enter all 6 digits of the PIN sent to your email.';
+              });
+              return;
+            }
+
+            setDialogState(() {
+              isLoading = true;
+              localErrorWhere = null;
+              localErrorWhy = null;
+            });
+
+            final verified = await state.verifyPasswordResetPin(
+              email: state.userEmail,
+              token: entered,
+              expectedCode: sentCode,
+            );
+
+            if (!dialogCtx.mounted) return;
+
+            if (verified) {
               setDialogState(() {
                 step = 3;
+                isLoading = false;
                 localErrorWhere = null;
                 localErrorWhy = null;
               });
             } else {
               setDialogState(() {
-                localErrorWhere = 'Verification Code';
-                localErrorWhy = 'Invalid verification code. Please check your email.';
+                isLoading = false;
+                localErrorWhere = 'Verification PIN';
+                localErrorWhy = 'Invalid verification PIN. Please check the code sent to your email inbox.';
               });
             }
           }
@@ -2213,7 +2238,6 @@ class ProfileScreen extends StatelessWidget {
     } else {
       greeting = "Good evening";
     }
-    final activeAvatar = FinanceState.avatarPresets[state.avatarIndex.clamp(0, FinanceState.avatarPresets.length - 1)];
 
     return Scaffold(
       backgroundColor: AppTheme.background,
@@ -2254,21 +2278,22 @@ class ProfileScreen extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(
-                      color: (activeAvatar['color'] as Color).withValues(alpha: 0.14),
+                      color: AppTheme.primaryTeal.withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: (activeAvatar['color'] as Color).withValues(alpha: 0.4)),
+                      border: Border.all(color: AppTheme.primaryTeal.withValues(alpha: 0.3)),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(activeAvatar['icon'] as IconData, size: 14, color: activeAvatar['color'] as Color),
-                        const SizedBox(width: 4),
+                        Icon(Icons.verified_user_rounded, size: 13, color: AppTheme.primaryTeal),
+                        const SizedBox(width: 5),
                         Text(
-                          activeAvatar['name'] as String,
-                          style: TextStyle(
-                            color: activeAvatar['color'] as Color,
+                          state.isVerified ? "VERIFIED" : "MEMBER",
+                          style: const TextStyle(
+                            color: AppTheme.primaryTeal,
                             fontSize: 11,
                             fontWeight: FontWeight.w600,
+                            letterSpacing: 0.4,
                           ),
                         ),
                       ],
@@ -2285,24 +2310,58 @@ class ProfileScreen extends StatelessWidget {
                   children: [
                     Row(
                       children: [
-                        // Avatar: Active persona icon with glowing accent ring
-                        Container(
-                          width: 58,
-                          height: 58,
-                          decoration: BoxDecoration(
-                            color: (activeAvatar['color'] as Color).withValues(alpha: 0.15),
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: (activeAvatar['color'] as Color).withValues(alpha: 0.6),
-                              width: 1.5,
-                            ),
-                          ),
-                          child: Center(
-                            child: Icon(
-                              activeAvatar['icon'] as IconData,
-                              color: activeAvatar['color'] as Color,
-                              size: 28,
-                            ),
+                        // Avatar: Custom Gallery Photo or Default Profile Picture
+                        InkWell(
+                          onTap: () => state.pickProfilePictureFromGallery(),
+                          borderRadius: BorderRadius.circular(32),
+                          child: Stack(
+                            children: [
+                              Container(
+                                width: 60,
+                                height: 60,
+                                decoration: BoxDecoration(
+                                  color: AppTheme.surfaceLight,
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: AppTheme.primaryTeal.withValues(alpha: 0.6),
+                                    width: 1.8,
+                                  ),
+                                ),
+                                child: state.hasCustomProfileImage
+                                    ? ClipOval(
+                                        child: Image.memory(
+                                          base64Decode(state.profileImageBase64!),
+                                          width: 60,
+                                          height: 60,
+                                          fit: BoxFit.cover,
+                                        ),
+                                      )
+                                    : Center(
+                                        child: Icon(
+                                          Icons.person_rounded,
+                                          color: AppTheme.textSecondary,
+                                          size: 32,
+                                        ),
+                                      ),
+                              ),
+                              Positioned(
+                                bottom: 0,
+                                right: 0,
+                                child: Container(
+                                  padding: const EdgeInsets.all(4),
+                                  decoration: BoxDecoration(
+                                    color: AppTheme.primaryTeal,
+                                    shape: BoxShape.circle,
+                                    border: Border.all(color: AppTheme.surface, width: 2),
+                                  ),
+                                  child: const Icon(
+                                    Icons.camera_alt_rounded,
+                                    size: 11,
+                                    color: Colors.black,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                         const SizedBox(width: 16),
@@ -2425,9 +2484,9 @@ class ProfileScreen extends StatelessWidget {
               ).animate().fadeIn(duration: 350.ms, delay: 60.ms).slideY(begin: 0.06, end: 0),
               const SizedBox(height: 20),
 
-              // AVATAR PERSONA PICKER (Personalized Touch)
+              // PROFILE PICTURE (Custom Gallery Upload or Default)
               Text(
-                "CHOOSE YOUR PERSONA",
+                "PROFILE PICTURE",
                 style: TextStyle(
                   color: AppTheme.textSecondary,
                   fontSize: 11,
@@ -2436,74 +2495,91 @@ class ProfileScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 10),
-              SizedBox(
-                height: 72,
-                child: ListView.separated(
-                  scrollDirection: Axis.horizontal,
-                  physics: const BouncingScrollPhysics(),
-                  itemCount: FinanceState.avatarPresets.length,
-                  separatorBuilder: (context, index) => const SizedBox(width: 10),
-                  itemBuilder: (ctx, idx) {
-                    final preset = FinanceState.avatarPresets[idx];
-                    final isSelected = state.avatarIndex == idx;
-                    final color = preset['color'] as Color;
-                    return InkWell(
-                      onTap: () => state.setAvatarIndex(idx),
-                      borderRadius: BorderRadius.circular(12),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                        decoration: BoxDecoration(
-                          color: isSelected ? color.withValues(alpha: 0.16) : AppTheme.surface,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: isSelected ? color : AppTheme.surfaceBorder,
-                            width: isSelected ? 1.5 : 1.0,
-                          ),
-                        ),
-                        child: Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: color.withValues(alpha: 0.2),
-                                shape: BoxShape.circle,
+              InteractiveCard(
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 52,
+                      height: 52,
+                      decoration: BoxDecoration(
+                        color: AppTheme.surfaceLight,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: AppTheme.surfaceBorder, width: 1.5),
+                      ),
+                      child: state.hasCustomProfileImage
+                          ? ClipOval(
+                              child: Image.memory(
+                                base64Decode(state.profileImageBase64!),
+                                width: 52,
+                                height: 52,
+                                fit: BoxFit.cover,
                               ),
-                              child: Icon(preset['icon'] as IconData, color: color, size: 18),
+                            )
+                          : Center(
+                              child: Icon(
+                                Icons.person_rounded,
+                                color: AppTheme.textMuted,
+                                size: 28,
+                              ),
                             ),
-                            const SizedBox(width: 10),
-                            Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  preset['name'] as String,
-                                  style: TextStyle(
-                                    color: isSelected ? AppTheme.textPrimary : AppTheme.textSecondary,
-                                    fontSize: 12,
-                                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                                  ),
-                                ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  isSelected ? "Active Persona" : "Tap to Switch",
-                                  style: TextStyle(
-                                    color: isSelected ? color : AppTheme.textMuted,
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                              ],
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            state.hasCustomProfileImage ? "Custom Picture" : "Default Profile Picture",
+                            style: TextStyle(
+                              color: AppTheme.textPrimary,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
                             ),
-                          ],
+                          ),
+                          const SizedBox(height: 3),
+                          Text(
+                            state.hasCustomProfileImage
+                                ? "Photo selected from your gallery"
+                                : "Choose your own picture from device gallery",
+                            style: TextStyle(color: AppTheme.textMuted, fontSize: 11),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    ElevatedButton.icon(
+                      onPressed: () => state.pickProfilePictureFromGallery(),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppTheme.surfaceLight,
+                        foregroundColor: AppTheme.textPrimary,
+                        elevation: 0,
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          side: BorderSide(color: AppTheme.surfaceBorder),
                         ),
                       ),
-                    );
-                  },
+                      icon: const Icon(Icons.photo_library_outlined, size: 16),
+                      label: Text(
+                        state.hasCustomProfileImage ? "Change" : "Upload",
+                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+                      ),
+                    ),
+                    if (state.hasCustomProfileImage) ...[
+                      const SizedBox(width: 4),
+                      IconButton(
+                        onPressed: state.removeProfilePicture,
+                        tooltip: "Reset to default picture",
+                        icon: const Icon(Icons.delete_outline_rounded, size: 18, color: AppTheme.expenseCoral),
+                      ),
+                    ],
+                  ],
                 ),
               ).animate().fadeIn(duration: 350.ms, delay: 120.ms).slideY(begin: 0.06, end: 0),
               const SizedBox(height: 20),
 
-              // QUICK RELEVANT ACTIONS CARDS (Horizontal Boxed Cards)
+              // PRIVACY & QUICK ACTIONS
               Text(
                 "PRIVACY & QUICK ACTIONS",
                 style: TextStyle(
@@ -2557,7 +2633,7 @@ class ProfileScreen extends StatelessWidget {
                           ),
                           const SizedBox(height: 2),
                           Text(
-                            state.isNetWorthHidden ? "Amount is hidden ••••••" : "Amount is highlighted",
+                            state.isNetWorthHidden ? "Amount is hidden ••••••" : "Amount is visible",
                             style: TextStyle(color: AppTheme.textMuted, fontSize: 10),
                           ),
                         ],
@@ -2567,7 +2643,7 @@ class ProfileScreen extends StatelessWidget {
                   const SizedBox(width: 12),
                   Expanded(
                     child: InteractiveCard(
-                      onTap: () => _showChangePasswordDialog(context),
+                      onTap: () => _showLinkedAccountsSheet(context),
                       padding: const EdgeInsets.all(14),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -2575,28 +2651,28 @@ class ProfileScreen extends StatelessWidget {
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              const Icon(Icons.shield_outlined, color: AppTheme.secondaryCyan, size: 20),
+                              const Icon(Icons.account_balance_wallet_outlined, color: AppTheme.incomeMint, size: 20),
                               Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                                 decoration: BoxDecoration(
-                                  color: AppTheme.primaryTeal.withValues(alpha: 0.15),
+                                  color: AppTheme.incomeMint.withValues(alpha: 0.15),
                                   borderRadius: BorderRadius.circular(6),
                                 ),
-                                child: const Text(
-                                  "OTP 2FA",
-                                  style: TextStyle(color: AppTheme.primaryTeal, fontSize: 9, fontWeight: FontWeight.w700),
+                                child: Text(
+                                  "${state.bankAccounts.length + state.investments.length} LINKED",
+                                  style: const TextStyle(color: AppTheme.incomeMint, fontSize: 9, fontWeight: FontWeight.w700),
                                 ),
                               ),
                             ],
                           ),
                           const SizedBox(height: 10),
                           Text(
-                            "Password & Email",
+                            "Linked Accounts",
                             style: TextStyle(color: AppTheme.textPrimary, fontSize: 13, fontWeight: FontWeight.w600),
                           ),
                           const SizedBox(height: 2),
                           Text(
-                            "Email OTP verification",
+                            "${state.bankAccounts.length} Banks • ${state.investments.length} Invest",
                             style: TextStyle(color: AppTheme.textMuted, fontSize: 10),
                           ),
                         ],
@@ -2624,7 +2700,7 @@ class ProfileScreen extends StatelessWidget {
                     icon: Icons.lock_reset_rounded,
                     iconColor: AppTheme.warningAmber,
                     title: 'Change Password',
-                    subtitle: 'Update your security credentials',
+                    subtitle: 'Requires email verification PIN',
                     onTap: () => _showChangePasswordDialog(context),
                   ),
                   _buildDivider(),
@@ -2652,15 +2728,6 @@ class ProfileScreen extends StatelessWidget {
                     subtitle: 'Daily budget alerts & transaction notices',
                     value: state.notificationsEnabled,
                     onChanged: (val) => state.toggleNotifications(val),
-                  ),
-                  _buildDivider(),
-                  _buildSwitchRow(
-                    icon: Icons.fingerprint_rounded,
-                    iconColor: AppTheme.secondaryCyan,
-                    title: 'Biometric Login',
-                    subtitle: 'Fast unlock with Face ID / Fingerprint',
-                    value: state.biometricsEnabled,
-                    onChanged: (val) => state.toggleBiometrics(val),
                   ),
                   _buildDivider(),
                   _buildSettingRow(
@@ -2701,70 +2768,6 @@ class ProfileScreen extends StatelessWidget {
                       ),
                     ),
                     onTap: () => _showCurrencySelectorSheet(context),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 24),
-
-              // 4. SECURITY & CLOUD SECTION
-              _buildSectionHeader('SECURITY & CLOUD BACKEND'),
-              const SizedBox(height: 10),
-              _buildSettingsCard(
-                children: [
-                  _buildSettingRow(
-                    icon: Icons.cloud_done_rounded,
-                    iconColor: SupabaseService.instance.isConfigured ? AppTheme.primaryTeal : AppTheme.warningAmber,
-                    title: 'Supabase Cloud Sync',
-                    subtitle: SupabaseService.instance.isConfigured
-                        ? 'Connected • dmlcckzwofoaubzcszxl'
-                        : 'Offline Mode • Local Cache Active',
-                    trailing: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: SupabaseService.instance.isConfigured
-                            ? AppTheme.primaryTeal.withValues(alpha: 0.15)
-                            : AppTheme.warningAmber.withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text(
-                        SupabaseService.instance.isConfigured ? 'LIVE' : 'LOCAL',
-                        style: TextStyle(
-                          color: SupabaseService.instance.isConfigured ? AppTheme.primaryTeal : AppTheme.warningAmber,
-                          fontSize: 10,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ),
-                    onTap: () {
-                      state.syncWithSupabase();
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          backgroundColor: AppTheme.surfaceLight,
-                          behavior: SnackBarBehavior.floating,
-                          content: Text(
-                            'Synchronized latest records with Supabase cloud database.',
-                            style: TextStyle(color: AppTheme.primaryTeal, fontWeight: FontWeight.w600),
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                  _buildDivider(),
-                  _buildSettingRow(
-                    icon: Icons.sync_rounded,
-                    iconColor: AppTheme.secondaryCyan,
-                    title: 'Force Cloud Resync',
-                    subtitle: 'Pull latest balances & transactions',
-                    trailing: const Icon(Icons.refresh_rounded, size: 18, color: AppTheme.secondaryCyan),
-                    onTap: () {
-                      state.syncWithSupabase();
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          backgroundColor: AppTheme.surfaceLight,
-                          content: Text('Resync complete.'),
-                        ),
-                      );
-                    },
                   ),
                 ],
               ),

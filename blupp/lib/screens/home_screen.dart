@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../models/finance_state.dart';
@@ -90,8 +91,6 @@ class HomeScreen extends StatelessWidget {
   }
 
   Widget _buildHeader(BuildContext context) {
-    final avatar = FinanceState.avatarPresets[state.avatarIndex.clamp(0, FinanceState.avatarPresets.length - 1)];
-
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -145,17 +144,27 @@ class HomeScreen extends StatelessWidget {
                 width: 40,
                 height: 40,
                 decoration: BoxDecoration(
-                  color: (avatar['color'] as Color).withValues(alpha: 0.15),
+                  color: AppTheme.surfaceLight,
                   borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: (avatar['color'] as Color).withValues(alpha: 0.4)),
+                  border: Border.all(color: AppTheme.surfaceBorder),
                 ),
-                child: Center(
-                  child: Icon(
-                    avatar['icon'] as IconData,
-                    size: 20,
-                    color: avatar['color'] as Color,
-                  ),
-                ),
+                child: state.hasCustomProfileImage
+                    ? ClipRRect(
+                        borderRadius: BorderRadius.circular(9),
+                        child: Image.memory(
+                          base64Decode(state.profileImageBase64!),
+                          width: 40,
+                          height: 40,
+                          fit: BoxFit.cover,
+                        ),
+                      )
+                    : Center(
+                        child: Icon(
+                          Icons.person_rounded,
+                          size: 20,
+                          color: AppTheme.textSecondary,
+                        ),
+                      ),
               ),
             ),
           ],

@@ -1,3 +1,5 @@
+import 'dart:convert';
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'models/finance_state.dart';
@@ -126,58 +128,174 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
         index: _currentTabIndex,
         children: screens,
       ),
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          color: AppTheme.surface,
-          border: Border(
-            top: BorderSide(
-              color: AppTheme.surfaceBorder.withValues(alpha: 0.5),
-              width: 1.0,
+      bottomNavigationBar: ClipRect(
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+          child: Container(
+            decoration: BoxDecoration(
+              color: AppTheme.isDark
+                  ? const Color(0xCC09090B)
+                  : const Color(0xCCFFFFFF),
+              border: Border(
+                top: BorderSide(
+                  color: AppTheme.isDark
+                      ? Colors.white.withValues(alpha: 0.08)
+                      : Colors.black.withValues(alpha: 0.08),
+                  width: 0.8,
+                ),
+              ),
+            ),
+            padding: EdgeInsets.only(
+              top: 6,
+              bottom: MediaQuery.paddingOf(context).bottom > 0
+                  ? MediaQuery.paddingOf(context).bottom
+                  : 8,
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                _buildNavItem(
+                  index: 0,
+                  icon: Icons.home_outlined,
+                  activeIcon: Icons.home_rounded,
+                  label: 'Home',
+                ),
+                _buildNavItem(
+                  index: 1,
+                  icon: Icons.receipt_long_outlined,
+                  activeIcon: Icons.receipt_long_rounded,
+                  label: 'Expenses',
+                ),
+                _buildNavItem(
+                  index: 2,
+                  icon: Icons.insights_outlined,
+                  activeIcon: Icons.insights_rounded,
+                  label: 'Analytics',
+                ),
+                _buildNavItem(
+                  index: 3,
+                  icon: Icons.auto_awesome_outlined,
+                  activeIcon: Icons.auto_awesome_rounded,
+                  label: 'FOMO AI',
+                ),
+                _buildNavItem(
+                  index: 4,
+                  icon: Icons.calendar_today_outlined,
+                  activeIcon: Icons.calendar_month_rounded,
+                  label: 'Calendar',
+                ),
+                _buildProfileNavItem(index: 5),
+              ],
             ),
           ),
         ),
-        child: BottomNavigationBar(
-          currentIndex: _currentTabIndex,
-          onTap: _navigateToTab,
-          backgroundColor: AppTheme.surface,
-          selectedItemColor: AppTheme.textPrimary,
-          unselectedItemColor: AppTheme.textMuted,
-          selectedLabelStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 10),
-          unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w400, fontSize: 10),
-          type: BottomNavigationBarType.fixed,
-          elevation: 0,
-          items: [
-            BottomNavigationBarItem(
-              icon: Icon(Icons.dashboard_rounded, color: AppTheme.textMuted),
-              activeIcon: Icon(Icons.dashboard_rounded, color: AppTheme.textPrimary),
-              label: 'Home',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.receipt_long_rounded, color: AppTheme.textMuted),
-              activeIcon: Icon(Icons.receipt_long_rounded, color: AppTheme.textPrimary),
-              label: 'Expenses',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.pie_chart_rounded, color: AppTheme.textMuted),
-              activeIcon: Icon(Icons.pie_chart_rounded, color: AppTheme.textPrimary),
-              label: 'Analytics',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.auto_awesome_rounded, color: AppTheme.textMuted),
-              activeIcon: Icon(Icons.auto_awesome_rounded, color: AppTheme.textPrimary),
-              label: 'FOMO AI',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.calendar_month_rounded, color: AppTheme.textMuted),
-              activeIcon: Icon(Icons.calendar_month_rounded, color: AppTheme.textPrimary),
-              label: 'Calendar',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.person_rounded, color: AppTheme.textMuted),
-              activeIcon: Icon(Icons.person_rounded, color: AppTheme.textPrimary),
-              label: 'Profile',
-            ),
-          ],
+      ),
+    );
+  }
+
+  Widget _buildNavItem({
+    required int index,
+    required IconData icon,
+    required IconData activeIcon,
+    required String label,
+  }) {
+    final isSelected = _currentTabIndex == index;
+    return Expanded(
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () => _navigateToTab(index),
+        child: SizedBox(
+          height: 48,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              AnimatedScale(
+                scale: isSelected ? 1.12 : 1.0,
+                duration: const Duration(milliseconds: 150),
+                child: Icon(
+                  isSelected ? activeIcon : icon,
+                  size: 24,
+                  color: isSelected ? AppTheme.textPrimary : AppTheme.textMuted,
+                ),
+              ),
+              const SizedBox(height: 3),
+              AnimatedOpacity(
+                opacity: isSelected ? 1.0 : 0.0,
+                duration: const Duration(milliseconds: 150),
+                child: Container(
+                  width: 4,
+                  height: 4,
+                  decoration: const BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: AppTheme.primaryTeal,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildProfileNavItem({required int index}) {
+    final isSelected = _currentTabIndex == index;
+    final hasCustomImage = widget.state.profileImageBase64 != null;
+
+    return Expanded(
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () => _navigateToTab(index),
+        child: SizedBox(
+          height: 48,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              AnimatedScale(
+                scale: isSelected ? 1.08 : 1.0,
+                duration: const Duration(milliseconds: 150),
+                child: Container(
+                  padding: const EdgeInsets.all(1.5),
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: isSelected ? AppTheme.textPrimary : Colors.transparent,
+                      width: 1.5,
+                    ),
+                  ),
+                  child: CircleAvatar(
+                    radius: 12,
+                    backgroundColor: AppTheme.isDark ? const Color(0xFF27272A) : const Color(0xFFE4E4E7),
+                    backgroundImage: hasCustomImage
+                        ? MemoryImage(base64Decode(widget.state.profileImageBase64!))
+                        : null,
+                    child: !hasCustomImage
+                        ? Icon(
+                            isSelected ? Icons.person_rounded : Icons.person_outline_rounded,
+                            size: 15,
+                            color: isSelected ? AppTheme.textPrimary : AppTheme.textMuted,
+                          )
+                        : null,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 3),
+              AnimatedOpacity(
+                opacity: isSelected ? 1.0 : 0.0,
+                duration: const Duration(milliseconds: 150),
+                child: Container(
+                  width: 4,
+                  height: 4,
+                  decoration: const BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: AppTheme.primaryTeal,
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

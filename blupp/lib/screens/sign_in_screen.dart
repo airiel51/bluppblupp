@@ -15,8 +15,8 @@ class SignInScreen extends StatefulWidget {
 
 class _SignInScreenState extends State<SignInScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _emailController = TextEditingController(text: 'airiel@blupp.ai');
-  final _passwordController = TextEditingController(text: 'password123');
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
   final _nameController = TextEditingController();
 
   bool _obscurePassword = true;
@@ -177,26 +177,42 @@ class _SignInScreenState extends State<SignInScreen> {
               }
             }
 
-            void verifyCode() {
+            Future<void> verifyCode() async {
               final entered = codeController.text.trim();
               if (entered.length != 6) {
                 setDialogState(() {
-                  localErrorWhere = 'Verification Code';
-                  localErrorWhy = 'Please enter all 6 digits of the security code.';
+                  localErrorWhere = 'Verification PIN';
+                  localErrorWhy = 'Please enter all 6 digits of the security PIN.';
                 });
                 return;
               }
 
-              if (entered == generatedCode || entered == '123456') {
+              setDialogState(() {
+                isLoading = true;
+                localErrorWhere = null;
+                localErrorWhy = null;
+              });
+
+              final verified = await widget.state.verifyPasswordResetPin(
+                email: emailController.text.trim(),
+                token: entered,
+                expectedCode: generatedCode,
+              );
+
+              if (!dialogCtx.mounted) return;
+
+              if (verified) {
                 setDialogState(() {
                   step = 3;
+                  isLoading = false;
                   localErrorWhere = null;
                   localErrorWhy = null;
                 });
               } else {
                 setDialogState(() {
-                  localErrorWhere = 'Verification Code';
-                  localErrorWhy = 'Invalid security code. Please check the code sent to your email.';
+                  isLoading = false;
+                  localErrorWhere = 'Verification PIN';
+                  localErrorWhy = 'Invalid security PIN. Please enter the code sent to your email inbox.';
                 });
               }
             }
@@ -604,7 +620,7 @@ class _SignInScreenState extends State<SignInScreen> {
                       _buildInputField(
                         controller: _nameController,
                         label: 'Full Name',
-                        hint: 'Airiel Danial',
+                        hint: 'Your full name',
                         icon: Icons.person_outline_rounded,
                         validator: (val) {
                           if (val == null || val.trim().isEmpty) {

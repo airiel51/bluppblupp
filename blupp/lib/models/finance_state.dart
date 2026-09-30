@@ -1,6 +1,9 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import '../services/supabase_service.dart';
 import '../theme/app_theme.dart';
+import 'currency_model.dart';
 
 enum TransactionType { expense, income }
 
@@ -87,7 +90,7 @@ class LoanItem {
 class TransactionItem {
   final String id;
   final String title;
-  final double amount;
+  double amount;
   final TransactionType type;
   final String categoryId;
   final DateTime date;
@@ -109,7 +112,7 @@ class TransactionItem {
 class PlannedExpense {
   final String id;
   final String title;
-  final double amount;
+  double amount;
   final String categoryId;
   final DateTime date;
   final bool isRecurring;
@@ -131,7 +134,7 @@ class PlannedExpense {
 class WishlistItem {
   final String id;
   final String title;
-  final double cost;
+  double cost;
   final String categoryId;
   final DateTime addedDate;
   final String aiVerdict;
@@ -201,7 +204,43 @@ class FinanceState extends ChangeNotifier {
     notifyListeners();
   }
 
-  // Personalized Avatar Presets
+  // Profile Picture (Custom Gallery Upload or Default)
+  String? _profileImageBase64;
+  String? get profileImageBase64 => _profileImageBase64;
+  bool get hasCustomProfileImage => _profileImageBase64 != null && _profileImageBase64!.isNotEmpty;
+
+  void setProfileImage(String? base64Str) {
+    _profileImageBase64 = base64Str;
+    notifyListeners();
+    SupabaseService.instance.updateUserProfileImage(base64Str);
+  }
+
+  Future<bool> pickProfilePictureFromGallery() async {
+    try {
+      final picker = ImagePicker();
+      final XFile? image = await picker.pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 512,
+        maxHeight: 512,
+        imageQuality: 80,
+      );
+      if (image != null) {
+        final bytes = await image.readAsBytes();
+        final base64Str = base64Encode(bytes);
+        setProfileImage(base64Str);
+        return true;
+      }
+    } catch (e) {
+      debugPrint('[FinanceState] Error picking profile image: $e');
+    }
+    return false;
+  }
+
+  void removeProfilePicture() {
+    setProfileImage(null);
+  }
+
+  // Personalized Avatar Presets (Fallback)
   int _avatarIndex = 0;
   int get avatarIndex => _avatarIndex;
   
@@ -246,113 +285,105 @@ class FinanceState extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Automatically converts all stored money values when changing currency in settings
   void setBaseCurrency(String code) {
-    _baseCurrency = code.toUpperCase();
+    final newCode = code.toUpperCase();
+    final oldCode = _baseCurrency.toUpperCase();
+    if (oldCode == newCode) return;
+
+    if (_monthlySpendingBudget > 0) {
+      _monthlySpendingBudget = CurrencyManager.convert(
+        amount: _monthlySpendingBudget,
+        fromCode: oldCode,
+        toCode: newCode,
+      );
+      SupabaseService.instance.updateMonthlyBudget(_monthlySpendingBudget);
+    }
+
+    for (final bank in _bankAccounts) {
+      bank.balance = CurrencyManager.convert(
+        amount: bank.balance,
+        fromCode: oldCode,
+        toCode: newCode,
+      );
+      SupabaseService.instance.updateBankBalance(bank.id, bank.balance);
+    }
+
+    for (final tx in _transactions) {
+      tx.amount = CurrencyManager.convert(
+        amount: tx.amount,
+        fromCode: oldCode,
+        toCode: newCode,
+      );
+    }
+
+    for (final inv in _investments) {
+      inv.balance = CurrencyManager.convert(
+        amount: inv.balance,
+        fromCode: oldCode,
+        toCode: newCode,
+      );
+    }
+
+    for (final loan in _loans) {
+      loan.totalLoan = CurrencyManager.convert(
+        amount: loan.totalLoan,
+        fromCode: oldCode,
+        toCode: newCode,
+      );
+      loan.remainingBalance = CurrencyManager.convert(
+        amount: loan.remainingBalance,
+        fromCode: oldCode,
+        toCode: newCode,
+      );
+      loan.monthlyInstallment = CurrencyManager.convert(
+        amount: loan.monthlyInstallment,
+        fromCode: oldCode,
+        toCode: newCode,
+      );
+      SupabaseService.instance.updateLoanBalance(loan.id, loan.remainingBalance);
+    }
+
+    for (final plan in _plannedExpenses) {
+      plan.amount = CurrencyManager.convert(
+        amount: plan.amount,
+        fromCode: oldCode,
+        toCode: newCode,
+      );
+    }
+
+    for (final wish in _fomoWishlist) {
+      wish.cost = CurrencyManager.convert(
+        amount: wish.cost,
+        fromCode: oldCode,
+        toCode: newCode,
+      );
+    }
+
+    if (_totalFomoSaved > 0) {
+      _totalFomoSaved = CurrencyManager.convert(
+        amount: _totalFomoSaved,
+        fromCode: oldCode,
+        toCode: newCode,
+      );
+    }
+
+    _baseCurrency = newCode;
     AppTheme.activeCurrencyCode = _baseCurrency;
     notifyListeners();
   }
 
-  // Base Monthly Spending Budget allocated by the user
-  double _monthlySpendingBudget = 3200.00;
+  // Base Monthly Spending Budget allocated by the user (starts 0 for new users)
+  double _monthlySpendingBudget = 0.00;
 
-  // Banks list
-  final List<BankAccount> _bankAccounts = [
-    BankAccount(
-      id: 'mb_1',
-      name: 'Maybank',
-      accountNumber: '•••• 8921',
-      balance: 4250.00,
-      color: const Color(0xFFFFB800),
-      icon: Icons.account_balance,
-    ),
-    BankAccount(
-      id: 'cimb_1',
-      name: 'CIMB Bank',
-      accountNumber: '•••• 4310',
-      balance: 2180.50,
-      color: const Color(0xFFE53935),
-      icon: Icons.account_balance,
-    ),
-    BankAccount(
-      id: 'bi_1',
-      name: 'Bank Islam',
-      accountNumber: '•••• 6742',
-      balance: 1450.00,
-      color: const Color(0xFF00897B),
-      icon: Icons.account_balance,
-    ),
-  ];
+  // Banks list - empty for clean slate upon new user sign in
+  final List<BankAccount> _bankAccounts = [];
 
-  // Investments & Savings (ASNB Fund, Tabung Haji, Robo-advisor)
-  final List<InvestmentItem> _investments = [
-    InvestmentItem(
-      id: 'asnb_1',
-      name: 'ASNB (Amanah Saham Bumiputera)',
-      institution: 'Permodalan Nasional Berhad',
-      balance: 15400.00,
-      returnRateAnnual: 5.25,
-      notes: 'Monthly auto-deduct RM 300',
-      icon: Icons.savings_rounded,
-      color: const Color(0xFF00C48C),
-    ),
-    InvestmentItem(
-      id: 'stash_1',
-      name: 'StashAway General Investing',
-      institution: 'StashAway Malaysia',
-      balance: 3850.00,
-      returnRateAnnual: 7.40,
-      notes: 'High growth portfolio',
-      icon: Icons.trending_up_rounded,
-      color: const Color(0xFF7C4DFF),
-    ),
-    InvestmentItem(
-      id: 'th_1',
-      name: 'Tabung Haji Savings',
-      institution: 'Lembaga Tabung Haji',
-      balance: 4500.00,
-      returnRateAnnual: 3.10,
-      notes: 'Emergency reserve fund',
-      icon: Icons.shield_rounded,
-      color: const Color(0xFF009688),
-    ),
-  ];
+  // Investments & Savings - empty for clean slate
+  final List<InvestmentItem> _investments = [];
 
-  // Loans & Liabilities (ShopeePay Later, Transport/Car Loan, Personal)
-  final List<LoanItem> _loans = [
-    LoanItem(
-      id: 'spay_1',
-      name: 'ShopeePay Later (SPayLater)',
-      provider: 'SeaMoney Malaysia',
-      totalLoan: 650.00,
-      remainingBalance: 390.00,
-      monthlyInstallment: 130.00,
-      dueDayOfMonth: 10,
-      icon: Icons.shopping_bag_rounded,
-      color: const Color(0xFFEE4D2D), // Shopee orange
-    ),
-    LoanItem(
-      id: 'car_1',
-      name: 'Transport / Car Loan',
-      provider: 'Maybank Hire Purchase',
-      totalLoan: 36000.00,
-      remainingBalance: 16800.00,
-      monthlyInstallment: 520.00,
-      dueDayOfMonth: 5,
-      icon: Icons.directions_car_rounded,
-      color: const Color(0xFF3B82F6), // Blue
-    ),
-    LoanItem(
-      id: 'grab_1',
-      name: 'Grab PayLater',
-      provider: 'Grab Financial Services',
-      totalLoan: 320.00,
-      remainingBalance: 180.00,
-      monthlyInstallment: 90.00,
-      dueDayOfMonth: 18,
-      icon: Icons.electric_scooter_rounded,
-      color: const Color(0xFF00B14F), // Grab green
-    ),
-  ];
+  // Loans & Liabilities - empty for clean slate
+  final List<LoanItem> _loans = [];
 
   // Categories
   final List<CategoryItem> _categories = [
@@ -459,161 +490,290 @@ class FinanceState extends ChangeNotifier {
     ),
   ];
 
-  // Transactions list
-  final List<TransactionItem> _transactions = [
-    TransactionItem(
-      id: 'tx_1',
-      title: 'Groceries at Jaya Grocer',
-      amount: 145.80,
-      type: TransactionType.expense,
-      categoryId: 'groceries',
-      date: DateTime.now().subtract(const Duration(hours: 4)),
-      bankAccountId: 'mb_1',
-      note: 'Weekly essentials & fresh veggies',
-    ),
-    TransactionItem(
-      id: 'tx_2',
-      title: 'Shell Fuel V-Power',
-      amount: 65.00,
-      type: TransactionType.expense,
-      categoryId: 'transport',
-      date: DateTime.now().subtract(const Duration(days: 1)),
-      bankAccountId: 'mb_1',
-      note: 'Full tank',
-    ),
-    TransactionItem(
-      id: 'tx_3',
-      title: 'ShopeePay SPayLater Installment',
-      amount: 130.00,
-      type: TransactionType.expense,
-      categoryId: 'loan_repay',
-      date: DateTime.now().subtract(const Duration(days: 2)),
-      bankAccountId: 'cimb_1',
-      note: 'Monthly gadget installment',
-    ),
-    TransactionItem(
-      id: 'tx_4',
-      title: 'Nasi Lemak & Kopi Tealive',
-      amount: 28.50,
-      type: TransactionType.expense,
-      categoryId: 'food',
-      date: DateTime.now().subtract(const Duration(days: 2, hours: 3)),
-      bankAccountId: 'cimb_1',
-      note: 'Lunch with colleagues',
-    ),
-    TransactionItem(
-      id: 'tx_5',
-      title: 'Uniqlo Airism T-Shirts',
-      amount: 119.00,
-      type: TransactionType.expense,
-      categoryId: 'shopping',
-      date: DateTime.now().subtract(const Duration(days: 3)),
-      bankAccountId: 'bi_1',
-      note: 'Weekend shopping',
-    ),
-    TransactionItem(
-      id: 'tx_6',
-      title: 'Freelance UI Design Project',
-      amount: 850.00,
-      type: TransactionType.income,
-      categoryId: 'freelance',
-      date: DateTime.now().subtract(const Duration(days: 4)),
-      bankAccountId: 'mb_1',
-      note: 'Milestone 2 payment',
-    ),
-    TransactionItem(
-      id: 'tx_7',
-      title: 'Netflix & Spotify Subs',
-      amount: 68.00,
-      type: TransactionType.expense,
-      categoryId: 'entertainment',
-      date: DateTime.now().subtract(const Duration(days: 5)),
-      bankAccountId: 'cimb_1',
-      note: 'Family plan auto-debit',
-    ),
-    TransactionItem(
-      id: 'tx_8',
-      title: 'TNB Electric & Air Selangor',
-      amount: 142.30,
-      type: TransactionType.expense,
-      categoryId: 'utilities',
-      date: DateTime.now().subtract(const Duration(days: 6)),
-      bankAccountId: 'mb_1',
-      note: 'Monthly condo utility bills',
-    ),
-  ];
+  // Transactions list - empty for clean slate
+  final List<TransactionItem> _transactions = [];
 
-  // Planned Expenses (for Calendar Planner)
-  final List<PlannedExpense> _plannedExpenses = [
-    PlannedExpense(
-      id: 'plan_1',
-      title: 'Car Service & Engine Oil',
-      amount: 280.00,
-      categoryId: 'transport',
-      date: DateTime.now().add(const Duration(days: 2)),
-      note: '10,000km scheduled maintenance',
-    ),
-    PlannedExpense(
-      id: 'plan_2',
-      title: 'Shopee 10.10 Wishlist Checkout',
-      amount: 150.00,
-      categoryId: 'shopping',
-      date: DateTime.now().add(const Duration(days: 4)),
-      note: 'Voucher sales checkout',
-    ),
-    PlannedExpense(
-      id: 'plan_3',
-      title: 'Car Loan EMI Monthly',
-      amount: 520.00,
-      categoryId: 'loan_repay',
-      date: DateTime.now().add(const Duration(days: 6)),
-      isRecurring: true,
-      note: 'Auto debit Maybank HP',
-    ),
-    PlannedExpense(
-      id: 'plan_4',
-      title: 'Unifi High Speed Wifi Bill',
-      amount: 139.00,
-      categoryId: 'utilities',
-      date: DateTime.now().add(const Duration(days: 9)),
-      note: 'Monthly internet bill',
-    ),
-    PlannedExpense(
-      id: 'plan_5',
-      title: 'Weekend Groceries at Village Grocer',
-      amount: 180.00,
-      categoryId: 'groceries',
-      date: DateTime.now().add(const Duration(days: 12)),
-      note: 'Pantry restocking',
-    ),
-  ];
+  // Planned Expenses (for Calendar Planner) - empty for clean slate
+  final List<PlannedExpense> _plannedExpenses = [];
 
-  // FOMO Wishlist & Avoided Purchases
-  final List<WishlistItem> _fomoWishlist = [
-    WishlistItem(
-      id: 'fomo_1',
-      title: 'Sony WH-1000XM5 Wireless Headphones',
-      cost: 1399.00,
-      categoryId: 'shopping',
-      addedDate: DateTime.now().subtract(const Duration(days: 8)),
-      aiVerdict: 'FOMO Alert: You already have working earbuds!',
-      aiReason: 'Spending RM 1,399 drops your daily allowance from RM 58 to RM 12/day. Put in 30-day cooldown instead.',
-      avoided: true,
-    ),
-    WishlistItem(
-      id: 'fomo_2',
-      title: 'Mechanical Custom Keyboard Kit',
-      cost: 450.00,
-      categoryId: 'shopping',
-      addedDate: DateTime.now().subtract(const Duration(days: 3)),
-      aiVerdict: 'Impulse Detected: High hype factor',
-      aiReason: 'Waiting 30 days gives your ASNB account RM 23.60 extra compound interest instead.',
-      avoided: true,
-    ),
-  ];
+  // FOMO Wishlist & Avoided Purchases - empty for clean slate
+  final List<WishlistItem> _fomoWishlist = [];
 
   // Total amount saved by saying NO to FOMO
-  double _totalFomoSaved = 1849.00;
+  double _totalFomoSaved = 0.00;
+
+  /// Completely clears all user data for fresh user accounts or sign outs
+  void clearAllData() {
+    _bankAccounts.clear();
+    _investments.clear();
+    _loans.clear();
+    _transactions.clear();
+    _plannedExpenses.clear();
+    _fomoWishlist.clear();
+    _totalFomoSaved = 0.00;
+    _monthlySpendingBudget = 0.00;
+    _profileImageBase64 = null;
+    notifyListeners();
+  }
+
+  /// Explicitly loads sample data only when Demo Mode is clicked
+  void loadDemoData() {
+    _monthlySpendingBudget = 3200.00;
+    _bankAccounts.clear();
+    _bankAccounts.addAll([
+      BankAccount(
+        id: 'mb_1',
+        name: 'Maybank',
+        accountNumber: '•••• 8921',
+        balance: 4250.00,
+        color: const Color(0xFFFFB800),
+        icon: Icons.account_balance,
+      ),
+      BankAccount(
+        id: 'cimb_1',
+        name: 'CIMB Bank',
+        accountNumber: '•••• 4310',
+        balance: 2180.50,
+        color: const Color(0xFFE53935),
+        icon: Icons.account_balance,
+      ),
+      BankAccount(
+        id: 'bi_1',
+        name: 'Bank Islam',
+        accountNumber: '•••• 6742',
+        balance: 1450.00,
+        color: const Color(0xFF00897B),
+        icon: Icons.account_balance,
+      ),
+    ]);
+
+    _investments.clear();
+    _investments.addAll([
+      InvestmentItem(
+        id: 'asnb_1',
+        name: 'ASNB (Amanah Saham Bumiputera)',
+        institution: 'Permodalan Nasional Berhad',
+        balance: 15400.00,
+        returnRateAnnual: 5.25,
+        notes: 'Monthly auto-deduct RM 300',
+        icon: Icons.savings_rounded,
+        color: const Color(0xFF00C48C),
+      ),
+      InvestmentItem(
+        id: 'stash_1',
+        name: 'StashAway General Investing',
+        institution: 'StashAway Malaysia',
+        balance: 3850.00,
+        returnRateAnnual: 7.40,
+        notes: 'High growth portfolio',
+        icon: Icons.trending_up_rounded,
+        color: const Color(0xFF7C4DFF),
+      ),
+      InvestmentItem(
+        id: 'th_1',
+        name: 'Tabung Haji Savings',
+        institution: 'Lembaga Tabung Haji',
+        balance: 4500.00,
+        returnRateAnnual: 3.10,
+        notes: 'Emergency reserve fund',
+        icon: Icons.shield_rounded,
+        color: const Color(0xFF009688),
+      ),
+    ]);
+
+    _loans.clear();
+    _loans.addAll([
+      LoanItem(
+        id: 'spay_1',
+        name: 'ShopeePay Later (SPayLater)',
+        provider: 'SeaMoney Malaysia',
+        totalLoan: 650.00,
+        remainingBalance: 390.00,
+        monthlyInstallment: 130.00,
+        dueDayOfMonth: 10,
+        icon: Icons.shopping_bag_rounded,
+        color: const Color(0xFFEE4D2D),
+      ),
+      LoanItem(
+        id: 'car_1',
+        name: 'Transport / Car Loan',
+        provider: 'Maybank Hire Purchase',
+        totalLoan: 36000.00,
+        remainingBalance: 16800.00,
+        monthlyInstallment: 520.00,
+        dueDayOfMonth: 5,
+        icon: Icons.directions_car_rounded,
+        color: const Color(0xFF3B82F6),
+      ),
+      LoanItem(
+        id: 'grab_1',
+        name: 'Grab PayLater',
+        provider: 'Grab Financial Services',
+        totalLoan: 320.00,
+        remainingBalance: 180.00,
+        monthlyInstallment: 90.00,
+        dueDayOfMonth: 18,
+        icon: Icons.electric_scooter_rounded,
+        color: const Color(0xFF00B14F),
+      ),
+    ]);
+
+    _transactions.clear();
+    _transactions.addAll([
+      TransactionItem(
+        id: 'tx_1',
+        title: 'Groceries at Jaya Grocer',
+        amount: 145.80,
+        type: TransactionType.expense,
+        categoryId: 'groceries',
+        date: DateTime.now().subtract(const Duration(hours: 4)),
+        bankAccountId: 'mb_1',
+        note: 'Weekly essentials & fresh veggies',
+      ),
+      TransactionItem(
+        id: 'tx_2',
+        title: 'Shell Fuel V-Power',
+        amount: 65.00,
+        type: TransactionType.expense,
+        categoryId: 'transport',
+        date: DateTime.now().subtract(const Duration(days: 1)),
+        bankAccountId: 'mb_1',
+        note: 'Full tank',
+      ),
+      TransactionItem(
+        id: 'tx_3',
+        title: 'ShopeePay SPayLater Installment',
+        amount: 130.00,
+        type: TransactionType.expense,
+        categoryId: 'loan_repay',
+        date: DateTime.now().subtract(const Duration(days: 2)),
+        bankAccountId: 'cimb_1',
+        note: 'Monthly gadget installment',
+      ),
+      TransactionItem(
+        id: 'tx_4',
+        title: 'Nasi Lemak & Kopi Tealive',
+        amount: 28.50,
+        type: TransactionType.expense,
+        categoryId: 'food',
+        date: DateTime.now().subtract(const Duration(days: 2, hours: 3)),
+        bankAccountId: 'cimb_1',
+        note: 'Lunch with colleagues',
+      ),
+      TransactionItem(
+        id: 'tx_5',
+        title: 'Uniqlo Airism T-Shirts',
+        amount: 119.00,
+        type: TransactionType.expense,
+        categoryId: 'shopping',
+        date: DateTime.now().subtract(const Duration(days: 3)),
+        bankAccountId: 'bi_1',
+        note: 'Weekend shopping',
+      ),
+      TransactionItem(
+        id: 'tx_6',
+        title: 'Freelance UI Design Project',
+        amount: 850.00,
+        type: TransactionType.income,
+        categoryId: 'freelance',
+        date: DateTime.now().subtract(const Duration(days: 4)),
+        bankAccountId: 'mb_1',
+        note: 'Milestone 2 payment',
+      ),
+      TransactionItem(
+        id: 'tx_7',
+        title: 'Netflix & Spotify Subs',
+        amount: 68.00,
+        type: TransactionType.expense,
+        categoryId: 'entertainment',
+        date: DateTime.now().subtract(const Duration(days: 5)),
+        bankAccountId: 'cimb_1',
+        note: 'Family plan auto-debit',
+      ),
+      TransactionItem(
+        id: 'tx_8',
+        title: 'TNB Electric & Air Selangor',
+        amount: 142.30,
+        type: TransactionType.expense,
+        categoryId: 'utilities',
+        date: DateTime.now().subtract(const Duration(days: 6)),
+        bankAccountId: 'mb_1',
+        note: 'Monthly condo utility bills',
+      ),
+    ]);
+
+    _plannedExpenses.clear();
+    _plannedExpenses.addAll([
+      PlannedExpense(
+        id: 'plan_1',
+        title: 'Car Service & Engine Oil',
+        amount: 280.00,
+        categoryId: 'transport',
+        date: DateTime.now().add(const Duration(days: 2)),
+        note: '10,000km scheduled maintenance',
+      ),
+      PlannedExpense(
+        id: 'plan_2',
+        title: 'Shopee 10.10 Wishlist Checkout',
+        amount: 150.00,
+        categoryId: 'shopping',
+        date: DateTime.now().add(const Duration(days: 4)),
+        note: 'Voucher sales checkout',
+      ),
+      PlannedExpense(
+        id: 'plan_3',
+        title: 'Car Loan EMI Monthly',
+        amount: 520.00,
+        categoryId: 'loan_repay',
+        date: DateTime.now().add(const Duration(days: 6)),
+        isRecurring: true,
+        note: 'Auto debit Maybank HP',
+      ),
+      PlannedExpense(
+        id: 'plan_4',
+        title: 'Unifi High Speed Wifi Bill',
+        amount: 139.00,
+        categoryId: 'utilities',
+        date: DateTime.now().add(const Duration(days: 9)),
+        note: 'Monthly internet bill',
+      ),
+      PlannedExpense(
+        id: 'plan_5',
+        title: 'Weekend Groceries at Village Grocer',
+        amount: 180.00,
+        categoryId: 'groceries',
+        date: DateTime.now().add(const Duration(days: 12)),
+        note: 'Pantry restocking',
+      ),
+    ]);
+
+    _fomoWishlist.clear();
+    _fomoWishlist.addAll([
+      WishlistItem(
+        id: 'fomo_1',
+        title: 'Sony WH-1000XM5 Wireless Headphones',
+        cost: 1399.00,
+        categoryId: 'shopping',
+        addedDate: DateTime.now().subtract(const Duration(days: 8)),
+        aiVerdict: 'FOMO Alert: You already have working earbuds!',
+        aiReason: 'Spending RM 1,399 drops your daily allowance from RM 58 to RM 12/day. Put in 30-day cooldown instead.',
+        avoided: true,
+      ),
+      WishlistItem(
+        id: 'fomo_2',
+        title: 'Mechanical Custom Keyboard Kit',
+        cost: 450.00,
+        categoryId: 'shopping',
+        addedDate: DateTime.now().subtract(const Duration(days: 3)),
+        aiVerdict: 'Impulse Detected: High hype factor',
+        aiReason: 'Waiting 30 days gives your ASNB account RM 23.60 extra compound interest instead.',
+        avoided: true,
+      ),
+    ]);
+
+    _totalFomoSaved = 1849.00;
+    notifyListeners();
+  }
 
   // --- GETTERS ---
   List<BankAccount> get bankAccounts => List.unmodifiable(_bankAccounts);
@@ -788,6 +948,11 @@ class FinanceState extends ChangeNotifier {
         if (profile['phone'] != null && (profile['phone'] as String).isNotEmpty) {
           _userPhone = profile['phone'];
         }
+        if (profile['profile_image'] != null && (profile['profile_image'] as String).isNotEmpty) {
+          _profileImageBase64 = profile['profile_image'] as String;
+        } else if (profile['avatar_url'] != null && (profile['avatar_url'] as String).isNotEmpty) {
+          _profileImageBase64 = profile['avatar_url'] as String;
+        }
         if (profile['notifications_enabled'] != null) {
           _notificationsEnabled = profile['notifications_enabled'] as bool;
         }
@@ -799,59 +964,36 @@ class FinanceState extends ChangeNotifier {
         }
       }
 
-      // 2. Fetch Bank Accounts
+      // 2. Fetch Bank Accounts (Empty for new users)
       final supaBanks = await SupabaseService.instance.fetchBankAccounts();
-      if (supaBanks.isNotEmpty) {
-        _bankAccounts.clear();
-        _bankAccounts.addAll(supaBanks);
-      }
+      _bankAccounts.clear();
+      _bankAccounts.addAll(supaBanks);
 
       // 3. Fetch Transactions
       final supaTransactions = await SupabaseService.instance.fetchTransactions();
-      if (supaTransactions.isNotEmpty) {
-        _transactions.clear();
-        _transactions.addAll(supaTransactions);
-      }
+      _transactions.clear();
+      _transactions.addAll(supaTransactions);
 
       // 4. Fetch Investments
       final supaInvestments = await SupabaseService.instance.fetchInvestments();
-      if (supaInvestments.isNotEmpty) {
-        _investments.clear();
-        _investments.addAll(supaInvestments);
-      }
+      _investments.clear();
+      _investments.addAll(supaInvestments);
 
       // 5. Fetch Loans
       final supaLoans = await SupabaseService.instance.fetchLoans();
-      if (supaLoans.isNotEmpty) {
-        _loans.clear();
-        _loans.addAll(supaLoans);
-      }
+      _loans.clear();
+      _loans.addAll(supaLoans);
 
       // 6. Fetch Planned Expenses
       final supaPlans = await SupabaseService.instance.fetchPlannedExpenses();
-      if (supaPlans.isNotEmpty) {
-        _plannedExpenses.clear();
-        _plannedExpenses.addAll(supaPlans);
-      }
+      _plannedExpenses.clear();
+      _plannedExpenses.addAll(supaPlans);
 
       // 7. Fetch FOMO Wishlist
       final supaWishlist = await SupabaseService.instance.fetchWishlist();
-      if (supaWishlist.isNotEmpty) {
-        _fomoWishlist.clear();
-        _fomoWishlist.addAll(supaWishlist);
-        _totalFomoSaved = _fomoWishlist.where((w) => w.avoided).fold(0.0, (sum, w) => sum + w.cost);
-      }
-
-      // 8. If Supabase has zero data, seed the initial data so user sees records in Supabase Dashboard
-      if (supaBanks.isEmpty && supaTransactions.isEmpty) {
-        await SupabaseService.instance.seedInitialData(
-          banks: _bankAccounts,
-          investments: _investments,
-          loans: _loans,
-          transactions: _transactions,
-          plans: _plannedExpenses,
-        );
-      }
+      _fomoWishlist.clear();
+      _fomoWishlist.addAll(supaWishlist);
+      _totalFomoSaved = _fomoWishlist.where((w) => w.avoided).fold(0.0, (sum, w) => sum + w.cost);
     } catch (e) {
       debugPrint('[FinanceState] Error syncing with Supabase: $e');
     } finally {
@@ -1245,6 +1387,9 @@ class FinanceState extends ChangeNotifier {
     _authError = null;
     notifyListeners();
 
+    // Wipe any existing/mock data before signing into actual user session
+    clearAllData();
+
     try {
       if (SupabaseService.instance.isConfigured) {
         final res = await SupabaseService.instance.signInWithPassword(
@@ -1272,7 +1417,7 @@ class FinanceState extends ChangeNotifier {
       _authError = null;
       notifyListeners();
 
-      // Trigger data sync upon sign in
+      // Trigger data sync upon sign in - new users will have empty lists
       syncWithSupabase();
       return true;
     } catch (e) {
@@ -1287,6 +1432,9 @@ class FinanceState extends ChangeNotifier {
     _isAuthLoading = true;
     _authError = null;
     notifyListeners();
+
+    // Fresh clean slate for new registrations - no default/mock data
+    clearAllData();
 
     try {
       if (SupabaseService.instance.isConfigured) {
@@ -1316,6 +1464,7 @@ class FinanceState extends ChangeNotifier {
       _authError = null;
       notifyListeners();
 
+      // Trigger data sync upon sign up (clean empty state)
       syncWithSupabase();
       return true;
     } catch (e) {
@@ -1327,6 +1476,8 @@ class FinanceState extends ChangeNotifier {
   }
 
   void signInDemo() {
+    clearAllData();
+    loadDemoData();
     _isAuthenticated = true;
     _userName = 'Airiel';
     _userEmail = 'airiel@blupp.ai';
@@ -1344,6 +1495,7 @@ class FinanceState extends ChangeNotifier {
     } catch (e) {
       debugPrint('[FinanceState] Error during signOut: $e');
     } finally {
+      clearAllData();
       _isAuthenticated = false;
       _isAuthLoading = false;
       _authError = null;
@@ -1399,7 +1551,7 @@ class FinanceState extends ChangeNotifier {
     notifyListeners();
   }
 
-  // Password Reset with Email Verification Code
+  // Password Reset with Email Verification PIN Code
   Future<String> requestPasswordResetCode(String email) async {
     _isAuthLoading = true;
     _authError = null;
@@ -1415,6 +1567,32 @@ class FinanceState extends ChangeNotifier {
       _authError = e.toString();
       notifyListeners();
       rethrow;
+    }
+  }
+
+  Future<bool> verifyPasswordResetPin({
+    required String email,
+    required String token,
+    required String expectedCode,
+  }) async {
+    _isAuthLoading = true;
+    _authError = null;
+    notifyListeners();
+
+    try {
+      final verified = await SupabaseService.instance.verifyPasswordResetPin(
+        email: email,
+        token: token,
+        fallbackCode: expectedCode,
+      );
+      _isAuthLoading = false;
+      notifyListeners();
+      return verified;
+    } catch (e) {
+      _isAuthLoading = false;
+      _authError = e.toString();
+      notifyListeners();
+      return false;
     }
   }
 
