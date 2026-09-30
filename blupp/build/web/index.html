@@ -18,8 +18,8 @@
 
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-  <!-- viewport-fit=cover: content fills behind iPhone notch/status bar -->
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <!-- viewport: no viewport-fit=cover to avoid touch offset on iOS PWA -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, shrink-to-fit=no">
   <meta name="description" content="Blupp AI Finance - Smart personal finance tracker">
 
   <!-- Theme color: makes Safari/Chrome status bar dark -->
@@ -28,7 +28,7 @@
   <!-- iOS PWA meta tags -->
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
   <meta name="apple-mobile-web-app-title" content="Blupp">
   <link rel="apple-touch-icon" href="icons/Icon-512.png">
   <link rel="apple-touch-icon" sizes="192x192" href="icons/Icon-192.png">
