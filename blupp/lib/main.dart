@@ -147,72 +147,86 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
             ),
           ),
 
-          // Floating glass navbar
+          // Floating glass navbar (responsive for mobile, iOS, and Web)
           Positioned(
             left: 16,
             right: 16,
             bottom: bottomPadding > 0 ? bottomPadding + 8 : 16,
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(28),
-              child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
+            child: Align(
+              alignment: Alignment.bottomCenter,
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 500),
                 child: Container(
                   height: 56,
                   decoration: BoxDecoration(
-                    color: AppTheme.isDark
-                        ? const Color(0xBF09090B)
-                        : const Color(0xBFFFFFFF),
                     borderRadius: BorderRadius.circular(28),
-                    border: Border.all(
-                      color: AppTheme.isDark
-                          ? Colors.white.withValues(alpha: 0.10)
-                          : Colors.black.withValues(alpha: 0.08),
-                      width: 0.8,
-                    ),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withValues(alpha: AppTheme.isDark ? 0.45 : 0.12),
-                        blurRadius: 30,
+                        color: Colors.black.withValues(
+                          alpha: AppTheme.isDark ? 0.45 : 0.12,
+                        ),
+                        blurRadius: 24,
                         spreadRadius: 0,
                         offset: const Offset(0, 8),
                       ),
                     ],
                   ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceAround,
-                    children: [
-                      _buildNavItem(
-                        index: 0,
-                        icon: Icons.home_outlined,
-                        activeIcon: Icons.home_rounded,
-                        label: 'Home',
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(28),
+                    child: BackdropFilter(
+                      filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
+                      child: Container(
+                        height: 56,
+                        decoration: BoxDecoration(
+                          color: AppTheme.isDark
+                              ? const Color(0xBF09090B)
+                              : const Color(0xBFFFFFFF),
+                          borderRadius: BorderRadius.circular(28),
+                          border: Border.all(
+                            color: AppTheme.isDark
+                                ? Colors.white.withValues(alpha: 0.10)
+                                : Colors.black.withValues(alpha: 0.08),
+                            width: 0.8,
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceAround,
+                          children: [
+                            _buildNavItem(
+                              index: 0,
+                              icon: Icons.home_outlined,
+                              activeIcon: Icons.home_rounded,
+                              label: 'Home',
+                            ),
+                            _buildNavItem(
+                              index: 1,
+                              icon: Icons.receipt_long_outlined,
+                              activeIcon: Icons.receipt_long_rounded,
+                              label: 'Expenses',
+                            ),
+                            _buildNavItem(
+                              index: 2,
+                              icon: Icons.insights_outlined,
+                              activeIcon: Icons.insights_rounded,
+                              label: 'Analytics',
+                            ),
+                            _buildNavItem(
+                              index: 3,
+                              icon: Icons.auto_awesome_outlined,
+                              activeIcon: Icons.auto_awesome_rounded,
+                              label: 'FOMO AI',
+                            ),
+                            _buildNavItem(
+                              index: 4,
+                              icon: Icons.calendar_today_outlined,
+                              activeIcon: Icons.calendar_month_rounded,
+                              label: 'Calendar',
+                            ),
+                            _buildProfileNavItem(index: 5),
+                          ],
+                        ),
                       ),
-                      _buildNavItem(
-                        index: 1,
-                        icon: Icons.receipt_long_outlined,
-                        activeIcon: Icons.receipt_long_rounded,
-                        label: 'Expenses',
-                      ),
-                      _buildNavItem(
-                        index: 2,
-                        icon: Icons.insights_outlined,
-                        activeIcon: Icons.insights_rounded,
-                        label: 'Analytics',
-                      ),
-                      _buildNavItem(
-                        index: 3,
-                        icon: Icons.auto_awesome_outlined,
-                        activeIcon: Icons.auto_awesome_rounded,
-                        label: 'FOMO AI',
-                      ),
-                      _buildNavItem(
-                        index: 4,
-                        icon: Icons.calendar_today_outlined,
-                        activeIcon: Icons.calendar_month_rounded,
-                        label: 'Calendar',
-                      ),
-                      _buildProfileNavItem(index: 5),
-                    ],
+                    ),
                   ),
                 ),
               ),
