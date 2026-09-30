@@ -12,6 +12,49 @@ class ProfileScreen extends StatelessWidget {
 
   const ProfileScreen({super.key, required this.state});
 
+  Future<void> _pickProfilePhoto(BuildContext context) async {
+    // Show loading overlay
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const Center(
+        child: CircularProgressIndicator(color: AppTheme.primaryTeal),
+      ),
+    );
+    final success = await state.pickProfilePictureFromGallery();
+    if (!context.mounted) return;
+    Navigator.of(context, rootNavigator: true).pop(); // dismiss loading
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        backgroundColor: AppTheme.surfaceLight,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        content: Row(
+          children: [
+            Icon(
+              success ? Icons.check_circle_rounded : Icons.error_outline_rounded,
+              color: success ? AppTheme.primaryTeal : AppTheme.expenseCoral,
+              size: 20,
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                success
+                    ? 'Profile picture updated successfully'
+                    : 'Could not pick image. Please check permissions.',
+                style: TextStyle(
+                  color: AppTheme.textPrimary,
+                  fontWeight: FontWeight.w500,
+                  fontSize: 13,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   void _showEditProfileSheet(BuildContext context) {
     final nameCtrl = TextEditingController(text: state.userName);
     final emailCtrl = TextEditingController(text: state.userEmail);
@@ -2312,7 +2355,7 @@ class ProfileScreen extends StatelessWidget {
                       children: [
                         // Avatar: Custom Gallery Photo or Default Profile Picture
                         InkWell(
-                          onTap: () => state.pickProfilePictureFromGallery(),
+                          onTap: () => _pickProfilePhoto(context),
                           borderRadius: BorderRadius.circular(32),
                           child: Stack(
                             children: [
@@ -2549,7 +2592,7 @@ class ProfileScreen extends StatelessWidget {
                     ),
                     const SizedBox(width: 8),
                     ElevatedButton.icon(
-                      onPressed: () => state.pickProfilePictureFromGallery(),
+                      onPressed: () => _pickProfilePhoto(context),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppTheme.surfaceLight,
                         foregroundColor: AppTheme.textPrimary,

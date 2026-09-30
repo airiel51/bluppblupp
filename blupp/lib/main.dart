@@ -101,6 +101,10 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
 
   @override
   Widget build(BuildContext context) {
+    final bottomPadding = MediaQuery.paddingOf(context).bottom;
+    // Height of the floating navbar: 56px content + top padding + bottom safe area
+    final navbarHeight = 56.0 + bottomPadding.clamp(8.0, 40.0);
+
     final screens = [
       HomeScreen(
         state: widget.state,
@@ -124,71 +128,97 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
     ];
 
     return Scaffold(
-      body: IndexedStack(
-        index: _currentTabIndex,
-        children: screens,
-      ),
-      bottomNavigationBar: ClipRect(
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-          child: Container(
-            decoration: BoxDecoration(
-              color: AppTheme.isDark
-                  ? const Color(0xCC09090B)
-                  : const Color(0xCCFFFFFF),
-              border: Border(
-                top: BorderSide(
-                  color: AppTheme.isDark
-                      ? Colors.white.withValues(alpha: 0.08)
-                      : Colors.black.withValues(alpha: 0.08),
-                  width: 0.8,
+      extendBody: true,
+      body: Stack(
+        children: [
+          // Tab content with fade animation
+          AnimatedSwitcher(
+            duration: const Duration(milliseconds: 220),
+            transitionBuilder: (child, animation) => FadeTransition(
+              opacity: animation,
+              child: child,
+            ),
+            child: KeyedSubtree(
+              key: ValueKey<int>(_currentTabIndex),
+              child: Padding(
+                padding: EdgeInsets.only(bottom: navbarHeight),
+                child: screens[_currentTabIndex],
+              ),
+            ),
+          ),
+
+          // Floating glass navbar
+          Positioned(
+            left: 16,
+            right: 16,
+            bottom: bottomPadding > 0 ? bottomPadding + 8 : 16,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(28),
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
+                child: Container(
+                  height: 56,
+                  decoration: BoxDecoration(
+                    color: AppTheme.isDark
+                        ? const Color(0xBF09090B)
+                        : const Color(0xBFFFFFFF),
+                    borderRadius: BorderRadius.circular(28),
+                    border: Border.all(
+                      color: AppTheme.isDark
+                          ? Colors.white.withValues(alpha: 0.10)
+                          : Colors.black.withValues(alpha: 0.08),
+                      width: 0.8,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: AppTheme.isDark ? 0.45 : 0.12),
+                        blurRadius: 30,
+                        spreadRadius: 0,
+                        offset: const Offset(0, 8),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: [
+                      _buildNavItem(
+                        index: 0,
+                        icon: Icons.home_outlined,
+                        activeIcon: Icons.home_rounded,
+                        label: 'Home',
+                      ),
+                      _buildNavItem(
+                        index: 1,
+                        icon: Icons.receipt_long_outlined,
+                        activeIcon: Icons.receipt_long_rounded,
+                        label: 'Expenses',
+                      ),
+                      _buildNavItem(
+                        index: 2,
+                        icon: Icons.insights_outlined,
+                        activeIcon: Icons.insights_rounded,
+                        label: 'Analytics',
+                      ),
+                      _buildNavItem(
+                        index: 3,
+                        icon: Icons.auto_awesome_outlined,
+                        activeIcon: Icons.auto_awesome_rounded,
+                        label: 'FOMO AI',
+                      ),
+                      _buildNavItem(
+                        index: 4,
+                        icon: Icons.calendar_today_outlined,
+                        activeIcon: Icons.calendar_month_rounded,
+                        label: 'Calendar',
+                      ),
+                      _buildProfileNavItem(index: 5),
+                    ],
+                  ),
                 ),
               ),
             ),
-            padding: EdgeInsets.only(
-              top: 6,
-              bottom: MediaQuery.paddingOf(context).bottom > 0
-                  ? MediaQuery.paddingOf(context).bottom
-                  : 8,
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                _buildNavItem(
-                  index: 0,
-                  icon: Icons.home_outlined,
-                  activeIcon: Icons.home_rounded,
-                  label: 'Home',
-                ),
-                _buildNavItem(
-                  index: 1,
-                  icon: Icons.receipt_long_outlined,
-                  activeIcon: Icons.receipt_long_rounded,
-                  label: 'Expenses',
-                ),
-                _buildNavItem(
-                  index: 2,
-                  icon: Icons.insights_outlined,
-                  activeIcon: Icons.insights_rounded,
-                  label: 'Analytics',
-                ),
-                _buildNavItem(
-                  index: 3,
-                  icon: Icons.auto_awesome_outlined,
-                  activeIcon: Icons.auto_awesome_rounded,
-                  label: 'FOMO AI',
-                ),
-                _buildNavItem(
-                  index: 4,
-                  icon: Icons.calendar_today_outlined,
-                  activeIcon: Icons.calendar_month_rounded,
-                  label: 'Calendar',
-                ),
-                _buildProfileNavItem(index: 5),
-              ],
-            ),
           ),
-        ),
+        ],
       ),
     );
   }
