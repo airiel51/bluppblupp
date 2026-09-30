@@ -45,5 +45,12 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<!-- Required by image_picker to access the photo library on iOS -->
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Blupp needs access to your photo library so you can set a profile picture.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>Blupp needs permission to save photos to your library.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Blupp needs camera access to let you take a profile photo.</string>
 </dict>
 </plist>
