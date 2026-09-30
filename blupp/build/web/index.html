@@ -18,9 +18,14 @@
 
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-  <meta name="description" content="A new Flutter project.">
+  <!-- viewport-fit=cover: content fills behind iPhone notch/status bar -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="description" content="Blupp AI Finance - Smart personal finance tracker">
 
-  <!-- iOS meta tags & icons -->
+  <!-- Theme color: makes Safari/Chrome status bar dark -->
+  <meta name="theme-color" content="#09090B">
+
+  <!-- iOS PWA meta tags -->
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -34,6 +39,17 @@
 
   <title>Blupp Finance</title>
   <link rel="manifest" href="manifest.json">
+
+  <style>
+    /* Prevent white flash on load — match app dark background */
+    html, body {
+      background-color: #09090B;
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      overflow: hidden;
+    }
+  </style>
 </head>
 <body>
   <script src="flutter_bootstrap.js" async></script>
