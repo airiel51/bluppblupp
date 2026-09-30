@@ -1,0 +1,7 @@
+{
+  "buildCommand": "cd blupp && flutter build web --release",
+  "outputDirectory": "blupp/build/web",
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/index.html" }
+  ]
+}
