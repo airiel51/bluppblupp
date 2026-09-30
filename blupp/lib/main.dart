@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'models/finance_state.dart';
 import 'theme/app_theme.dart';
 import 'screens/home_screen.dart';
@@ -12,6 +13,14 @@ import 'services/supabase_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  // Make status bar transparent with light (white) icons — removes white bar on iOS
+  SystemChrome.setSystemUIOverlayStyle(
+    const SystemUiOverlayStyle(
+      statusBarColor: Colors.transparent,
+      statusBarBrightness: Brightness.dark,        // iOS: dark bg → light icons
+      statusBarIconBrightness: Brightness.light,   // Android: light icons
+    ),
+  );
   await SupabaseService.instance.init();
   runApp(const BluppApp());
 }

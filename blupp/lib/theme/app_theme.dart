@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../models/currency_model.dart';
 
@@ -92,6 +93,11 @@ class AppTheme {
         foregroundColor: const Color(0xFFFAFAFA),
         elevation: 0,
         centerTitle: false,
+        systemOverlayStyle: const SystemUiOverlayStyle(
+          statusBarColor: Colors.transparent,
+          statusBarBrightness: Brightness.dark,
+          statusBarIconBrightness: Brightness.light,
+        ),
         titleTextStyle: GoogleFonts.inter(
           color: const Color(0xFFFAFAFA),
           fontSize: 20,
@@ -129,6 +135,11 @@ class AppTheme {
         foregroundColor: const Color(0xFF09090B),
         elevation: 0,
         centerTitle: false,
+        systemOverlayStyle: const SystemUiOverlayStyle(
+          statusBarColor: Colors.transparent,
+          statusBarBrightness: Brightness.light,
+          statusBarIconBrightness: Brightness.dark,
+        ),
         titleTextStyle: GoogleFonts.inter(
           color: const Color(0xFF09090B),
           fontSize: 20,
