@@ -94,7 +94,7 @@ flutter:
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
 flutter_launcher_icons:
-  image_path: "assets/blupp_logo.jpg"
+  image_path: "assets/WhatsApp Image 2026-09-30 at 16.14.48.jpeg"
   android: true
   ios: true
   remove_alpha_ios: true

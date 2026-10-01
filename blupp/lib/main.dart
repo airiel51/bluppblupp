@@ -92,11 +92,30 @@ class MainNavigationShell extends StatefulWidget {
 
 class _MainNavigationShellState extends State<MainNavigationShell> {
   int _currentTabIndex = 0;
+  late final PageController _pageController;
+
+  @override
+  void initState() {
+    super.initState();
+    _pageController = PageController(initialPage: 0);
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
 
   void _navigateToTab(int index) {
+    if (_currentTabIndex == index) return;
     setState(() {
       _currentTabIndex = index;
     });
+    _pageController.animateToPage(
+      index,
+      duration: const Duration(milliseconds: 280),
+      curve: Curves.easeOutCubic,
+    );
   }
 
   @override
@@ -105,45 +124,42 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
     // Height of the floating navbar: 56px content + top padding + bottom safe area
     final navbarHeight = 56.0 + bottomPadding.clamp(8.0, 40.0);
 
-    final screens = [
-      HomeScreen(
-        state: widget.state,
-        onNavigateTab: _navigateToTab,
-      ),
-      TrackingScreen(
-        state: widget.state,
-      ),
-      AnalyticsScreen(
-        state: widget.state,
-      ),
-      FomoScreen(
-        state: widget.state,
-      ),
-      CalendarScreen(
-        state: widget.state,
-      ),
-      ProfileScreen(
-        state: widget.state,
-      ),
-    ];
-
     return Scaffold(
       extendBody: true,
       body: Stack(
         children: [
-          // Tab content with fade animation
-          AnimatedSwitcher(
-            duration: const Duration(milliseconds: 220),
-            transitionBuilder: (child, animation) => FadeTransition(
-              opacity: animation,
-              child: child,
-            ),
-            child: KeyedSubtree(
-              key: ValueKey<int>(_currentTabIndex),
-              child: Padding(
-                padding: EdgeInsets.only(bottom: navbarHeight),
-                child: screens[_currentTabIndex],
-              ),
+          // Swipeable tab content via PageView
+          Padding(
+            padding: EdgeInsets.only(bottom: navbarHeight),
+            child: PageView(
+              controller: _pageController,
+              physics: const BouncingScrollPhysics(),
+              onPageChanged: (index) {
+                setState(() {
+                  _currentTabIndex = index;
+                });
+              },
+              children: [
+                HomeScreen(
+                  state: widget.state,
+                  onNavigateTab: _navigateToTab,
+                ),
+                TrackingScreen(
+                  state: widget.state,
+                ),
+                AnalyticsScreen(
+                  state: widget.state,
+                ),
+                FomoScreen(
+                  state: widget.state,
+                ),
+                CalendarScreen(
+                  state: widget.state,
+                ),
+                ProfileScreen(
+                  state: widget.state,
+                ),
+              ],
             ),
           ),
 
