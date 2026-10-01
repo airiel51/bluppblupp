@@ -22,6 +22,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, shrink-to-fit=no">
   <meta name="description" content="Blupp AI Finance - Smart personal finance tracker">
 
+  <!-- Cache control: force revalidation on every visit -->
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+
   <!-- Theme color: makes Safari/Chrome status bar dark -->
   <meta name="theme-color" content="#09090B">
 
@@ -52,6 +57,17 @@
   </style>
 </head>
 <body>
+  <script>
+    // Unregister old service workers to prevent stale cache on iOS
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then(function(registrations) {
+        for (let registration of registrations) {
+          registration.unregister();
+        }
+      });
+    }
+  </script>
   <script src="flutter_bootstrap.js" async></script>
 </body>
 </html>
+
