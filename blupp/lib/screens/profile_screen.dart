@@ -6,6 +6,7 @@ import '../models/currency_model.dart';
 import '../theme/app_theme.dart';
 import '../widgets/blupp_states.dart';
 import '../widgets/blupp_forms.dart';
+import '../widgets/blupp_logo.dart';
 
 class ProfileScreen extends StatelessWidget {
   final FinanceState state;
@@ -739,12 +740,12 @@ class ProfileScreen extends StatelessWidget {
         title: Row(
           children: [
             Container(
-              padding: const EdgeInsets.all(8),
+              padding: const EdgeInsets.all(6),
               decoration: BoxDecoration(
                 color: AppTheme.primaryTeal.withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: Icon(Icons.bolt_rounded, color: AppTheme.primaryTeal, size: 20),
+              child: const BluppLogo(size: 22, iconOnly: true, isDark: true),
             ),
             const SizedBox(width: 12),
             Text('About Blupp', style: TextStyle(color: AppTheme.textPrimary, fontWeight: FontWeight.w500)),

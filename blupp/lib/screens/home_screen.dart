@@ -5,6 +5,7 @@ import '../models/finance_state.dart';
 import '../theme/app_theme.dart';
 import '../widgets/blupp_states.dart';
 import '../widgets/blupp_forms.dart';
+import '../widgets/blupp_logo.dart';
 
 class HomeScreen extends StatelessWidget {
   final FinanceState state;
@@ -94,26 +95,50 @@ class HomeScreen extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        Row(
           children: [
-            Text(
-              "${_getGreeting()} 👋",
-              style: TextStyle(
-                color: AppTheme.textMuted,
-                fontSize: 13,
-                fontWeight: FontWeight.w400,
+            Container(
+              width: 44,
+              height: 44,
+              padding: const EdgeInsets.all(7),
+              decoration: BoxDecoration(
+                color: AppTheme.isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: AppTheme.isDark
+                      ? Colors.white.withValues(alpha: 0.10)
+                      : Colors.black.withValues(alpha: 0.08),
+                ),
+              ),
+              child: BluppLogo(
+                size: 28,
+                iconOnly: true,
+                isDark: AppTheme.isDark,
               ),
             ),
-            const SizedBox(height: 2),
-            Text(
-              state.userName.isNotEmpty ? state.userName : "Airiel",
-              style: TextStyle(
-                color: AppTheme.textPrimary,
-                fontSize: 22,
-                fontWeight: FontWeight.w700,
-                letterSpacing: -0.6,
-              ),
+            const SizedBox(width: 12),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  "${_getGreeting()} 👋",
+                  style: TextStyle(
+                    color: AppTheme.textMuted,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w400,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  state.userName.isNotEmpty ? state.userName : "Airiel",
+                  style: TextStyle(
+                    color: AppTheme.textPrimary,
+                    fontSize: 22,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: -0.6,
+                  ),
+                ),
+              ],
             ),
           ],
         ),
