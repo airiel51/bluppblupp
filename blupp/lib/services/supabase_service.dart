@@ -98,12 +98,44 @@ class SupabaseService {
         email: email.trim(),
         password: password,
         data: fullName != null ? {'full_name': fullName} : null,
+        emailRedirectTo: kIsWeb ? Uri.base.origin : null,
       );
       debugPrint('[SupabaseService] Sign up success for: ${response.user?.email}');
       return response;
     } catch (e) {
       debugPrint('[SupabaseService] Sign up error: $e');
       rethrow;
+    }
+  }
+
+  Future<AuthResponse?> verifySignUpOtp({
+    required String email,
+    required String token,
+  }) async {
+    final cleanToken = token.trim();
+    if (!_isConfigured || client == null) return null;
+    try {
+      final res = await client!.auth.verifyOTP(
+        email: email.trim(),
+        token: cleanToken,
+        type: OtpType.signup,
+      );
+      debugPrint('[SupabaseService] verifySignUpOtp success for $email');
+      return res;
+    } catch (e) {
+      debugPrint('[SupabaseService] verifySignUpOtp signup failed: $e, trying email OTP...');
+      try {
+        final res2 = await client!.auth.verifyOTP(
+          email: email.trim(),
+          token: cleanToken,
+          type: OtpType.email,
+        );
+        debugPrint('[SupabaseService] verifySignUpOtp email type success for $email');
+        return res2;
+      } catch (e2) {
+        debugPrint('[SupabaseService] verifySignUpOtp email failed: $e2');
+        rethrow;
+      }
     }
   }
 

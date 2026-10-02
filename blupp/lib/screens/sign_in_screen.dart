@@ -120,7 +120,12 @@ class _SignInScreenState extends State<SignInScreen> {
         name: _nameController.text.trim().isNotEmpty ? _nameController.text.trim() : null,
       );
       if (!mounted) return;
-      if (!success && widget.state.authError != null) {
+      if (widget.state.requiresSignUpVerification) {
+        _showSignUpVerificationDialog(
+          email: email,
+          name: _nameController.text.trim().isNotEmpty ? _nameController.text.trim() : null,
+        );
+      } else if (!success && widget.state.authError != null) {
         _showErrorSnackBar(widget.state.authError!);
       }
     } else {
@@ -154,6 +159,21 @@ class _SignInScreenState extends State<SignInScreen> {
           ],
         ),
       ),
+    );
+  }
+
+  void _showSignUpVerificationDialog({required String email, String? name}) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        return _SignUpVerificationSheet(
+          email: email,
+          name: name,
+          state: widget.state,
+        );
+      },
     );
   }
 
@@ -1931,6 +1951,321 @@ class _ForgotPasswordSheetState extends State<_ForgotPasswordSheet> {
                 ],
               ),
       ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Sign-up Email Verification Bottom Sheet (OTP entry)
+// ---------------------------------------------------------------------------
+class _SignUpVerificationSheet extends StatefulWidget {
+  final String email;
+  final String? name;
+  final FinanceState state;
+
+  const _SignUpVerificationSheet({
+    required this.email,
+    this.name,
+    required this.state,
+  });
+
+  @override
+  State<_SignUpVerificationSheet> createState() => _SignUpVerificationSheetState();
+}
+
+class _SignUpVerificationSheetState extends State<_SignUpVerificationSheet> {
+  final _codeCtrl = TextEditingController();
+  int _otpLength = 8;
+  bool _isLoading = false;
+  String? _errorMessage;
+  bool _isSuccess = false;
+
+  @override
+  void dispose() {
+    _codeCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _verify() async {
+    final entered = _codeCtrl.text.trim();
+    if (entered.length != _otpLength && entered.length != 6 && entered.length != 8) {
+      setState(() => _errorMessage = 'Please enter the complete $_otpLength-digit PIN.');
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    final success = await widget.state.verifySignUpCode(
+      email: widget.email,
+      token: entered,
+      name: widget.name,
+    );
+
+    if (!mounted) return;
+
+    if (success) {
+      setState(() {
+        _isSuccess = true;
+        _isLoading = false;
+      });
+      Future.delayed(const Duration(milliseconds: 1200), () {
+        if (mounted) Navigator.pop(context);
+      });
+    } else {
+      setState(() {
+        _isLoading = false;
+        _errorMessage = widget.state.authError ?? 'Invalid verification code. Please check your inbox and try again.';
+      });
+    }
+  }
+
+  Widget _buildLengthTab(int length, String label) {
+    final isSelected = _otpLength == length;
+    return GestureDetector(
+      onTap: () {
+        if (_otpLength != length) {
+          setState(() {
+            _otpLength = length;
+            _codeCtrl.clear();
+            _errorMessage = null;
+          });
+        }
+      },
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+        decoration: BoxDecoration(
+          color: isSelected ? Colors.white : Colors.transparent,
+          borderRadius: BorderRadius.circular(8),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.06),
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
+                  ),
+                ]
+              : null,
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+            color: isSelected ? const Color(0xFF1E293B) : const Color(0xFF64748B),
+          ),
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final bottomPadding = MediaQuery.paddingOf(context).bottom;
+
+    return Container(
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.of(context).size.height * 0.88,
+      ),
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      padding: EdgeInsets.fromLTRB(24, 16, 24, bottomPadding + 24),
+      child: _isSuccess
+          ? Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const SizedBox(height: 32),
+                Container(
+                  width: 80,
+                  height: 80,
+                  decoration: const BoxDecoration(
+                    color: Color(0xFFDCFCE7),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.check_rounded, color: Color(0xFF16A34A), size: 48),
+                ),
+                const SizedBox(height: 20),
+                const Text(
+                  'Email Verified!',
+                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700, color: Color(0xFF1E293B)),
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'Welcome to Blupp AI Finance. Opening your dashboard...',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 14, color: Color(0xFF64748B)),
+                ),
+                const SizedBox(height: 32),
+              ],
+            )
+          : SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFE2E8F0),
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+
+                  Center(
+                    child: Container(
+                      width: 72,
+                      height: 72,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF355FE5).withValues(alpha: 0.08),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Icons.mark_email_read_outlined, color: Color(0xFF355FE5), size: 34),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+
+                  const Center(
+                    child: Text(
+                      'Verify Your Email',
+                      style: TextStyle(color: Color(0xFF1E293B), fontSize: 20, fontWeight: FontWeight.w700),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Center(
+                    child: RichText(
+                      textAlign: TextAlign.center,
+                      text: TextSpan(
+                        style: const TextStyle(color: Color(0xFF64748B), fontSize: 13, height: 1.5),
+                        children: [
+                          const TextSpan(text: 'We sent a verification code to\n'),
+                          TextSpan(
+                            text: widget.email,
+                            style: const TextStyle(color: Color(0xFF355FE5), fontWeight: FontWeight.w600),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // 8 or 6 digit toggle
+                  Center(
+                    child: Container(
+                      padding: const EdgeInsets.all(3),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF1F5F9),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          _buildLengthTab(8, '8 Digits'),
+                          _buildLengthTab(6, '6 Digits'),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+
+                  if (_errorMessage != null) ...[
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFEE2E2),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: const Color(0xFFFCA5A5)),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.error_outline_rounded, color: Color(0xFFDC2626), size: 18),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              _errorMessage!,
+                              style: const TextStyle(color: Color(0xFFDC2626), fontSize: 13, fontWeight: FontWeight.w500),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                  ],
+
+                  BluppBoxedOtpInput(
+                    key: ValueKey('signup_otp_$_otpLength'),
+                    length: _otpLength,
+                    onChanged: (code) {
+                      _codeCtrl.text = code;
+                      if (code.length == 8 && _otpLength != 8) {
+                        setState(() => _otpLength = 8);
+                      } else if (code.length == 6 && _otpLength != 6) {
+                        setState(() => _otpLength = 6);
+                      }
+                    },
+                    onCompleted: (code) {
+                      _codeCtrl.text = code;
+                      _verify();
+                    },
+                  ),
+                  const SizedBox(height: 24),
+
+                  SizedBox(
+                    width: double.infinity,
+                    height: 52,
+                    child: ElevatedButton(
+                      onPressed: _isLoading ? null : _verify,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF355FE5),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                        elevation: 0,
+                      ),
+                      child: _isLoading
+                          ? const SizedBox(
+                              width: 22,
+                              height: 22,
+                              child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5),
+                            )
+                          : const Text(
+                              'Verify & Complete Signup',
+                              style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w700),
+                            ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF8FAFC),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: const Color(0xFFE2E8F0)),
+                    ),
+                    child: const Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Icon(Icons.info_outline_rounded, size: 16, color: Color(0xFF64748B)),
+                        SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'Received an email with a "Confirm your mail" link? You can tap that link in your email to verify directly.',
+                            style: TextStyle(fontSize: 12, color: Color(0xFF64748B), height: 1.4),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
     );
   }
 }

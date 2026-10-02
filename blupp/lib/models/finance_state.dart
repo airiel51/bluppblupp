@@ -1434,9 +1434,21 @@ class FinanceState extends ChangeNotifier {
     }
   }
 
+  bool _requiresSignUpVerification = false;
+  bool get requiresSignUpVerification => _requiresSignUpVerification;
+  String _pendingSignUpEmail = '';
+  String get pendingSignUpEmail => _pendingSignUpEmail;
+
+  void clearSignUpVerification() {
+    _requiresSignUpVerification = false;
+    _pendingSignUpEmail = '';
+    notifyListeners();
+  }
+
   Future<bool> signUp({required String email, required String password, String? name}) async {
     _isAuthLoading = true;
     _authError = null;
+    _requiresSignUpVerification = false;
     notifyListeners();
 
     // Fresh clean slate for new registrations - no default/mock data
@@ -1460,10 +1472,17 @@ class FinanceState extends ChangeNotifier {
               email: _userEmail,
             );
             _isAuthenticated = true;
-          } else {
-            // Confirm email is ON in Supabase - session is pending confirmation
             _isAuthLoading = false;
-            _authError = 'Account created! Please check your email to confirm your account, or disable "Confirm email" in Supabase to sign in instantly.';
+            _authError = null;
+            notifyListeners();
+            syncWithSupabase();
+            return true;
+          } else {
+            // Confirm email is ON in Supabase - user needs to verify PIN code
+            _isAuthLoading = false;
+            _requiresSignUpVerification = true;
+            _pendingSignUpEmail = _userEmail;
+            _authError = null;
             notifyListeners();
             return false;
           }
@@ -1473,26 +1492,72 @@ class FinanceState extends ChangeNotifier {
         _userEmail = email.trim();
         _userName = name ?? email.trim().split('@').first;
         _isAuthenticated = true;
+        _isAuthLoading = false;
+        _authError = null;
+        notifyListeners();
+        return true;
       }
 
       _isAuthLoading = false;
       _authError = null;
       notifyListeners();
-
-      // Trigger data sync upon sign up (clean empty state)
-      if (_isAuthenticated) {
-        syncWithSupabase();
-      }
       return true;
     } catch (e) {
       _isAuthLoading = false;
       String msg = e.toString().replaceAll('Exception: ', '').replaceAll('AuthException: ', '');
-      if (msg.contains('over_email_send_rate_limit') || msg.contains('rate limit')) {
-        msg = 'Supabase email limit reached (max 2 emails/hour on free tier). To fix this instantly: open Supabase Dashboard > Authentication > Providers > Email, and turn OFF "Confirm email".';
+      if (msg.contains('Error sending confirmation email') || msg.contains('unexpected_failure')) {
+        msg = 'Failed to send confirmation email. Check your Supabase SMTP settings, or if using Resend onboarding domain, test with your Resend account email.';
+      } else if (msg.contains('over_email_send_rate_limit') || msg.contains('rate limit')) {
+        msg = 'Supabase email limit reached (max 2 emails/hour on free tier). Connect custom SMTP in Supabase to send unlimited emails!';
       } else if (msg.contains('User already registered')) {
         msg = 'An account with this email already exists. Please sign in or use Forgot Password.';
       }
       _authError = msg;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<bool> verifySignUpCode({
+    required String email,
+    required String token,
+    String? name,
+  }) async {
+    _isAuthLoading = true;
+    _authError = null;
+    notifyListeners();
+
+    try {
+      if (SupabaseService.instance.isConfigured) {
+        final res = await SupabaseService.instance.verifySignUpOtp(
+          email: email.trim(),
+          token: token.trim(),
+        );
+        if (res?.user != null) {
+          _userEmail = res!.user!.email ?? email.trim();
+          _userName = name ?? _userName;
+          
+          await SupabaseService.instance.updateUserProfile(
+            name: _userName,
+            email: _userEmail,
+          );
+          _isAuthenticated = true;
+          _requiresSignUpVerification = false;
+          _pendingSignUpEmail = '';
+          _isAuthLoading = false;
+          _authError = null;
+          notifyListeners();
+          syncWithSupabase();
+          return true;
+        }
+      }
+      _isAuthLoading = false;
+      _authError = 'Could not verify code. Please check your PIN and try again.';
+      notifyListeners();
+      return false;
+    } catch (e) {
+      _isAuthLoading = false;
+      _authError = e.toString().replaceAll('Exception: ', '').replaceAll('AuthException: ', '');
       notifyListeners();
       return false;
     }
