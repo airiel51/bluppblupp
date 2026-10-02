@@ -1,7 +1,9 @@
+import 'dart:async';
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/finance_state.dart';
-import '../theme/app_theme.dart';
+import '../services/supabase_service.dart';
 import '../widgets/blupp_states.dart';
 import '../widgets/blupp_forms.dart';
 import '../widgets/blupp_logo.dart';
@@ -29,9 +31,23 @@ class _SignInScreenState extends State<SignInScreen> {
   bool _agreeToDataProcessing = true;
   String? _formErrorWhere;
   String? _formErrorWhy;
+  StreamSubscription<AuthState>? _authSubscription;
+
+  @override
+  void initState() {
+    super.initState();
+    _authSubscription = SupabaseService.instance.authStateChanges?.listen((data) {
+      if (data.event == AuthChangeEvent.passwordRecovery) {
+        if (mounted) {
+          _showForgotPasswordDialog(startAtStep3: true);
+        }
+      }
+    });
+  }
 
   @override
   void dispose() {
+    _authSubscription?.cancel();
     _emailController.dispose();
     _passwordController.dispose();
     _nameController.dispose();
@@ -141,7 +157,7 @@ class _SignInScreenState extends State<SignInScreen> {
     );
   }
 
-  void _showForgotPasswordDialog() {
+  void _showForgotPasswordDialog({bool startAtStep3 = false}) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -150,6 +166,7 @@ class _SignInScreenState extends State<SignInScreen> {
         return _ForgotPasswordSheet(
           initialEmail: _emailController.text,
           state: widget.state,
+          initialStep: startAtStep3 ? 3 : 1,
           onSuccess: (email) {
             _emailController.text = email;
             _passwordController.clear();
@@ -993,11 +1010,13 @@ class _ForgotPasswordSheet extends StatefulWidget {
   final String initialEmail;
   final FinanceState state;
   final void Function(String email) onSuccess;
+  final int initialStep;
 
   const _ForgotPasswordSheet({
     required this.initialEmail,
     required this.state,
     required this.onSuccess,
+    this.initialStep = 1,
   });
 
   @override
@@ -1010,7 +1029,7 @@ class _ForgotPasswordSheetState extends State<_ForgotPasswordSheet> {
   final _newPassCtrl = TextEditingController();
   final _confirmPassCtrl = TextEditingController();
 
-  int _step = 1; // 1: Email, 2: OTP, 3: New Password, 4: Success
+  late int _step; // 1: Email, 2: OTP, 3: New Password, 4: Success
   String _generatedCode = '';
   String? _errorMessage;
   bool _isLoading = false;
@@ -1020,6 +1039,7 @@ class _ForgotPasswordSheetState extends State<_ForgotPasswordSheet> {
   @override
   void initState() {
     super.initState();
+    _step = widget.initialStep;
     _emailCtrl = TextEditingController(text: widget.initialEmail);
   }
 
@@ -1482,6 +1502,35 @@ class _ForgotPasswordSheetState extends State<_ForgotPasswordSheet> {
           label: 'Verify PIN',
           icon: Icons.verified_user_outlined,
           onPressed: _verifyCode,
+        ),
+
+        const SizedBox(height: 16),
+
+        // Helper tip card if email has link instead of code
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          decoration: BoxDecoration(
+            color: const Color(0xFFF8FAFC),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: const Color(0xFFE2E8F0)),
+          ),
+          child: const Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(Icons.info_outline_rounded, size: 16, color: Color(0xFF64748B)),
+              SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Received an email with a "Reset password" button instead of a code? Tap that button in your email to open the reset form directly.',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Color(0xFF64748B),
+                    height: 1.4,
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ],
     );

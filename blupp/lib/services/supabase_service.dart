@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/finance_state.dart';
@@ -122,12 +123,19 @@ class SupabaseService {
 
     if (_isConfigured && client != null) {
       try {
-        await client!.auth.resetPasswordForEmail(email.trim());
+        await client!.auth.resetPasswordForEmail(
+          email.trim(),
+          redirectTo: kIsWeb ? Uri.base.origin : null,
+        );
         debugPrint('[SupabaseService] Password reset verification OTP sent to: $email');
       } catch (e) {
         debugPrint('[SupabaseService] resetPasswordForEmail notice: $e');
         try {
-          await client!.auth.signInWithOtp(email: email.trim(), shouldCreateUser: false);
+          await client!.auth.signInWithOtp(
+            email: email.trim(),
+            shouldCreateUser: false,
+            emailRedirectTo: kIsWeb ? Uri.base.origin : null,
+          );
           debugPrint('[SupabaseService] signInWithOtp sent to: $email');
         } catch (e2) {
           debugPrint('[SupabaseService] signInWithOtp notice: $e2');
