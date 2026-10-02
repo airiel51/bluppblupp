@@ -1422,7 +1422,13 @@ class FinanceState extends ChangeNotifier {
       return true;
     } catch (e) {
       _isAuthLoading = false;
-      _authError = e.toString().replaceAll('Exception: ', '').replaceAll('AuthException: ', '');
+      String msg = e.toString().replaceAll('Exception: ', '').replaceAll('AuthException: ', '');
+      if (msg.contains('Email not confirmed')) {
+        msg = 'Your email has not been confirmed yet. Please check your inbox for the confirmation link, or disable "Confirm email" in Supabase Dashboard to sign in immediately.';
+      } else if (msg.contains('Invalid login credentials')) {
+        msg = 'Invalid email or password. Please check your credentials or reset your password.';
+      }
+      _authError = msg;
       notifyListeners();
       return false;
     }
@@ -1447,29 +1453,46 @@ class FinanceState extends ChangeNotifier {
           _userEmail = res!.user!.email ?? email.trim();
           _userName = name ?? email.trim().split('@').first;
           
-          // Create profile record in Supabase
-          await SupabaseService.instance.updateUserProfile(
-            name: _userName,
-            email: _userEmail,
-          );
+          if (res.session != null) {
+            // Session established immediately (Confirm email is OFF in Supabase)
+            await SupabaseService.instance.updateUserProfile(
+              name: _userName,
+              email: _userEmail,
+            );
+            _isAuthenticated = true;
+          } else {
+            // Confirm email is ON in Supabase - session is pending confirmation
+            _isAuthLoading = false;
+            _authError = 'Account created! Please check your email to confirm your account, or disable "Confirm email" in Supabase to sign in instantly.';
+            notifyListeners();
+            return false;
+          }
         }
       } else {
         await Future.delayed(const Duration(milliseconds: 600));
         _userEmail = email.trim();
         _userName = name ?? email.trim().split('@').first;
+        _isAuthenticated = true;
       }
 
-      _isAuthenticated = true;
       _isAuthLoading = false;
       _authError = null;
       notifyListeners();
 
       // Trigger data sync upon sign up (clean empty state)
-      syncWithSupabase();
+      if (_isAuthenticated) {
+        syncWithSupabase();
+      }
       return true;
     } catch (e) {
       _isAuthLoading = false;
-      _authError = e.toString().replaceAll('Exception: ', '').replaceAll('AuthException: ', '');
+      String msg = e.toString().replaceAll('Exception: ', '').replaceAll('AuthException: ', '');
+      if (msg.contains('over_email_send_rate_limit') || msg.contains('rate limit')) {
+        msg = 'Supabase email limit reached (max 2 emails/hour on free tier). To fix this instantly: open Supabase Dashboard > Authentication > Providers > Email, and turn OFF "Confirm email".';
+      } else if (msg.contains('User already registered')) {
+        msg = 'An account with this email already exists. Please sign in or use Forgot Password.';
+      }
+      _authError = msg;
       notifyListeners();
       return false;
     }
