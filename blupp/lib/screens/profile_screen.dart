@@ -190,6 +190,7 @@ class ProfileScreen extends StatelessWidget {
 
   void _showChangePasswordDialog(BuildContext context) {
     int step = 1; // 1: Send Code, 2: Enter Code, 3: Enter New Password
+    int otpLength = 8;
     String sentCode = '';
     final codeCtrl = TextEditingController();
     final newPassCtrl = TextEditingController();
@@ -228,10 +229,10 @@ class ProfileScreen extends StatelessWidget {
 
           Future<void> verifyCode() async {
             final entered = codeCtrl.text.trim();
-            if (entered.length != 6) {
+            if (entered.length != otpLength && entered.length != 6 && entered.length != 8) {
               setDialogState(() {
                 localErrorWhere = 'Verification PIN';
-                localErrorWhy = 'Please enter all 6 digits of the PIN sent to your email.';
+                localErrorWhy = 'Please enter your $otpLength-digit PIN sent to your email.';
               });
               return;
             }
@@ -387,14 +388,20 @@ class ProfileScreen extends StatelessWidget {
                   // STEP 2: Enter Code with Horizontal Boxed Cells
                   if (step == 2) ...[
                     Text(
-                      'Enter the 6-digit verification code sent to ${state.userEmail}:',
+                      'Enter the $otpLength-digit verification code sent to ${state.userEmail}:',
                       style: TextStyle(color: AppTheme.textSecondary, fontSize: 13, height: 1.4),
                     ),
                     const SizedBox(height: 16),
                     BluppBoxedOtpInput(
-                      length: 6,
+                      key: ValueKey('profile_otp_$otpLength'),
+                      length: otpLength,
                       onChanged: (code) {
                         codeCtrl.text = code;
+                        if (code.length == 8 && otpLength != 8) {
+                          setDialogState(() => otpLength = 8);
+                        } else if (code.length == 6 && otpLength != 6) {
+                          setDialogState(() => otpLength = 6);
+                        }
                       },
                       onCompleted: (code) {
                         codeCtrl.text = code;

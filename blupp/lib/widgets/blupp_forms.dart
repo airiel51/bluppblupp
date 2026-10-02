@@ -319,8 +319,27 @@ class _BluppBoxedOtpInputState extends State<BluppBoxedOtpInput> {
   @override
   void initState() {
     super.initState();
+    _initControllers();
+  }
+
+  void _initControllers() {
     _controllers = List.generate(widget.length, (_) => TextEditingController());
     _focusNodes = List.generate(widget.length, (_) => FocusNode());
+  }
+
+  @override
+  void didUpdateWidget(covariant BluppBoxedOtpInput oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.length != widget.length) {
+      for (var c in _controllers) {
+        c.dispose();
+      }
+      for (var f in _focusNodes) {
+        f.dispose();
+      }
+      _initControllers();
+      setState(() {});
+    }
   }
 
   @override
@@ -335,10 +354,20 @@ class _BluppBoxedOtpInputState extends State<BluppBoxedOtpInput> {
   }
 
   void _onDigitChanged(int index, String value) {
-    if (value.isNotEmpty) {
-      if (value.length > 1) {
-        _controllers[index].text = value.substring(value.length - 1);
+    final clean = value.replaceAll(RegExp(r'\D'), '');
+    if (clean.length > 1) {
+      // User pasted or typed multiple digits
+      for (int i = 0; i < clean.length && (index + i) < widget.length; i++) {
+        _controllers[index + i].text = clean[i];
       }
+      final nextFocus = (index + clean.length).clamp(0, widget.length - 1);
+      if (index + clean.length >= widget.length) {
+        _focusNodes[widget.length - 1].unfocus();
+      } else {
+        _focusNodes[nextFocus].requestFocus();
+      }
+    } else if (clean.isNotEmpty) {
+      _controllers[index].text = clean;
       if (index < widget.length - 1) {
         _focusNodes[index + 1].requestFocus();
       } else {
@@ -359,12 +388,17 @@ class _BluppBoxedOtpInputState extends State<BluppBoxedOtpInput> {
 
   @override
   Widget build(BuildContext context) {
+    final isCompact = widget.length > 6;
+    final boxWidth = isCompact ? 35.0 : 44.0;
+    final boxHeight = isCompact ? 48.0 : 52.0;
+    final fontSize = isCompact ? 17.0 : 20.0;
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: List.generate(widget.length, (index) {
         return Container(
-          width: 44,
-          height: 52,
+          width: boxWidth,
+          height: boxHeight,
           decoration: BoxDecoration(
             color: AppTheme.surface,
             borderRadius: BorderRadius.circular(10),
@@ -381,10 +415,9 @@ class _BluppBoxedOtpInputState extends State<BluppBoxedOtpInput> {
               focusNode: _focusNodes[index],
               keyboardType: TextInputType.number,
               textAlign: TextAlign.center,
-              maxLength: 1,
               style: TextStyle(
                 color: AppTheme.textPrimary,
-                fontSize: 20,
+                fontSize: fontSize,
                 fontWeight: FontWeight.w600,
               ),
               decoration: const InputDecoration(

@@ -1030,6 +1030,7 @@ class _ForgotPasswordSheetState extends State<_ForgotPasswordSheet> {
   final _confirmPassCtrl = TextEditingController();
 
   late int _step; // 1: Email, 2: OTP, 3: New Password, 4: Success
+  int _otpLength = 8;
   String _generatedCode = '';
   String? _errorMessage;
   bool _isLoading = false;
@@ -1079,8 +1080,8 @@ class _ForgotPasswordSheetState extends State<_ForgotPasswordSheet> {
 
   Future<void> _verifyCode() async {
     final entered = _codeCtrl.text.trim();
-    if (entered.length != 6) {
-      setState(() => _errorMessage = 'Please enter the full 6-digit PIN.');
+    if (entered.length != _otpLength && entered.length != 6 && entered.length != 8) {
+      setState(() => _errorMessage = 'Please enter your complete $_otpLength-digit PIN.');
       return;
     }
     setState(() { _isLoading = true; _errorMessage = null; });
@@ -1336,6 +1337,46 @@ class _ForgotPasswordSheetState extends State<_ForgotPasswordSheet> {
     );
   }
 
+  Widget _buildLengthTab(int length, String label) {
+    final isSelected = _otpLength == length;
+    return GestureDetector(
+      onTap: () {
+        if (_otpLength != length) {
+          setState(() {
+            _otpLength = length;
+            _codeCtrl.clear();
+            _errorMessage = null;
+          });
+        }
+      },
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+        decoration: BoxDecoration(
+          color: isSelected ? Colors.white : Colors.transparent,
+          borderRadius: BorderRadius.circular(8),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.06),
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
+                  ),
+                ]
+              : null,
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+            color: isSelected ? const Color(0xFF1E293B) : const Color(0xFF64748B),
+          ),
+        ),
+      ),
+    );
+  }
+
   // ── Step 1: Enter Email ───────────────────────────
   Widget _buildStep1({required Key key}) {
     return Column(
@@ -1438,7 +1479,7 @@ class _ForgotPasswordSheetState extends State<_ForgotPasswordSheet> {
             text: TextSpan(
               style: const TextStyle(color: Color(0xFF64748B), fontSize: 13, height: 1.5),
               children: [
-                const TextSpan(text: 'Enter the 6-digit PIN sent to\n'),
+                TextSpan(text: 'Enter the $_otpLength-digit PIN sent to\n'),
                 TextSpan(
                   text: _emailCtrl.text.trim(),
                   style: const TextStyle(
@@ -1450,7 +1491,26 @@ class _ForgotPasswordSheetState extends State<_ForgotPasswordSheet> {
             ),
           ),
         ),
-        const SizedBox(height: 24),
+        const SizedBox(height: 16),
+
+        // OTP Length Selector Tabs
+        Center(
+          child: Container(
+            padding: const EdgeInsets.all(3),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF1F5F9),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _buildLengthTab(8, '8 Digits'),
+                _buildLengthTab(6, '6 Digits'),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 20),
 
         if (_errorMessage != null) ...[
           _buildErrorBanner(),
@@ -1459,8 +1519,16 @@ class _ForgotPasswordSheetState extends State<_ForgotPasswordSheet> {
 
         // OTP Input
         BluppBoxedOtpInput(
-          length: 6,
-          onChanged: (code) => _codeCtrl.text = code,
+          key: ValueKey('otp_box_$_otpLength'),
+          length: _otpLength,
+          onChanged: (code) {
+            _codeCtrl.text = code;
+            if (code.length == 8 && _otpLength != 8) {
+              setState(() => _otpLength = 8);
+            } else if (code.length == 6 && _otpLength != 6) {
+              setState(() => _otpLength = 6);
+            }
+          },
           onCompleted: (code) {
             _codeCtrl.text = code;
             _verifyCode();
