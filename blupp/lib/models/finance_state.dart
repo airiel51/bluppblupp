@@ -1,7 +1,5 @@
-import 'dart:convert';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
+import '../services/universal_image_picker/universal_image_picker.dart';
 import '../services/supabase_service.dart';
 import '../theme/app_theme.dart';
 import 'currency_model.dart';
@@ -358,20 +356,10 @@ class FinanceState extends ChangeNotifier {
 
   Future<bool> pickProfilePictureFromGallery() async {
     try {
-      final picker = ImagePicker();
-      final XFile? image = await picker.pickImage(
-        source: ImageSource.gallery,
-        maxWidth: kIsWeb ? null : 512,
-        maxHeight: kIsWeb ? null : 512,
-        imageQuality: kIsWeb ? null : 80,
-      );
-      if (image != null) {
-        final bytes = await image.readAsBytes();
-        if (bytes.isNotEmpty) {
-          final base64Str = base64Encode(bytes);
-          setProfileImage(base64Str);
-          return true;
-        }
+      final img = await UniversalImagePicker.pickImage(isCamera: false);
+      if (img != null && img.base64String.isNotEmpty) {
+        setProfileImage(img.base64String);
+        return true;
       }
     } catch (e) {
       debugPrint('[FinanceState] Error picking profile image: $e');
@@ -381,29 +369,10 @@ class FinanceState extends ChangeNotifier {
 
   Future<bool> pickProfilePictureFromCamera() async {
     try {
-      final picker = ImagePicker();
-      XFile? image;
-      try {
-        image = await picker.pickImage(
-          source: ImageSource.camera,
-          maxWidth: kIsWeb ? null : 512,
-          maxHeight: kIsWeb ? null : 512,
-          imageQuality: kIsWeb ? null : 80,
-        );
-      } catch (cameraErr) {
-        debugPrint('[FinanceState] Camera direct access failed: $cameraErr, falling back to gallery/photo picker');
-        if (kIsWeb) {
-          image = await picker.pickImage(source: ImageSource.gallery);
-        }
-      }
-
-      if (image != null) {
-        final bytes = await image.readAsBytes();
-        if (bytes.isNotEmpty) {
-          final base64Str = base64Encode(bytes);
-          setProfileImage(base64Str);
-          return true;
-        }
+      final img = await UniversalImagePicker.pickImage(isCamera: true);
+      if (img != null && img.base64String.isNotEmpty) {
+        setProfileImage(img.base64String);
+        return true;
       }
     } catch (e) {
       debugPrint('[FinanceState] Error taking photo from camera: $e');

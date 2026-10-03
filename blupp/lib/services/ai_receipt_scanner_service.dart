@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:image_picker/image_picker.dart';
+import 'universal_image_picker/universal_image_picker.dart';
 import '../models/finance_state.dart';
 
 class ScannedReceiptResult {
@@ -27,8 +28,6 @@ class ScannedReceiptResult {
 }
 
 class AiReceiptScannerService {
-  static final ImagePicker _picker = ImagePicker();
-
   /// Picks an image from Camera or Gallery and scans with AI Vision
   static Future<ScannedReceiptResult?> scanReceipt({
     required ImageSource source,
@@ -36,20 +35,9 @@ class AiReceiptScannerService {
     VoidCallback? onImagePicked,
   }) async {
     try {
-      XFile? photo;
-      try {
-        photo = await _picker.pickImage(
-          source: source,
-          maxWidth: kIsWeb ? null : 1080,
-          maxHeight: kIsWeb ? null : 1920,
-          imageQuality: kIsWeb ? null : 85,
-        );
-      } catch (cameraErr) {
-        debugPrint('[AiReceiptScannerService] Direct camera pick failed: $cameraErr, falling back to gallery');
-        if (kIsWeb && source == ImageSource.camera) {
-          photo = await _picker.pickImage(source: ImageSource.gallery);
-        }
-      }
+      final UniversalPickedImage? photo = await UniversalImagePicker.pickImage(
+        isCamera: source == ImageSource.camera,
+      );
 
       if (photo == null) return null;
 

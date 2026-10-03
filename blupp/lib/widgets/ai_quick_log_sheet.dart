@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../models/finance_state.dart';
 import '../services/ai_nlp_service.dart';
+import '../services/universal_speech/universal_speech.dart';
 import '../theme/app_theme.dart';
 import 'ai_receipt_scanner_sheet.dart';
 
@@ -17,6 +18,7 @@ class AiQuickLogSheet extends StatefulWidget {
 class _AiQuickLogSheetState extends State<AiQuickLogSheet> {
   final TextEditingController _promptController = TextEditingController();
   ParsedQuickLog? _parsed;
+  bool _isListening = false;
 
   @override
   void initState() {
@@ -31,8 +33,57 @@ class _AiQuickLogSheetState extends State<AiQuickLogSheet> {
 
   @override
   void dispose() {
+    if (_isListening) {
+      UniversalSpeech.stopListening();
+    }
     _promptController.dispose();
     super.dispose();
+  }
+
+  void _toggleVoiceRecognition() {
+    if (_isListening) {
+      UniversalSpeech.stopListening();
+      setState(() => _isListening = false);
+      return;
+    }
+
+    setState(() {
+      _isListening = true;
+    });
+
+    UniversalSpeech.startListening(
+      onResult: (transcript, isFinal) {
+        if (!mounted) return;
+        setState(() {
+          _promptController.text = transcript;
+          _promptController.selection = TextSelection.fromPosition(TextPosition(offset: transcript.length));
+          if (isFinal) {
+            _isListening = false;
+          }
+        });
+      },
+      onStatus: (listening, error) {
+        if (!mounted) return;
+        setState(() {
+          _isListening = listening;
+          if (error != null) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Row(
+                  children: [
+                    const Icon(Icons.info_outline, color: Colors.white, size: 16),
+                    const SizedBox(width: 8),
+                    Expanded(child: Text("Microphone Notice: $error")),
+                  ],
+                ),
+                behavior: SnackBarBehavior.floating,
+                duration: const Duration(seconds: 3),
+              ),
+            );
+          }
+        });
+      },
+    );
   }
 
   void _applyPrompt(String text) {
@@ -168,33 +219,133 @@ class _AiQuickLogSheetState extends State<AiQuickLogSheet> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Natural Language Input Box
+                  // Natural Language Input Box with Voice Mic
                   Container(
                     decoration: BoxDecoration(
                       color: AppTheme.surfaceLight,
                       borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: const Color(0xFF10B981).withValues(alpha: 0.3)),
+                      border: Border.all(
+                        color: _isListening
+                            ? const Color(0xFFEF4444).withValues(alpha: 0.6)
+                            : const Color(0xFF10B981).withValues(alpha: 0.3),
+                        width: _isListening ? 1.5 : 1.0,
+                      ),
                     ),
                     padding: const EdgeInsets.all(14),
                     child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        TextField(
-                          controller: _promptController,
-                          autofocus: true,
-                          maxLines: 2,
-                          style: TextStyle(color: AppTheme.textPrimary, fontSize: 15, height: 1.4),
-                          decoration: InputDecoration(
-                            hintText: "e.g. 'Lunch RM 18 with Maybank' or 'Grab 28 semalam'",
-                            hintStyle: TextStyle(color: AppTheme.textMuted, fontSize: 14),
-                            border: InputBorder.none,
-                          ),
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              child: TextField(
+                                controller: _promptController,
+                                autofocus: true,
+                                maxLines: 2,
+                                style: TextStyle(color: AppTheme.textPrimary, fontSize: 15, height: 1.4),
+                                decoration: InputDecoration(
+                                  hintText: _isListening
+                                      ? "🎙️ Listening... Speak transaction in English/BM..."
+                                      : "e.g. 'Lunch RM 18 with Maybank' or 'Grab 28 semalam'",
+                                  hintStyle: TextStyle(
+                                    color: _isListening ? const Color(0xFF10B981) : AppTheme.textMuted,
+                                    fontSize: 14,
+                                  ),
+                                  border: InputBorder.none,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            // Microphone Toggle Action
+                            InkWell(
+                              onTap: _toggleVoiceRecognition,
+                              borderRadius: BorderRadius.circular(22),
+                              child: AnimatedContainer(
+                                duration: const Duration(milliseconds: 250),
+                                padding: const EdgeInsets.all(10),
+                                decoration: BoxDecoration(
+                                  color: _isListening
+                                      ? const Color(0xFFEF4444).withValues(alpha: 0.2)
+                                      : const Color(0xFF10B981).withValues(alpha: 0.15),
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: _isListening
+                                        ? const Color(0xFFEF4444)
+                                        : const Color(0xFF10B981).withValues(alpha: 0.4),
+                                    width: _isListening ? 1.8 : 1.0,
+                                  ),
+                                  boxShadow: _isListening
+                                      ? [
+                                          BoxShadow(
+                                            color: const Color(0xFFEF4444).withValues(alpha: 0.35),
+                                            blurRadius: 10,
+                                            spreadRadius: 2,
+                                          ),
+                                        ]
+                                      : null,
+                                ),
+                                child: Icon(
+                                  _isListening ? Icons.mic : Icons.mic_none_rounded,
+                                  color: _isListening ? const Color(0xFFEF4444) : const Color(0xFF10B981),
+                                  size: 20,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
+
+                        // Active Listening Status Ribbon
+                        if (_isListening) ...[
+                          const SizedBox(height: 10),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF10B981).withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Row(
+                              children: [
+                                Container(
+                                  width: 8,
+                                  height: 8,
+                                  decoration: const BoxDecoration(
+                                    color: Color(0xFF10B981),
+                                    shape: BoxShape.circle,
+                                  ),
+                                ).animate(onPlay: (c) => c.repeat(reverse: true)).scale(duration: 400.ms),
+                                const SizedBox(width: 8),
+                                const Expanded(
+                                  child: Text(
+                                    "Listening... Speak clearly into microphone",
+                                    style: TextStyle(color: Color(0xFF10B981), fontSize: 11, fontWeight: FontWeight.w600),
+                                  ),
+                                ),
+                                InkWell(
+                                  onTap: _toggleVoiceRecognition,
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFF10B981),
+                                      borderRadius: BorderRadius.circular(6),
+                                    ),
+                                    child: const Text(
+                                      "Done",
+                                      style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w700),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+
                         const Divider(height: 16),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Text(
-                              "AI parses category, amount, bank & date",
+                              _isListening ? "Say amount, category & bank" : "AI parses category, amount, bank & date",
                               style: TextStyle(color: AppTheme.textMuted, fontSize: 11),
                             ),
                             if (_promptController.text.isNotEmpty)

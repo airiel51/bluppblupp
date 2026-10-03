@@ -688,8 +688,8 @@ class _SignInScreenState extends State<SignInScreen> {
                               .fadeIn(duration: 350.ms, delay: 160.ms)
                               .slideY(begin: 0.08, end: 0),
 
-                          // 3. Dynamic Interactive Password Strength Meter & Real-time Checklist
-                          if (_passwordController.text.isNotEmpty || isSignUp)
+                          // 3. Dynamic Interactive Password Strength Meter & Real-time Checklist (Only for Create Account)
+                          if (isSignUp && _passwordController.text.isNotEmpty)
                             _buildPasswordStrengthIndicator(_passwordController.text)
                                 .animate()
                                 .fadeIn(duration: 250.ms)

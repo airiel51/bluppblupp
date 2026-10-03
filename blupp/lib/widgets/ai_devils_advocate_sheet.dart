@@ -1,7 +1,7 @@
-import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../models/finance_state.dart';
+import '../services/ai_devils_advocate_engine.dart';
 import '../theme/app_theme.dart';
 
 class ChatMessage {
@@ -39,10 +39,20 @@ class _AiDevilsAdvocateSheetState extends State<AiDevilsAdvocateSheet> {
   final ScrollController _scrollController = ScrollController();
   final List<ChatMessage> _messages = [];
   bool _isTyping = false;
+  String? _activeItem;
+  double? _activePrice;
+  List<String> _dynamicChips = [
+    "Sony WH-1000XM5 RM 1,499",
+    "Shopee keyboard RM 350",
+    "Concert ticket RM 480",
+    "Sneakers RM 280",
+  ];
 
   @override
   void initState() {
     super.initState();
+    _activeItem = widget.initialItem;
+    _activePrice = widget.initialPrice;
     _initChat();
   }
 
@@ -90,11 +100,20 @@ class _AiDevilsAdvocateSheetState extends State<AiDevilsAdvocateSheet> {
     });
   }
 
-  void _handleSendMessage() async {
-    final text = _inputController.text.trim();
+  void _handleSendMessage({String? overrideText}) async {
+    final text = (overrideText ?? _inputController.text).trim();
     if (text.isEmpty || _isTyping) return;
 
-    _inputController.clear();
+    if (overrideText == null) {
+      _inputController.clear();
+    }
+
+    // If user clicked direct cooldown action chip
+    if (text.contains('🛡️ Lock into 30-Day Cooldown') || text.contains('Fine, put it on 30-day cooldown')) {
+      _addCooldownItem(_activePrice ?? 150.0);
+      return;
+    }
+
     setState(() {
       _messages.add(ChatMessage(
         text: text,
@@ -105,59 +124,46 @@ class _AiDevilsAdvocateSheetState extends State<AiDevilsAdvocateSheet> {
     });
     _scrollToBottom();
 
-    // Extract price and item name from prompt
-    final amountRegex = RegExp(r'(?:rm|\$)?\s*([0-9]+(?:[\.,][0-9]{1,2})?)\s*(?:rm|ringgit|myr)?', caseSensitive: false);
-    final match = amountRegex.firstMatch(text.toLowerCase());
-    double price = 150.0;
-    if (match != null) {
-      price = double.tryParse(match.group(1)?.replaceAll(',', '.') ?? '150') ?? 150.0;
-    }
+    // Context history for conversational coherence
+    final history = _messages.map((m) => {
+      'text': m.text,
+      'isUser': m.isUser,
+    }).toList();
 
-    // Work-hours labor cost equivalent (assuming RM 25/hr base wage)
-    final workHours = (price / 25.0).toStringAsFixed(1);
-    // 10-year compounding opportunity cost @ 8% CAGR
-    final futureValue = price * pow(1.08, 10);
-    final allowanceDrop = widget.state.monthlySpendingBudget > 0
-        ? ((price / widget.state.monthlySpendingBudget) * 100).toStringAsFixed(1)
-        : '25.0';
+    // Simulate intelligent neural reasoning delay
+    await Future.delayed(const Duration(milliseconds: 750));
 
-    await Future.delayed(const Duration(milliseconds: 900));
+    final aiResponse = AiDevilsAdvocateEngine.generateResponse(
+      userMessage: text,
+      state: widget.state,
+      currentItem: _activeItem,
+      currentPrice: _activePrice,
+      conversationHistory: history,
+    );
 
-    String rebuttal;
-    if (price > widget.state.spendingBalanceLeft && widget.state.spendingBalanceLeft > 0) {
-      rebuttal = "🚨 Red Alert! That ${AppTheme.formatCurrency(price)} purchase EXCEEDS your entire remaining spending allowance for the month (${AppTheme.formatCurrency(widget.state.spendingBalanceLeft)})!\n\n"
-          "Buying this immediately throws you into a deficit, forcing you to liquidate savings or rack up debt.";
-    } else if (price >= 300) {
-      rebuttal = "Hold on! That's ${AppTheme.formatCurrency(price)} of after-tax money. You'll need to work ~$workHours hours at your desk just to pay for this item!\n\n"
-          "If you invest this into your ASNB/StashAway portfolio instead, compounding turns it into ${AppTheme.formatCurrency(futureValue)} in 10 years.";
-    } else {
-      rebuttal = "That's ${AppTheme.formatCurrency(price)} — about $workHours hours of your hard-earned labor. It wipes out $allowanceDrop% of your monthly discretionary buffer.\n\n"
-          "Ask yourself: Will this item bring you genuine fulfillment 30 days from now, or is it just a 15-minute dopamine hit?";
-    }
-
-    final cardData = {
-      'price': price,
-      'workHours': workHours,
-      'futureValue': futureValue,
-      'allowanceDrop': allowanceDrop,
-    };
+    _activeItem = aiResponse.currentItem;
+    _activePrice = aiResponse.currentPrice;
 
     if (!mounted) return;
     setState(() {
       _isTyping = false;
+      _dynamicChips = aiResponse.suggestedChips;
       _messages.add(ChatMessage(
-        text: rebuttal,
+        text: aiResponse.text,
         isUser: false,
         timestamp: DateTime.now(),
-        aiCardData: cardData,
+        aiCardData: aiResponse.cardData,
       ));
     });
     _scrollToBottom();
   }
 
   void _addCooldownItem(double price) {
+    final itemName = (_activeItem != null && _activeItem!.isNotEmpty && _activeItem != 'this item')
+        ? _activeItem!
+        : "Resisted FOMO Item";
     widget.state.addToWishlist(
-      "Resisted FOMO Item",
+      itemName,
       price,
       'shopping',
       "FOMO Intercepted: 30-Day Cooling Chamber",
@@ -265,20 +271,17 @@ class _AiDevilsAdvocateSheetState extends State<AiDevilsAdvocateSheet> {
             ),
           ),
 
-          // Quick Inspiration Chips
+          // Quick Inspiration / Counter-Argument Chips
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
             child: Row(
-              children: [
-                _buildPromptChip("Sony WH-1000XM5 RM 1,499"),
-                const SizedBox(width: 8),
-                _buildPromptChip("Shopee keyboard RM 350"),
-                const SizedBox(width: 8),
-                _buildPromptChip("Concert ticket RM 480"),
-                const SizedBox(width: 8),
-                _buildPromptChip("Sneakers RM 280"),
-              ],
+              children: _dynamicChips.map((chipText) {
+                return Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: _buildPromptChip(chipText),
+                );
+              }).toList(),
             ),
           ),
 
@@ -331,22 +334,41 @@ class _AiDevilsAdvocateSheetState extends State<AiDevilsAdvocateSheet> {
   }
 
   Widget _buildPromptChip(String text) {
+    final isAction = text.startsWith('🛡️');
     return InkWell(
       onTap: () {
-        _inputController.text = "I really want to buy $text";
-        _handleSendMessage();
+        _handleSendMessage(overrideText: text);
       },
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: BorderRadius.circular(20),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
         decoration: BoxDecoration(
-          color: AppTheme.surfaceLight,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppTheme.surfaceBorder),
+          color: isAction
+              ? const Color(0xFF10B981).withValues(alpha: 0.18)
+              : AppTheme.surfaceLight,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: isAction
+                ? const Color(0xFF10B981).withValues(alpha: 0.5)
+                : AppTheme.surfaceBorder,
+          ),
         ),
-        child: Text(
-          text,
-          style: TextStyle(color: AppTheme.textSecondary, fontSize: 11, fontWeight: FontWeight.w500),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (isAction) ...[
+              const Icon(Icons.shield_rounded, size: 14, color: Color(0xFF10B981)),
+              const SizedBox(width: 5),
+            ],
+            Text(
+              text,
+              style: TextStyle(
+                color: isAction ? const Color(0xFF10B981) : AppTheme.textPrimary,
+                fontSize: 12,
+                fontWeight: isAction ? FontWeight.w700 : FontWeight.w500,
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -494,6 +516,8 @@ class _AiDevilsAdvocateSheetState extends State<AiDevilsAdvocateSheet> {
       ),
     );
   }
+
+
 
   Widget _buildTypingIndicator() {
     return Padding(
