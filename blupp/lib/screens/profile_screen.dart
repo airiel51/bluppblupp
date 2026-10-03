@@ -13,9 +13,7 @@ class ProfileScreen extends StatelessWidget {
 
   const ProfileScreen({super.key, required this.state});
 
-  void _showPersonaSelectorSheet(BuildContext context) {
-    final customCtrl = TextEditingController(text: state.userPersona);
-
+  void _showAiPersonaDiagnosisSheet(BuildContext context) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -26,6 +24,8 @@ class ProfileScreen extends StatelessWidget {
       builder: (ctx) {
         return StatefulBuilder(
           builder: (sheetCtx, setSheetState) {
+            final diagnosis = state.aiDiagnosis;
+
             return Padding(
               padding: EdgeInsets.only(
                 left: 20,
@@ -49,31 +49,55 @@ class ProfileScreen extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 18),
+
+                    // Sheet Header
                     Row(
                       children: [
                         Container(
                           padding: const EdgeInsets.all(8),
                           decoration: BoxDecoration(
-                            color: AppTheme.primaryTeal.withValues(alpha: 0.15),
+                            color: diagnosis.badgeColor.withValues(alpha: 0.15),
                             borderRadius: BorderRadius.circular(10),
                           ),
-                          child: const Icon(Icons.psychology_rounded, color: AppTheme.primaryTeal, size: 20),
+                          child: Icon(diagnosis.icon, color: diagnosis.badgeColor, size: 22),
                         ),
                         const SizedBox(width: 12),
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(
-                                "Financial Identity & Persona",
-                                style: TextStyle(
-                                  color: AppTheme.textPrimary,
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.w700,
-                                ),
+                              Row(
+                                children: [
+                                  Text(
+                                    "AI Financial Identity",
+                                    style: TextStyle(
+                                      color: AppTheme.textPrimary,
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: diagnosis.badgeColor.withValues(alpha: 0.18),
+                                      borderRadius: BorderRadius.circular(6),
+                                      border: Border.all(color: diagnosis.badgeColor.withValues(alpha: 0.4)),
+                                    ),
+                                    child: Text(
+                                      diagnosis.confidence,
+                                      style: TextStyle(
+                                        color: diagnosis.badgeColor,
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ),
+                              const SizedBox(height: 2),
                               Text(
-                                "Label your wealth journey and financial archetype",
+                                "Diagnosed dynamically from your cash flow & balance sheet",
                                 style: TextStyle(color: AppTheme.textSecondary, fontSize: 12),
                               ),
                             ],
@@ -81,129 +105,248 @@ class ProfileScreen extends StatelessWidget {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 18),
-
-                    // Preset Personas
-                    Text(
-                      "RECOMMENDED ARCHETYPES",
-                      style: TextStyle(
-                        color: AppTheme.textSecondary,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                        letterSpacing: 0.8,
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: FinanceState.personaPresets.map((preset) {
-                        final isSelected = state.userPersona == preset;
-                        return InkWell(
-                          onTap: () {
-                            state.setUserPersona(preset);
-                            customCtrl.text = preset;
-                            setSheetState(() {});
-                          },
-                          borderRadius: BorderRadius.circular(12),
-                          child: AnimatedContainer(
-                            duration: const Duration(milliseconds: 200),
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                            decoration: BoxDecoration(
-                              color: isSelected
-                                  ? AppTheme.primaryTeal.withValues(alpha: 0.18)
-                                  : AppTheme.surfaceLight,
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(
-                                color: isSelected
-                                    ? AppTheme.primaryTeal
-                                    : AppTheme.surfaceBorder,
-                                width: isSelected ? 1.5 : 1.0,
-                              ),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text(
-                                  preset,
-                                  style: TextStyle(
-                                    color: isSelected ? AppTheme.primaryTeal : AppTheme.textPrimary,
-                                    fontSize: 12,
-                                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                                  ),
-                                ),
-                                if (isSelected) ...[
-                                  const SizedBox(width: 6),
-                                  const Icon(Icons.check_circle_rounded, color: AppTheme.primaryTeal, size: 14),
-                                ],
-                              ],
-                            ),
-                          ),
-                        );
-                      }).toList(),
-                    ),
-
                     const SizedBox(height: 20),
 
-                    // Custom Persona Input
-                    Text(
-                      "OR CUSTOM IDENTITY LABEL",
-                      style: TextStyle(
-                        color: AppTheme.textSecondary,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                        letterSpacing: 0.8,
+                    // Hero Diagnosis Card
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: diagnosis.badgeColor.withValues(alpha: 0.08),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: diagnosis.badgeColor.withValues(alpha: 0.35)),
                       ),
-                    ),
-                    const SizedBox(height: 8),
-                    TextField(
-                      controller: customCtrl,
-                      style: TextStyle(color: AppTheme.textPrimary, fontSize: 14),
-                      decoration: InputDecoration(
-                        hintText: "e.g. Sovereign Wealth Architect, Future Millionaire",
-                        hintStyle: TextStyle(color: AppTheme.textMuted, fontSize: 13),
-                        prefixIcon: const Icon(Icons.edit_note_rounded, color: AppTheme.primaryTeal),
-                        filled: true,
-                        fillColor: AppTheme.surfaceLight,
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-
-                    SizedBox(
-                      width: double.infinity,
-                      height: 48,
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppTheme.primaryTeal,
-                          foregroundColor: Colors.black,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        ),
-                        onPressed: () {
-                          if (customCtrl.text.trim().isNotEmpty) {
-                            state.setUserPersona(customCtrl.text.trim());
-                            Navigator.pop(ctx);
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                backgroundColor: AppTheme.surfaceLight,
-                                behavior: SnackBarBehavior.floating,
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                content: Row(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Icon(diagnosis.icon, color: diagnosis.badgeColor, size: 26),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    const Icon(Icons.check_circle_rounded, color: AppTheme.primaryTeal, size: 18),
-                                    const SizedBox(width: 8),
                                     Text(
-                                      "Persona updated to \"${customCtrl.text.trim()}\"",
-                                      style: TextStyle(color: AppTheme.textPrimary, fontWeight: FontWeight.w500),
+                                      diagnosis.archetype,
+                                      style: TextStyle(
+                                        color: AppTheme.textPrimary,
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w800,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      diagnosis.subtitle,
+                                      style: TextStyle(color: diagnosis.badgeColor, fontSize: 12, fontWeight: FontWeight.w600),
                                     ),
                                   ],
                                 ),
                               ),
-                            );
-                          }
-                        },
-                        child: const Text("Apply Persona Label", style: TextStyle(fontWeight: FontWeight.w700)),
+                            ],
+                          ),
+                          const SizedBox(height: 14),
+                          Text(
+                            diagnosis.diagnosisSummary,
+                            style: TextStyle(
+                              color: AppTheme.textPrimary.withValues(alpha: 0.9),
+                              fontSize: 13,
+                              height: 1.45,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 18),
+
+                    // Live Heuristic Signals Analyzed
+                    Text(
+                      "LIVE SIGNALS EVALUATED BY AI",
+                      style: TextStyle(
+                        color: AppTheme.textSecondary,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.8,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _buildAiSignalPill(
+                            "Savings Velocity",
+                            "${state.savingsRatePercentage.toStringAsFixed(0)}%",
+                            Icons.trending_up_rounded,
+                            AppTheme.incomeMint,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: _buildAiSignalPill(
+                            "Budget Consumed",
+                            "${state.budgetUsedPercentage.toStringAsFixed(0)}%",
+                            Icons.pie_chart_outline_rounded,
+                            state.budgetUsedPercentage > 85 ? AppTheme.expenseCoral : AppTheme.primaryTeal,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _buildAiSignalPill(
+                            "FOMO Shield",
+                            AppTheme.formatCurrency(state.totalFomoSaved),
+                            Icons.shield_rounded,
+                            const Color(0xFF00E5FF),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: _buildAiSignalPill(
+                            "Solvency Ratio",
+                            state.totalLoans <= 0 ? "Zero Debt" : "${state.assetToDebtRatio.toStringAsFixed(1)}x Assets",
+                            Icons.account_balance_rounded,
+                            const Color(0xFF8B5CF6),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 18),
+
+                    // AI Behavioral Traits
+                    Text(
+                      "AI DETECTED BEHAVIORAL TRAITS",
+                      style: TextStyle(
+                        color: AppTheme.textSecondary,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.8,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: diagnosis.traits.map((trait) {
+                        return Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: AppTheme.surfaceLight,
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: AppTheme.surfaceBorder),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.check_circle_rounded, color: diagnosis.badgeColor, size: 13),
+                              const SizedBox(width: 6),
+                              Text(
+                                trait,
+                                style: TextStyle(
+                                  color: AppTheme.textPrimary,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                    const SizedBox(height: 18),
+
+                    // Next-Level Strategy
+                    Container(
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: AppTheme.surfaceLight,
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: AppTheme.surfaceBorder),
+                      ),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Icon(Icons.lightbulb_rounded, color: Color(0xFFF59E0B), size: 20),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  "AI Next-Level Strategy",
+                                  style: TextStyle(
+                                    color: Color(0xFFF59E0B),
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  diagnosis.levelUpAction,
+                                  style: TextStyle(
+                                    color: AppTheme.textPrimary.withValues(alpha: 0.85),
+                                    fontSize: 12,
+                                    height: 1.4,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+
+                    // Re-run AI Diagnosis Button
+                    SizedBox(
+                      width: double.infinity,
+                      height: 48,
+                      child: ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: diagnosis.badgeColor,
+                          foregroundColor: Colors.black,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                        onPressed: state.isAiAnalyzingPersona
+                            ? null
+                            : () async {
+                                setSheetState(() {});
+                                await state.refreshAiPersona();
+                                if (sheetCtx.mounted) {
+                                  setSheetState(() {});
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      backgroundColor: AppTheme.surfaceLight,
+                                      behavior: SnackBarBehavior.floating,
+                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                      content: Row(
+                                        children: [
+                                          Icon(Icons.auto_awesome_rounded, color: diagnosis.badgeColor, size: 18),
+                                          const SizedBox(width: 8),
+                                          Text(
+                                            "AI Re-analyzed Identity: ${state.userPersona}",
+                                            style: TextStyle(color: AppTheme.textPrimary, fontWeight: FontWeight.w600),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  );
+                                }
+                              },
+                        icon: state.isAiAnalyzingPersona
+                            ? const SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(color: Colors.black, strokeWidth: 2),
+                              )
+                            : const Icon(Icons.refresh_rounded, size: 18),
+                        label: Text(
+                          state.isAiAnalyzingPersona
+                              ? "Scanning Financial Vectors..."
+                              : "Re-analyze Financial Identity",
+                          style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+                        ),
                       ),
                     ),
                   ],
@@ -213,6 +356,32 @@ class ProfileScreen extends StatelessWidget {
           },
         );
       },
+    );
+  }
+
+  Widget _buildAiSignalPill(String title, String value, IconData icon, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        color: AppTheme.surfaceLight,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: AppTheme.surfaceBorder),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, color: color, size: 16),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title, style: TextStyle(color: AppTheme.textMuted, fontSize: 10)),
+                Text(value, style: TextStyle(color: AppTheme.textPrimary, fontSize: 12, fontWeight: FontWeight.w700)),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -3588,29 +3757,29 @@ class ProfileScreen extends StatelessWidget {
                               ),
                               const SizedBox(height: 6),
 
-                              // Editable Financial Persona Archetype Pill
+                              // AI Diagnosed Financial Persona Archetype Pill
                               InkWell(
-                                onTap: () => _showPersonaSelectorSheet(context),
+                                onTap: () => _showAiPersonaDiagnosisSheet(context),
                                 borderRadius: BorderRadius.circular(20),
                                 child: Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                                   decoration: BoxDecoration(
-                                    color: AppTheme.primaryTeal.withValues(alpha: 0.16),
+                                    color: state.aiDiagnosis.badgeColor.withValues(alpha: 0.16),
                                     borderRadius: BorderRadius.circular(20),
                                     border: Border.all(
-                                      color: AppTheme.primaryTeal.withValues(alpha: 0.4),
+                                      color: state.aiDiagnosis.badgeColor.withValues(alpha: 0.5),
                                     ),
                                   ),
                                   child: Row(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
-                                      const Icon(Icons.psychology_rounded, color: AppTheme.primaryTeal, size: 13),
+                                      Icon(state.aiDiagnosis.icon, color: state.aiDiagnosis.badgeColor, size: 13),
                                       const SizedBox(width: 5),
                                       Flexible(
                                         child: Text(
-                                          state.userPersona,
-                                          style: const TextStyle(
-                                            color: AppTheme.primaryTeal,
+                                          "AI: ${state.userPersona}",
+                                          style: TextStyle(
+                                            color: state.aiDiagnosis.badgeColor,
                                             fontSize: 11,
                                             fontWeight: FontWeight.w700,
                                           ),
@@ -3618,7 +3787,7 @@ class ProfileScreen extends StatelessWidget {
                                         ),
                                       ),
                                       const SizedBox(width: 4),
-                                      const Icon(Icons.edit_rounded, color: AppTheme.primaryTeal, size: 10),
+                                      Icon(Icons.auto_awesome, color: state.aiDiagnosis.badgeColor, size: 10),
                                     ],
                                   ),
                                 ),

@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:http/http.dart' as http;
@@ -46,6 +47,10 @@ class _FomoScreenState extends State<FomoScreen> {
   double _newBalance = 0.0;
   double _oldDailyAllowance = 0.0;
   double _newDailyAllowance = 0.0;
+  int _regretScore = 75;
+  double _workHoursNeeded = 0.0;
+  double _tenYearCompoundCost = 0.0;
+  List<Map<String, dynamic>> _aiRecommendations = [];
 
   final List<String> _urgencyOptions = [
     'TikTok / Social Media Hype',
@@ -184,6 +189,69 @@ class _FomoScreenState extends State<FomoScreen> {
       adviceText = "$adviceText\n\nAI Coach Note: $serverAdvice";
     }
 
+    // --- MULTI-DIMENSIONAL AI PSYCHOMETRICS & METRICS ---
+    int computedRegret = 70;
+    switch (_selectedUrgency) {
+      case 'TikTok / Social Media Hype':
+        computedRegret = 88;
+        break;
+      case 'Flash Sale / Limited Time Discount':
+        computedRegret = 84;
+        break;
+      case 'Saw Friends / Influencer using it':
+        computedRegret = 79;
+        break;
+      case 'Feeling Stressed / Treat Myself':
+        computedRegret = 74;
+        break;
+      case 'Actually Need it for Daily Life':
+        computedRegret = 24;
+        break;
+    }
+    if (projectedBalance < 0) {
+      computedRegret += 10;
+    } else if (cost > currentBalance * 0.4) {
+      computedRegret += 6;
+    }
+    computedRegret = computedRegret.clamp(12, 98);
+
+    final monthlyIncome = widget.state.totalIncomeThisMonth > 0 ? widget.state.totalIncomeThisMonth : 4500.0;
+    final hourlyWage = (monthlyIncome / 160.0).clamp(15.0, 500.0);
+    final workHours = cost / hourlyWage;
+
+    final compound10Yr = cost * pow(1.08, 10);
+
+    final List<Map<String, dynamic>> recommendations = [
+      {
+        'title': '72-Hour Anti-FOMO Cooling Chamber',
+        'tag': 'Neuroscience Protocol',
+        'icon': Icons.hourglass_top_rounded,
+        'color': const Color(0xFF38BDF8),
+        'desc': 'Neuroscience shows 74% of retail urges are temporary dopamine spikes that fade after 72 hours. Pause until ${now.add(const Duration(days: 3)).day}/${now.add(const Duration(days: 3)).month}. If you still crave it, review your allowance.',
+      },
+      {
+        'title': 'Smart & Cheaper Alternatives',
+        'tag': 'Value Optimization',
+        'icon': Icons.loyalty_rounded,
+        'color': const Color(0xFF10B981),
+        'desc': 'Check secondhand platforms (Carousell, Mudah) or certified refurbished retailers for "$item". You can often capture 90% of the utility while keeping ${AppTheme.formatCurrency(cost * 0.35)} in your bank account.',
+      },
+      {
+        'title': '"Earn the Right to Buy" Challenge',
+        'tag': 'Discipline Challenge',
+        'icon': Icons.fitness_center_rounded,
+        'color': const Color(0xFFF59E0B),
+        'desc': 'Condition this purchase on funding at least 50% (${AppTheme.formatCurrency(cost * 0.5)}) through extra side hustle earnings or cutting discretionary food delivery for 14 days.',
+      },
+      {
+        'title': 'The 10/10/10 Mindful Filter',
+        'tag': 'Psychological Anchor',
+        'icon': Icons.psychology_alt_rounded,
+        'color': const Color(0xFF8B5CF6),
+        'desc': 'Ask: Will you care about "$item" in 10 minutes? 10 months? 10 years? If not in 10 months, it is fleeting consumption depreciating to zero.',
+      },
+    ];
+
     await Future.delayed(const Duration(milliseconds: 600));
 
     if (!mounted) return;
@@ -201,6 +269,10 @@ class _FomoScreenState extends State<FomoScreen> {
       _newBalance = projectedBalance;
       _oldDailyAllowance = oldDaily;
       _newDailyAllowance = newDaily;
+      _regretScore = computedRegret;
+      _workHoursNeeded = workHours;
+      _tenYearCompoundCost = compound10Yr;
+      _aiRecommendations = recommendations;
     });
   }
 
@@ -674,7 +746,7 @@ class _FomoScreenState extends State<FomoScreen> {
             style: TextStyle(
               color: AppTheme.textPrimary,
               fontSize: 14,
-              fontWeight: FontWeight.w500,
+              fontWeight: FontWeight.w600,
             ),
           ),
           const SizedBox(height: 8),
@@ -683,6 +755,7 @@ class _FomoScreenState extends State<FomoScreen> {
             decoration: BoxDecoration(
               color: Colors.black.withValues(alpha: 0.3),
               borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: AppTheme.surfaceBorder),
             ),
             child: Text(
               _whyNotNeed,
@@ -691,6 +764,210 @@ class _FomoScreenState extends State<FomoScreen> {
                 fontSize: 12,
                 height: 1.5,
               ),
+            ),
+          ),
+          const SizedBox(height: 18),
+
+          // --- AI PSYCHOMETRICS & TRUE COST DASHBOARD ---
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: AppTheme.surfaceLight.withValues(alpha: 0.6),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: AppTheme.surfaceBorder),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(Icons.psychology_rounded, size: 16, color: Color(0xFF00E5FF)),
+                        const SizedBox(width: 6),
+                        Text(
+                          "AI PSYCHOMETRICS & CAPITAL METRICS",
+                          style: TextStyle(
+                            color: AppTheme.textSecondary,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ],
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: (_regretScore > 65 ? AppTheme.expenseCoral : AppTheme.incomeMint).withValues(alpha: 0.18),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        "$_regretScore% Regret Risk",
+                        style: TextStyle(
+                          color: _regretScore > 65 ? AppTheme.expenseCoral : AppTheme.incomeMint,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 14),
+
+                // 3 Metrics Columns
+                Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text("Labor Cost", style: TextStyle(color: AppTheme.textMuted, fontSize: 10)),
+                          const SizedBox(height: 4),
+                          Text(
+                            "${_workHoursNeeded.toStringAsFixed(1)} hrs",
+                            style: TextStyle(color: AppTheme.textPrimary, fontSize: 14, fontWeight: FontWeight.w700),
+                          ),
+                          Text("of hard work", style: TextStyle(color: AppTheme.textMuted, fontSize: 10)),
+                        ],
+                      ),
+                    ),
+                    Container(width: 1, height: 36, color: AppTheme.surfaceBorder),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text("10-Yr Compounding", style: TextStyle(color: AppTheme.textMuted, fontSize: 10)),
+                          const SizedBox(height: 4),
+                          Text(
+                            AppTheme.formatCurrency(_tenYearCompoundCost),
+                            style: const TextStyle(color: Color(0xFF00D09C), fontSize: 14, fontWeight: FontWeight.w700),
+                          ),
+                          Text("if invested at 8%", style: TextStyle(color: AppTheme.textMuted, fontSize: 10)),
+                        ],
+                      ),
+                    ),
+                    Container(width: 1, height: 36, color: AppTheme.surfaceBorder),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text("Trigger Source", style: TextStyle(color: AppTheme.textMuted, fontSize: 10)),
+                          const SizedBox(height: 4),
+                          Text(
+                            _selectedUrgency.contains('/') ? _selectedUrgency.split('/').first.trim() : _selectedUrgency,
+                            style: TextStyle(color: AppTheme.textPrimary, fontSize: 12, fontWeight: FontWeight.w600),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          Text("Impulse Vector", style: TextStyle(color: AppTheme.textMuted, fontSize: 10)),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 20),
+
+          // --- 4 AI STRATEGIC RECOMMENDATIONS ---
+          Row(
+            children: [
+              const Icon(Icons.lightbulb_rounded, size: 16, color: Color(0xFFF59E0B)),
+              const SizedBox(width: 6),
+              Text(
+                "4 AI ACTIONABLE RECOMMENDATIONS",
+                style: TextStyle(
+                  color: AppTheme.textSecondary,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.6,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+
+          ..._aiRecommendations.map((rec) {
+            final color = rec['color'] as Color;
+            return Container(
+              margin: const EdgeInsets.only(bottom: 10),
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppTheme.surface,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: color.withValues(alpha: 0.3)),
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: color.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Icon(rec['icon'] as IconData, size: 18, color: color),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              rec['title'] as String,
+                              style: TextStyle(color: AppTheme.textPrimary, fontSize: 13, fontWeight: FontWeight.w700),
+                            ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: color.withValues(alpha: 0.12),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Text(
+                                rec['tag'] as String,
+                                style: TextStyle(color: color, fontSize: 9, fontWeight: FontWeight.w700),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          rec['desc'] as String,
+                          style: TextStyle(color: AppTheme.textSecondary, fontSize: 11, height: 1.4),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }),
+          const SizedBox(height: 12),
+
+          // Interactive "Ask AI Devil's Advocate" Button
+          SizedBox(
+            width: double.infinity,
+            height: 44,
+            child: OutlinedButton.icon(
+              style: OutlinedButton.styleFrom(
+                foregroundColor: const Color(0xFF00E5FF),
+                side: BorderSide(color: const Color(0xFF00E5FF).withValues(alpha: 0.6)),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+              icon: const Icon(Icons.forum_rounded, size: 18),
+              label: const Text(
+                "Ask AI Devil's Advocate: Convince Me NOT to Buy",
+                style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12),
+              ),
+              onPressed: () => _showAiDevilsAdvocateSheet(context),
             ),
           ),
           const SizedBox(height: 20),
@@ -802,6 +1079,208 @@ class _FomoScreenState extends State<FomoScreen> {
                 "I really need this (Log as Expense)",
                 style: TextStyle(color: AppTheme.textMuted, fontSize: 12, decoration: TextDecoration.underline),
               ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showAiDevilsAdvocateSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: AppTheme.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(26)),
+      ),
+      builder: (ctx) {
+        return Padding(
+          padding: EdgeInsets.only(
+            left: 20,
+            right: 20,
+            top: 16,
+            bottom: MediaQuery.of(ctx).viewInsets.bottom + 24,
+          ),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: AppTheme.surfaceBorder,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 18),
+
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF00E5FF).withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Icon(Icons.psychology_rounded, color: Color(0xFF00E5FF), size: 22),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            "Blupp AI Devil's Advocate",
+                            style: TextStyle(
+                              color: AppTheme.textPrimary,
+                              fontSize: 18,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          Text(
+                            "Rational, unfiltered financial cross-examination",
+                            style: TextStyle(color: AppTheme.textSecondary, fontSize: 12),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 18),
+
+                // AI Dialogue Bubbles
+                _buildAdvocateBubble(
+                  "Hey ${widget.state.userName}, let's look at '$_evaluatedItem' without the retail dopamine fog.",
+                  Icons.auto_awesome_rounded,
+                  const Color(0xFF00E5FF),
+                ),
+                const SizedBox(height: 10),
+                _buildAdvocateBubble(
+                  "You selected the urge trigger: '$_selectedUrgency'. Marketing algorithms spent millions of dollars testing colors, ads, and discounts specifically to provoke this impulse.",
+                  Icons.insights_rounded,
+                  AppTheme.expenseCoral,
+                ),
+                const SizedBox(height: 10),
+                _buildAdvocateBubble(
+                  "At your current income, paying ${AppTheme.formatCurrency(_evaluatedCost)} demands ${_workHoursNeeded.toStringAsFixed(1)} hours of grueling physical or mental labor. Are you truly prepared to hand over ${(_workHoursNeeded / 8).toStringAsFixed(1)} full work days of your finite life for this item?",
+                  Icons.hourglass_bottom_rounded,
+                  const Color(0xFFF59E0B),
+                ),
+                const SizedBox(height: 10),
+                _buildAdvocateBubble(
+                  "If you put ${AppTheme.formatCurrency(_evaluatedCost)} into your investment compounding pot instead, it compounds to ${AppTheme.formatCurrency(_tenYearCompoundCost)} in 10 years without any effort on your part.",
+                  Icons.trending_up_rounded,
+                  AppTheme.incomeMint,
+                ),
+                const SizedBox(height: 20),
+
+                // Decision buttons
+                Row(
+                  children: [
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppTheme.primaryTeal,
+                          foregroundColor: Colors.black,
+                          padding: const EdgeInsets.symmetric(vertical: 13),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                        icon: const Icon(Icons.savings_rounded, size: 18),
+                        label: const Text(
+                          "I'll Resist & Save",
+                          style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+                        ),
+                        onPressed: () {
+                          Navigator.pop(ctx);
+                          widget.state.recordFomoAvoidance(
+                            _evaluatedItem,
+                            _evaluatedCost,
+                            _selectedCategory,
+                            _verdict,
+                            _whyNotNeed,
+                          );
+                          setState(() {
+                            _hasResult = false;
+                            _itemController.clear();
+                            _costController.clear();
+                          });
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text("🎉 Victorious! You defeated FOMO and shielded ${AppTheme.formatCurrency(_evaluatedCost)}!"),
+                              backgroundColor: AppTheme.primaryTeal,
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: AppTheme.fomoPurple,
+                          side: const BorderSide(color: AppTheme.fomoPurple),
+                          padding: const EdgeInsets.symmetric(vertical: 13),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                        icon: const Icon(Icons.timer_outlined, size: 18),
+                        label: const Text(
+                          "30-Day Cooldown",
+                          style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+                        ),
+                        onPressed: () {
+                          Navigator.pop(ctx);
+                          widget.state.addToWishlist(
+                            _evaluatedItem,
+                            _evaluatedCost,
+                            _selectedCategory,
+                            _verdict,
+                            _whyNotNeed,
+                          );
+                          setState(() {
+                            _hasResult = false;
+                            _itemController.clear();
+                            _costController.clear();
+                          });
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text("Added to 30-Day Cooldown Wishlist. See if you still need it in a month!"),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildAdvocateBubble(String text, IconData icon, Color color) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppTheme.surfaceLight,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, size: 18, color: color),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              text,
+              style: TextStyle(color: AppTheme.textPrimary.withValues(alpha: 0.95), fontSize: 12, height: 1.45),
             ),
           ),
         ],

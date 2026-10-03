@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/finance_state.dart';
 import '../services/supabase_service.dart';
@@ -36,6 +37,9 @@ class _SignInScreenState extends State<SignInScreen> {
   @override
   void initState() {
     super.initState();
+    _passwordController.addListener(() {
+      if (mounted) setState(() {});
+    });
     _authSubscription = SupabaseService.instance.authStateChanges?.listen((data) {
       if (data.event == AuthChangeEvent.passwordRecovery) {
         if (mounted) {
@@ -257,6 +261,9 @@ class _SignInScreenState extends State<SignInScreen> {
           ),
         ),
 
+        // Ambient Drifting Glowing Orbs
+        _buildAmbientOrbs(),
+
         // Foreground Content
         SafeArea(
           child: Center(
@@ -269,7 +276,7 @@ class _SignInScreenState extends State<SignInScreen> {
                   children: [
                     const Spacer(flex: 3),
 
-                    // App Logo (White Fish & Wordmark)
+                    // App Logo (White Fish & Wordmark) with floating breathing animation
                     Center(
                       child: Container(
                         padding: const EdgeInsets.all(16),
@@ -293,7 +300,10 @@ class _SignInScreenState extends State<SignInScreen> {
                           iconOnly: true,
                           isDark: true,
                         ),
-                      ),
+                      )
+                          .animate()
+                          .scale(begin: const Offset(0.92, 0.92), end: const Offset(1.0, 1.0), duration: 700.ms, curve: Curves.easeOutBack)
+                          .fadeIn(duration: 500.ms),
                     ),
 
                     const Spacer(flex: 2),
@@ -308,7 +318,7 @@ class _SignInScreenState extends State<SignInScreen> {
                         letterSpacing: -0.8,
                         height: 1.15,
                       ),
-                    ),
+                    ).animate().fadeIn(duration: 400.ms, delay: 100.ms).slideY(begin: 0.08, end: 0),
                     const SizedBox(height: 12),
 
                     // Subtitle matching reference
@@ -320,7 +330,7 @@ class _SignInScreenState extends State<SignInScreen> {
                         fontWeight: FontWeight.w400,
                         height: 1.45,
                       ),
-                    ),
+                    ).animate().fadeIn(duration: 400.ms, delay: 200.ms).slideY(begin: 0.08, end: 0),
 
                     const Spacer(flex: 4),
 
@@ -534,23 +544,46 @@ class _SignInScreenState extends State<SignInScreen> {
                   borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
                   child: SingleChildScrollView(
                     physics: const BouncingScrollPhysics(),
-                    padding: const EdgeInsets.fromLTRB(28, 30, 28, 24),
+                    padding: const EdgeInsets.fromLTRB(28, 24, 28, 24),
                     child: Form(
                       key: _formKey,
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          // Title (Royal Blue)
-                          Text(
-                            isSignUp ? 'Get Started' : 'Welcome back',
-                            style: const TextStyle(
-                              color: Color(0xFF2855D9),
-                              fontSize: 27,
-                              fontWeight: FontWeight.w800,
-                              letterSpacing: -0.6,
-                            ),
-                          ),
-                          const SizedBox(height: 22),
+                          // 1. Interactive Sliding Pill Toggle Switcher (Sign In <-> Create Account)
+                          _buildInteractiveAuthTogglePill(isSignUp)
+                              .animate()
+                              .fadeIn(duration: 300.ms)
+                              .slideY(begin: -0.06, end: 0),
+                          const SizedBox(height: 18),
+
+                          // 2. Animated Title & Subtitle
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                isSignUp ? 'Create Account' : 'Welcome back',
+                                style: const TextStyle(
+                                  color: Color(0xFF2855D9),
+                                  fontSize: 26,
+                                  fontWeight: FontWeight.w800,
+                                  letterSpacing: -0.6,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                isSignUp
+                                    ? 'Start your intelligent journey to financial sovereignty'
+                                    : 'Access your balance sheet & smart budgeting insights',
+                                style: const TextStyle(
+                                  color: Color(0xFF64748B),
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w400,
+                                ),
+                              ),
+                            ],
+                          ).animate().fadeIn(duration: 350.ms, delay: 50.ms).slideY(begin: -0.04, end: 0),
+                          const SizedBox(height: 18),
 
                           // Structured Error Banners
                           if (widget.state.authError != null) ...[
@@ -578,8 +611,11 @@ class _SignInScreenState extends State<SignInScreen> {
                               hint: 'Enter Full Name',
                               keyboardType: TextInputType.name,
                               textInputAction: TextInputAction.next,
-                            ),
-                            const SizedBox(height: 16),
+                            )
+                                .animate()
+                                .fadeIn(duration: 350.ms, delay: 80.ms)
+                                .slideY(begin: 0.08, end: 0),
+                            const SizedBox(height: 14),
                           ],
 
                           // Email Field
@@ -589,8 +625,11 @@ class _SignInScreenState extends State<SignInScreen> {
                             hint: isSignUp ? 'Enter Email' : 'kristin.watson@example.com',
                             keyboardType: TextInputType.emailAddress,
                             textInputAction: TextInputAction.next,
-                          ),
-                          const SizedBox(height: 16),
+                          )
+                              .animate()
+                              .fadeIn(duration: 350.ms, delay: 120.ms)
+                              .slideY(begin: 0.08, end: 0),
+                          const SizedBox(height: 14),
 
                           // Password Field
                           _buildInputCard(
@@ -614,7 +653,18 @@ class _SignInScreenState extends State<SignInScreen> {
                                 });
                               },
                             ),
-                          ),
+                          )
+                              .animate()
+                              .fadeIn(duration: 350.ms, delay: 160.ms)
+                              .slideY(begin: 0.08, end: 0),
+
+                          // 3. Dynamic Interactive Password Strength Meter & Real-time Checklist
+                          if (_passwordController.text.isNotEmpty || isSignUp)
+                            _buildPasswordStrengthIndicator(_passwordController.text)
+                                .animate()
+                                .fadeIn(duration: 250.ms)
+                                .slideY(begin: 0.04, end: 0),
+
                           const SizedBox(height: 12),
 
                           // Checkboxes & Links
@@ -677,7 +727,7 @@ class _SignInScreenState extends State<SignInScreen> {
                                   ),
                                 ),
                               ],
-                            ),
+                            ).animate().fadeIn(duration: 350.ms, delay: 200.ms),
                           ] else ...[
                             // Sign Up Terms Checkbox
                             Row(
@@ -726,12 +776,12 @@ class _SignInScreenState extends State<SignInScreen> {
                                   ),
                                 ),
                               ],
-                            ),
+                            ).animate().fadeIn(duration: 350.ms, delay: 200.ms),
                           ],
 
-                          const SizedBox(height: 22),
+                          const SizedBox(height: 20),
 
-                          // Primary Action Button (Vibrant Royal Blue)
+                          // 4. Interactive Animated Primary Action Button (Vibrant Royal Blue)
                           SizedBox(
                             height: 50,
                             child: ElevatedButton(
@@ -753,17 +803,27 @@ class _SignInScreenState extends State<SignInScreen> {
                                         color: Colors.white,
                                       ),
                                     )
-                                  : Text(
-                                      isSignUp ? 'Sign up' : 'Sign in',
-                                      style: const TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.w700,
-                                      ),
+                                  : Row(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        Text(
+                                          isSignUp ? 'Create My Account' : 'Sign In to Blupp',
+                                          style: const TextStyle(
+                                            fontSize: 15,
+                                            fontWeight: FontWeight.w700,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        const Icon(Icons.arrow_forward_rounded, size: 16),
+                                      ],
                                     ),
                             ),
-                          ),
+                          )
+                              .animate()
+                              .fadeIn(duration: 350.ms, delay: 240.ms)
+                              .scale(begin: const Offset(0.96, 0.96), end: const Offset(1, 1)),
 
-                          const SizedBox(height: 24),
+                          const SizedBox(height: 20),
 
                           // Footer switch link
                           Row(
@@ -798,7 +858,7 @@ class _SignInScreenState extends State<SignInScreen> {
                                 ),
                               ),
                             ],
-                          ),
+                          ).animate().fadeIn(duration: 350.ms, delay: 280.ms),
 
                           const SizedBox(height: 16),
                         ],
@@ -813,6 +873,272 @@ class _SignInScreenState extends State<SignInScreen> {
       ],
     );
   }
+
+  // --- ANIMATED HELPER WIDGETS ---
+
+  Widget _buildAmbientOrbs() {
+    return Positioned.fill(
+      child: IgnorePointer(
+        child: Stack(
+          children: [
+            Positioned(
+              top: -60,
+              left: -60,
+              child: Container(
+                width: 240,
+                height: 240,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: RadialGradient(
+                    colors: [
+                      const Color(0xFF38BDF8).withValues(alpha: 0.35),
+                      Colors.transparent,
+                    ],
+                  ),
+                ),
+              )
+                  .animate()
+                  .fadeIn(duration: 800.ms)
+                  .scale(begin: const Offset(0.85, 0.85), end: const Offset(1.0, 1.0), duration: 1000.ms, curve: Curves.easeOutCubic),
+            ),
+            Positioned(
+              top: 60,
+              right: -50,
+              child: Container(
+                width: 200,
+                height: 200,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: RadialGradient(
+                    colors: [
+                      const Color(0xFF8B5CF6).withValues(alpha: 0.30),
+                      Colors.transparent,
+                    ],
+                  ),
+                ),
+              )
+                  .animate()
+                  .fadeIn(duration: 1000.ms)
+                  .scale(begin: const Offset(0.85, 0.85), end: const Offset(1.0, 1.0), duration: 1200.ms, curve: Curves.easeOutCubic),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInteractiveAuthTogglePill(bool isSignUp) {
+    return Container(
+      height: 44,
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF1F5F9),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
+      child: Stack(
+        children: [
+          // Animated sliding background pill
+          AnimatedAlign(
+            duration: const Duration(milliseconds: 250),
+            curve: Curves.easeOutCubic,
+            alignment: isSignUp ? Alignment.centerRight : Alignment.centerLeft,
+            child: FractionallySizedBox(
+              widthFactor: 0.5,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(10),
+                  boxShadow: const [
+                    BoxShadow(
+                      color: Color(0x1A000000),
+                      blurRadius: 8,
+                      offset: Offset(0, 2),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+
+          // Two Clickable Options
+          Row(
+            children: [
+              Expanded(
+                child: GestureDetector(
+                  onTap: () {
+                    if (isSignUp) {
+                      setState(() {
+                        _currentView = AuthView.signIn;
+                        widget.state.clearAuthError();
+                        _formErrorWhere = null;
+                        _formErrorWhy = null;
+                      });
+                    }
+                  },
+                  behavior: HitTestBehavior.opaque,
+                  child: Center(
+                    child: Text(
+                      'Sign In',
+                      style: TextStyle(
+                        color: !isSignUp ? const Color(0xFF2855D9) : const Color(0xFF64748B),
+                        fontWeight: !isSignUp ? FontWeight.w700 : FontWeight.w600,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              Expanded(
+                child: GestureDetector(
+                  onTap: () {
+                    if (!isSignUp) {
+                      setState(() {
+                        _currentView = AuthView.signUp;
+                        widget.state.clearAuthError();
+                        _formErrorWhere = null;
+                        _formErrorWhy = null;
+                      });
+                    }
+                  },
+                  behavior: HitTestBehavior.opaque,
+                  child: Center(
+                    child: Text(
+                      'Create Account',
+                      style: TextStyle(
+                        color: isSignUp ? const Color(0xFF2855D9) : const Color(0xFF64748B),
+                        fontWeight: isSignUp ? FontWeight.w700 : FontWeight.w600,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  int _calculatePasswordStrength(String password) {
+    if (password.isEmpty) return 0;
+    int score = 0;
+    if (password.length >= 6) score++;
+    if (password.length >= 9) score++;
+    if (RegExp(r'[a-zA-Z]').hasMatch(password) && RegExp(r'[0-9]').hasMatch(password)) score++;
+    if (RegExp(r'[!@#\$%^&*(),.?":{}|<>]').hasMatch(password) ||
+        (RegExp(r'[A-Z]').hasMatch(password) && RegExp(r'[a-z]').hasMatch(password))) {
+      score++;
+    }
+    return score.clamp(1, 4);
+  }
+
+  Widget _buildPasswordStrengthIndicator(String password) {
+    if (password.isEmpty) return const SizedBox.shrink();
+
+    final strength = _calculatePasswordStrength(password);
+    final hasMinLength = password.length >= 6;
+    final hasLettersAndNumbers = RegExp(r'[a-zA-Z]').hasMatch(password) && RegExp(r'[0-9]').hasMatch(password);
+
+    Color activeColor;
+    String strengthLabel;
+    if (strength == 1) {
+      activeColor = const Color(0xFFEF4444);
+      strengthLabel = "Weak";
+    } else if (strength == 2) {
+      activeColor = const Color(0xFFF59E0B);
+      strengthLabel = "Fair";
+    } else if (strength == 3) {
+      activeColor = const Color(0xFF38BDF8);
+      strengthLabel = "Good";
+    } else {
+      activeColor = const Color(0xFF10B981);
+      strengthLabel = "Ironclad";
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: 8),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Text(
+              "Password Security Strength",
+              style: TextStyle(color: Color(0xFF64748B), fontSize: 11, fontWeight: FontWeight.w500),
+            ),
+            AnimatedDefaultTextStyle(
+              duration: const Duration(milliseconds: 200),
+              style: TextStyle(color: activeColor, fontSize: 11, fontWeight: FontWeight.w700),
+              child: Text(strengthLabel),
+            ),
+          ],
+        ),
+        const SizedBox(height: 6),
+        // 4 segmented bars
+        Row(
+          children: List.generate(4, (index) {
+            final isFilled = index < strength;
+            return Expanded(
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 250),
+                height: 4,
+                margin: EdgeInsets.only(right: index < 3 ? 4 : 0),
+                decoration: BoxDecoration(
+                  color: isFilled ? activeColor : const Color(0xFFE2E8F0),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            );
+          }),
+        ),
+        const SizedBox(height: 8),
+        // Live Checklist Chips
+        Row(
+          children: [
+            _buildChecklistChip("6+ Chars", hasMinLength),
+            const SizedBox(width: 8),
+            _buildChecklistChip("Letters & Numbers", hasLettersAndNumbers),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildChecklistChip(String label, bool isMet) {
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 200),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: isMet ? const Color(0xFF10B981).withValues(alpha: 0.12) : const Color(0xFFF1F5F9),
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(
+          color: isMet ? const Color(0xFF10B981).withValues(alpha: 0.4) : const Color(0xFFE2E8F0),
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            isMet ? Icons.check_circle_rounded : Icons.radio_button_unchecked_rounded,
+            size: 11,
+            color: isMet ? const Color(0xFF10B981) : const Color(0xFF94A3B8),
+          ),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: TextStyle(
+              color: isMet ? const Color(0xFF047857) : const Color(0xFF64748B),
+              fontSize: 10,
+              fontWeight: isMet ? FontWeight.w600 : FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
 
   /// Clean input card with floating/top label matching reference
   Widget _buildInputCard({

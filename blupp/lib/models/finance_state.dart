@@ -155,6 +155,109 @@ class WishlistItem {
   });
 }
 
+class DailyExpenseGroup {
+  final DateTime date;
+  final double totalExpense;
+  final List<TransactionItem> items;
+
+  DailyExpenseGroup({
+    required this.date,
+    required this.totalExpense,
+    required this.items,
+  });
+
+  String get label {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final groupDay = DateTime(date.year, date.month, date.day);
+    final diff = today.difference(groupDay).inDays;
+
+    if (diff == 0) return "Today";
+    if (diff == 1) return "Yesterday";
+
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const weekdays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    return "${weekdays[date.weekday - 1]}, ${date.day} ${months[date.month - 1]}";
+  }
+}
+
+class WeeklyExpenseGroup {
+  final int weekIndex;
+  final DateTime startDate;
+  final DateTime endDate;
+  final double totalExpense;
+  final List<double> dailySpending; // 7 days: Mon -> Sun
+  final List<TransactionItem> items;
+
+  WeeklyExpenseGroup({
+    required this.weekIndex,
+    required this.startDate,
+    required this.endDate,
+    required this.totalExpense,
+    required this.dailySpending,
+    required this.items,
+  });
+
+  String get label {
+    if (weekIndex == 0) return "This Week";
+    if (weekIndex == 1) return "Last Week";
+    return "$weekIndex Weeks Ago";
+  }
+
+  String get dateRangeFormatted {
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    return "${startDate.day} ${months[startDate.month - 1]} – ${endDate.day} ${months[endDate.month - 1]}";
+  }
+}
+
+class MonthlyExpenseGroup {
+  final int year;
+  final int month;
+  final double totalExpense;
+  final Map<String, double> categoryBreakdown;
+  final List<TransactionItem> items;
+
+  MonthlyExpenseGroup({
+    required this.year,
+    required this.month,
+    required this.totalExpense,
+    required this.categoryBreakdown,
+    required this.items,
+  });
+
+  String get label {
+    const months = [
+      'January', 'February', 'March', 'April', 'May', 'June',
+      'July', 'August', 'September', 'October', 'November', 'December'
+    ];
+    return "${months[month - 1]} $year";
+  }
+}
+
+class AiFinancialDiagnosis {
+  final String archetype;
+  final String title;
+  final String subtitle;
+  final String confidence;
+  final String diagnosisSummary;
+  final List<String> traits;
+  final String levelUpAction;
+  final Color badgeColor;
+  final IconData icon;
+
+  const AiFinancialDiagnosis({
+    required this.archetype,
+    required this.title,
+    required this.subtitle,
+    required this.confidence,
+    required this.diagnosisSummary,
+    required this.traits,
+    required this.levelUpAction,
+    required this.badgeColor,
+    required this.icon,
+  });
+}
+
 class FinanceState extends ChangeNotifier {
   // Authentication & Profile State
   bool _isAuthenticated = false;
@@ -170,6 +273,9 @@ class FinanceState extends ChangeNotifier {
   FinanceState({bool? initialAuthenticated}) {
     if (initialAuthenticated != null) {
       _isAuthenticated = initialAuthenticated;
+      if (initialAuthenticated) {
+        loadDemoData();
+      }
     } else if (SupabaseService.instance.hasActiveSession) {
       _isAuthenticated = true;
       final user = SupabaseService.instance.currentUser;
@@ -263,30 +369,145 @@ class FinanceState extends ChangeNotifier {
     setProfileImage(null);
   }
 
-  // Persona Label (Financial Archetype)
-  String _userPersona = '⚡ High-Growth Wealth Builder';
-  String get userPersona => _userPersona;
+  // --- AI-ASSIGNED FINANCIAL IDENTITY ENGINE ---
+  bool _isAiAnalyzingPersona = false;
+  bool get isAiAnalyzingPersona => _isAiAnalyzingPersona;
 
-  static const List<String> personaPresets = [
-    '⚡ High-Growth Wealth Builder',
-    '🛡️ Disciplined Saver & Strategist',
-    '🎯 Balanced Budget Master',
-    '🚀 Tech & Crypto Explorer',
-    '🌿 Mindful Minimalist',
-    '💎 Diamond Hands Investor',
-    '👑 Financial Sovereign',
-    '💼 Executive Portfolio Planner',
-  ];
+  AiFinancialDiagnosis get aiDiagnosis {
+    final savings = savingsRatePercentage;
+    final budgetUsed = budgetUsedPercentage;
+    final hasInvestments = _investments.isNotEmpty;
+    final totalInv = totalInvestmentsAndSavings;
+    final totalDebt = totalLoans;
+    final fomoProtected = totalFomoSaved;
+    final fomoCount = _fomoWishlist.where((w) => w.avoided).length;
+    final netWorth = totalNetWorth;
 
-  void setUserPersona(String persona) {
-    if (persona.trim().isNotEmpty) {
-      _userPersona = persona.trim();
-      notifyListeners();
-      SupabaseService.instance.updateUserProfile(
-        name: _userName,
-        email: _userEmail,
+    if (savings >= 35 && hasInvestments && totalDebt == 0) {
+      return AiFinancialDiagnosis(
+        archetype: '⚡ High-Yield Wealth Accelerator',
+        title: 'High-Yield Wealth Accelerator',
+        subtitle: 'Aggressive Capital Compounding & Zero Toxic Debt',
+        confidence: '96% AI Match',
+        diagnosisSummary:
+            'Blupp AI detected an outstanding ${savings.toStringAsFixed(1)}% savings rate, active diversified asset portfolios (${AppTheme.formatCurrency(totalInv)}), and zero debt liabilities. You are compounding capital at top-tier institutional velocity.',
+        traits: [
+          '${savings.toStringAsFixed(0)}% Savings Rate',
+          'Zero Consumer Debt',
+          'Active Asset Compounding',
+          'Disciplined Cash Flow',
+        ],
+        levelUpAction:
+            'Automate monthly contributions into broad-market index funds to sustain generational compounding velocity.',
+        badgeColor: const Color(0xFF10B981),
+        icon: Icons.bolt_rounded,
+      );
+    } else if (fomoCount >= 2 && budgetUsed <= 75) {
+      return AiFinancialDiagnosis(
+        archetype: '🛡️ Disciplined Saver & FOMO Shield',
+        title: 'Disciplined Saver & FOMO Shield',
+        subtitle: 'Impulse Defense & High Cashflow Protection',
+        confidence: '94% AI Match',
+        diagnosisSummary:
+            'AI Neural Analysis identified superior psychological resistance against retail impulses. You have shielded ${AppTheme.formatCurrency(fomoProtected)} from impulsive buying while keeping budget usage under ${budgetUsed.toStringAsFixed(0)}%.',
+        traits: [
+          '${AppTheme.formatCurrency(fomoProtected)} Impulses Blocked',
+          '${(100 - budgetUsed).clamp(0, 100).toStringAsFixed(0)}% Budget Intact',
+          'Emotion-Free Purchasing',
+          'High Spending Cushion',
+        ],
+        levelUpAction:
+            'Channel at least 50% of money saved from avoided FOMO purchases directly into a high-yield investment account.',
+        badgeColor: const Color(0xFF00E5FF),
+        icon: Icons.shield_rounded,
+      );
+    } else if (hasInvestments && totalInv >= netWorth * 0.35 && netWorth > 1000) {
+      return AiFinancialDiagnosis(
+        archetype: '💎 Diamond Hands Compounding Sovereign',
+        title: 'Diamond Hands Compounding Sovereign',
+        subtitle: 'Long-Term Yield Maximalist & Asset Accumulator',
+        confidence: '95% AI Match',
+        diagnosisSummary:
+            'AI identifies high long-term investment conviction. Over ${(totalInv / (netWorth > 0 ? netWorth : 1) * 100).toStringAsFixed(0)}% of your balance sheet is invested in dividend/growth assets rather than sitting dormant in low-yield cash.',
+        traits: [
+          '${_investments.length} Portfolios Active',
+          'Long-Term Conviction',
+          'Anti-Inflation Allocation',
+          'Passive Yield Compounder',
+        ],
+        levelUpAction:
+            'Rebalance asset allocation bi-annually and maintain an emergency cash buffer of at least 3-6 months living expenses.',
+        badgeColor: const Color(0xFF8B5CF6),
+        icon: Icons.diamond_rounded,
+      );
+    } else if (budgetUsed <= 60 && totalExpensesThisMonth > 0) {
+      return AiFinancialDiagnosis(
+        archetype: '🌿 Mindful Minimalist & Cash Optimizer',
+        title: 'Mindful Minimalist & Cash Optimizer',
+        subtitle: 'Lean Cost Footprint & Intentional Spending',
+        confidence: '92% AI Match',
+        diagnosisSummary:
+            'Your expenditure footprint is exceptionally lean, utilizing only ${budgetUsed.toStringAsFixed(0)}% of your monthly allowance. You prioritize value and essential utilities over frivolous consumer consumption.',
+        traits: [
+          'Lean Overhead Cost',
+          'High Monthly Surplus',
+          'Zero Lifestyle Inflation',
+          'Essentialist Mindset',
+        ],
+        levelUpAction:
+            'Put your substantial monthly cash surplus into automated recurring investments to let compounding work for you.',
+        badgeColor: const Color(0xFF14B8A6),
+        icon: Icons.spa_rounded,
+      );
+    } else if (totalDebt > 0) {
+      return AiFinancialDiagnosis(
+        archetype: '🎯 Tactical Debt Eliminator & Rebuilder',
+        title: 'Tactical Debt Eliminator & Rebuilder',
+        subtitle: 'Structured Liability Payoff & Solvency Expansion',
+        confidence: '91% AI Match',
+        diagnosisSummary:
+            'AI observes focused repayment management across ${_loans.length} active loan obligations (${AppTheme.formatCurrency(totalDebt)} balance). You are maintaining positive monthly liquidity while shrinking liabilities.',
+        traits: [
+          '${_loans.length} Active Obligations Tracked',
+          'Avalanche/Snowball Strategy',
+          'Controlled Overhead',
+          'Net Worth Turnaround',
+        ],
+        levelUpAction:
+            'Apply any unexpected bonus or side-income directly towards your highest APR loan to accelerate zero-debt graduation.',
+        badgeColor: const Color(0xFFF59E0B),
+        icon: Icons.track_changes_rounded,
+      );
+    } else {
+      return AiFinancialDiagnosis(
+        archetype: '🌱 Foundation Wealth Builder',
+        title: 'Foundation Wealth Builder',
+        subtitle: 'Building Liquidity Moat & Tracking Mastery',
+        confidence: '89% AI Match',
+        diagnosisSummary:
+            'You are establishing rock-solid personal finance fundamentals. Blupp AI is actively tracking your cash inflows, bank accounts, and daily expenses to calculate your compounding potential.',
+        traits: [
+          'Active Expense Tracking',
+          'Growing Liquid Cushion',
+          'Financial Literacy Growth',
+          'Positive Net Trajectory',
+        ],
+        levelUpAction:
+            'Aim to save at least 20% of your next incoming salary before spending on discretionary items.',
+        badgeColor: const Color(0xFF38BDF8),
+        icon: Icons.eco_rounded,
       );
     }
+  }
+
+  String get userPersona => aiDiagnosis.archetype;
+
+  Future<void> refreshAiPersona() async {
+    _isAiAnalyzingPersona = true;
+    notifyListeners();
+    await Future.delayed(const Duration(milliseconds: 1200));
+    _isAiAnalyzingPersona = false;
+    notifyListeners();
   }
 
   // Avatar Studio Customization
@@ -1204,6 +1425,153 @@ class FinanceState extends ChangeNotifier {
     return getPlannedExpensesForDate(date)
         .where((p) => !p.isPaid)
         .fold(0.0, (sum, p) => sum + p.amount);
+  }
+
+  // --- DAILY, WEEKLY, MONTHLY EXPENSES HISTORY ---
+  List<DailyExpenseGroup> get dailyExpenseHistory {
+    final expenses = _transactions
+        .where((t) => t.type == TransactionType.expense && !isTransferOrTopUp(t))
+        .toList()
+      ..sort((a, b) => b.date.compareTo(a.date));
+
+    final Map<String, List<TransactionItem>> grouped = {};
+    for (final t in expenses) {
+      final key = "${t.date.year}-${t.date.month.toString().padLeft(2, '0')}-${t.date.day.toString().padLeft(2, '0')}";
+      grouped.putIfAbsent(key, () => []).add(t);
+    }
+
+    final List<DailyExpenseGroup> result = [];
+    grouped.forEach((key, list) {
+      final total = list.fold<double>(0.0, (sum, item) => sum + item.amount);
+      result.add(DailyExpenseGroup(
+        date: list.first.date,
+        totalExpense: total,
+        items: list,
+      ));
+    });
+
+    return result;
+  }
+
+  double get todayExpenseTotal {
+    final now = DateTime.now();
+    return _transactions
+        .where((t) =>
+            t.type == TransactionType.expense &&
+            !isTransferOrTopUp(t) &&
+            t.date.year == now.year &&
+            t.date.month == now.month &&
+            t.date.day == now.day)
+        .fold(0.0, (sum, t) => sum + t.amount);
+  }
+
+  double get yesterdayExpenseTotal {
+    final yest = DateTime.now().subtract(const Duration(days: 1));
+    return _transactions
+        .where((t) =>
+            t.type == TransactionType.expense &&
+            !isTransferOrTopUp(t) &&
+            t.date.year == yest.year &&
+            t.date.month == yest.month &&
+            t.date.day == yest.day)
+        .fold(0.0, (sum, t) => sum + t.amount);
+  }
+
+  List<WeeklyExpenseGroup> get weeklyExpenseHistory {
+    final expenses = _transactions
+        .where((t) => t.type == TransactionType.expense && !isTransferOrTopUp(t))
+        .toList();
+
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    // Find current week Monday
+    final currentMonday = today.subtract(Duration(days: today.weekday - 1));
+
+    final List<WeeklyExpenseGroup> result = [];
+
+    // Group last 8 weeks
+    for (int w = 0; w < 8; w++) {
+      final weekStart = currentMonday.subtract(Duration(days: w * 7));
+      final weekEnd = weekStart.add(const Duration(days: 6, hours: 23, minutes: 59, seconds: 59));
+
+      final weekItems = expenses.where((t) {
+        return !t.date.isBefore(weekStart) && !t.date.isAfter(weekEnd);
+      }).toList()..sort((a, b) => b.date.compareTo(a.date));
+
+      final total = weekItems.fold<double>(0.0, (sum, t) => sum + t.amount);
+
+      final List<double> dailySpending = List.filled(7, 0.0);
+      for (final t in weekItems) {
+        final dayIndex = (t.date.weekday - 1).clamp(0, 6);
+        dailySpending[dayIndex] += t.amount;
+      }
+
+      if (weekItems.isNotEmpty || w < 2) {
+        result.add(WeeklyExpenseGroup(
+          weekIndex: w,
+          startDate: weekStart,
+          endDate: weekEnd,
+          totalExpense: total,
+          dailySpending: dailySpending,
+          items: weekItems,
+        ));
+      }
+    }
+
+    return result;
+  }
+
+  double get thisWeekExpenseTotal {
+    final history = weeklyExpenseHistory;
+    return history.isNotEmpty ? history.first.totalExpense : 0.0;
+  }
+
+  double get lastWeekExpenseTotal {
+    final history = weeklyExpenseHistory;
+    return history.length > 1 ? history[1].totalExpense : 0.0;
+  }
+
+  List<MonthlyExpenseGroup> get monthlyExpenseHistory {
+    final expenses = _transactions
+        .where((t) => t.type == TransactionType.expense && !isTransferOrTopUp(t))
+        .toList();
+
+    final Map<String, List<TransactionItem>> grouped = {};
+    for (final t in expenses) {
+      final key = "${t.date.year}-${t.date.month.toString().padLeft(2, '0')}";
+      grouped.putIfAbsent(key, () => []).add(t);
+    }
+
+    // Always include current month even if 0 expenses
+    final now = DateTime.now();
+    final currentKey = "${now.year}-${now.month.toString().padLeft(2, '0')}";
+    grouped.putIfAbsent(currentKey, () => []);
+
+    final sortedKeys = grouped.keys.toList()..sort((a, b) => b.compareTo(a));
+
+    final List<MonthlyExpenseGroup> result = [];
+    for (final key in sortedKeys) {
+      final list = grouped[key]!;
+      final parts = key.split('-');
+      final y = int.parse(parts[0]);
+      final m = int.parse(parts[1]);
+
+      final total = list.fold<double>(0.0, (sum, t) => sum + t.amount);
+      final Map<String, double> catMap = {};
+      for (final t in list) {
+        catMap[t.categoryId] = (catMap[t.categoryId] ?? 0.0) + t.amount;
+      }
+
+      result.add(MonthlyExpenseGroup(
+        year: y,
+        month: m,
+        totalExpense: total,
+        categoryBreakdown: catMap,
+        items: list..sort((a, b) => b.date.compareTo(a.date)),
+      ));
+    }
+
+    return result;
   }
 
   // --- SUPABASE SYNCHRONIZATION ---

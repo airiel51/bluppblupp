@@ -20,6 +20,7 @@ class _TrackingScreenState extends State<TrackingScreen>
   late TabController _tabController;
   String _selectedCategoryFilter = 'all';
   String _searchQuery = '';
+  String _expenseTimeframe = 'daily'; // 'daily', 'weekly', 'monthly'
 
   @override
   void initState() {
@@ -262,30 +263,797 @@ class _TrackingScreenState extends State<TrackingScreen>
         ),
         const SizedBox(height: 20),
 
+        // Timeframe Selector: Daily, Weekly, Monthly
+        _buildTimeframeSelector(),
+        const SizedBox(height: 14),
+
         // Category Filter Chips
         _buildCategoryFilterRow(TransactionType.expense),
         const SizedBox(height: 16),
 
-        // Expense List Header
+        // Expense View based on Selected Timeframe
+        if (_expenseTimeframe == 'daily')
+          _buildDailyExpensesSection(expenses)
+        else if (_expenseTimeframe == 'weekly')
+          _buildWeeklyExpensesSection(expenses)
+        else
+          _buildMonthlyExpensesSection(expenses),
+      ],
+    );
+  }
+
+  // --- TIMEFRAME SELECTOR ---
+  Widget _buildTimeframeSelector() {
+    final options = [
+      {'id': 'daily', 'label': 'Daily', 'icon': Icons.today_rounded},
+      {'id': 'weekly', 'label': 'Weekly', 'icon': Icons.date_range_rounded},
+      {'id': 'monthly', 'label': 'Monthly', 'icon': Icons.calendar_month_rounded},
+    ];
+
+    return Container(
+      height: 44,
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: AppTheme.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppTheme.surfaceBorder),
+      ),
+      child: Row(
+        children: options.map((opt) {
+          final isSelected = _expenseTimeframe == opt['id'];
+          return Expanded(
+            child: GestureDetector(
+              onTap: () {
+                setState(() {
+                  _expenseTimeframe = opt['id'] as String;
+                });
+              },
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 220),
+                curve: Curves.easeInOut,
+                decoration: BoxDecoration(
+                  color: isSelected ? AppTheme.surfaceLight : Colors.transparent,
+                  borderRadius: BorderRadius.circular(9),
+                  border: isSelected
+                      ? Border.all(color: AppTheme.primaryTeal.withValues(alpha: 0.6), width: 1)
+                      : null,
+                  boxShadow: isSelected
+                      ? [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.15),
+                            blurRadius: 6,
+                            offset: const Offset(0, 2),
+                          ),
+                        ]
+                      : null,
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      opt['icon'] as IconData,
+                      size: 15,
+                      color: isSelected ? AppTheme.primaryTeal : AppTheme.textMuted,
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      opt['label'] as String,
+                      style: TextStyle(
+                        color: isSelected ? AppTheme.textPrimary : AppTheme.textMuted,
+                        fontSize: 12,
+                        fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+
+  // --- 1. DAILY EXPENSES SECTION ---
+  Widget _buildDailyExpensesSection(List<TransactionItem> filteredExpenses) {
+    final todaySpent = widget.state.todayExpenseTotal;
+    final yesterdaySpent = widget.state.yesterdayExpenseTotal;
+
+    // Group the filtered expenses by date
+    final Map<String, List<TransactionItem>> grouped = {};
+    for (final t in filteredExpenses) {
+      final key = "${t.date.year}-${t.date.month.toString().padLeft(2, '0')}-${t.date.day.toString().padLeft(2, '0')}";
+      grouped.putIfAbsent(key, () => []).add(t);
+    }
+    final sortedKeys = grouped.keys.toList()..sort((a, b) => b.compareTo(a));
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Daily KPI Comparison Row
+        Row(
+          children: [
+            Expanded(
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                decoration: BoxDecoration(
+                  color: AppTheme.surface,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AppTheme.surfaceBorder),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          width: 8,
+                          height: 8,
+                          decoration: const BoxDecoration(
+                            color: AppTheme.expenseCoral,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          "TODAY'S SPENT",
+                          style: TextStyle(color: AppTheme.textSecondary, fontSize: 10, fontWeight: FontWeight.w600),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      AppTheme.formatCurrency(todaySpent),
+                      style: TextStyle(color: AppTheme.textPrimary, fontSize: 16, fontWeight: FontWeight.w700),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                decoration: BoxDecoration(
+                  color: AppTheme.surface,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AppTheme.surfaceBorder),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          width: 8,
+                          height: 8,
+                          decoration: BoxDecoration(
+                            color: AppTheme.textMuted,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          "YESTERDAY",
+                          style: TextStyle(color: AppTheme.textSecondary, fontSize: 10, fontWeight: FontWeight.w600),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      AppTheme.formatCurrency(yesterdaySpent),
+                      style: TextStyle(color: AppTheme.textPrimary, fontSize: 16, fontWeight: FontWeight.w700),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 18),
+
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
-              "Transactions (${expenses.length})",
-              style: TextStyle(
-                color: AppTheme.textPrimary,
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-              ),
+              "Daily History (${filteredExpenses.length} entries)",
+              style: TextStyle(color: AppTheme.textPrimary, fontSize: 15, fontWeight: FontWeight.w600),
+            ),
+            Text(
+              "${sortedKeys.length} Days",
+              style: TextStyle(color: AppTheme.textMuted, fontSize: 12),
             ),
           ],
         ),
         const SizedBox(height: 12),
 
-        if (expenses.isEmpty)
-          _buildEmptyState("No expenses logged for this filter yet.")
+        if (filteredExpenses.isEmpty)
+          _buildEmptyState("No expenses recorded for this daily filter.")
         else
-          ...expenses.asMap().entries.map((e) => _buildTransactionCard(e.value, e.key)),
+          ...sortedKeys.map((dateKey) {
+            final items = grouped[dateKey]!;
+            final firstDate = items.first.date;
+            final dayTotal = items.fold<double>(0.0, (sum, t) => sum + t.amount);
+
+            final now = DateTime.now();
+            final today = DateTime(now.year, now.month, now.day);
+            final dayDate = DateTime(firstDate.year, firstDate.month, firstDate.day);
+            final diff = today.difference(dayDate).inDays;
+
+            String label;
+            if (diff == 0) {
+              label = "Today";
+            } else if (diff == 1) {
+              label = "Yesterday";
+            } else {
+              const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+              const weekdays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+              label = "${weekdays[firstDate.weekday - 1]}, ${firstDate.day} ${months[firstDate.month - 1]}";
+            }
+
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 14),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: AppTheme.surface.withValues(alpha: 0.5),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: AppTheme.surfaceBorder),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Day Header Banner
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                      decoration: BoxDecoration(
+                        color: AppTheme.surfaceLight.withValues(alpha: 0.6),
+                        borderRadius: const BorderRadius.vertical(top: Radius.circular(14)),
+                        border: Border(bottom: BorderSide(color: AppTheme.surfaceBorder.withValues(alpha: 0.5))),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Row(
+                            children: [
+                              Icon(
+                                diff == 0 ? Icons.bolt_rounded : Icons.calendar_today_rounded,
+                                size: 14,
+                                color: diff == 0 ? AppTheme.primaryTeal : AppTheme.textMuted,
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
+                                label,
+                                style: TextStyle(
+                                  color: diff == 0 ? AppTheme.primaryTeal : AppTheme.textPrimary,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: AppTheme.surface,
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: Text(
+                                  "${items.length} ${items.length == 1 ? 'tx' : 'txs'}",
+                                  style: TextStyle(color: AppTheme.textMuted, fontSize: 10),
+                                ),
+                              ),
+                            ],
+                          ),
+                          Text(
+                            AppTheme.formatCurrency(dayTotal),
+                            style: const TextStyle(
+                              color: AppTheme.expenseCoral,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    // Items for this day
+                    Padding(
+                      padding: const EdgeInsets.all(10),
+                      child: Column(
+                        children: items.map((tx) => _buildTransactionCard(tx)).toList(),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }),
+      ],
+    );
+  }
+
+  // --- 2. WEEKLY EXPENSES SECTION (with 7-Day Sparkline Bar Chart) ---
+  Widget _buildWeeklyExpensesSection(List<TransactionItem> filteredExpenses) {
+    final weeklyGroups = widget.state.weeklyExpenseHistory;
+    final thisWeekSpent = widget.state.thisWeekExpenseTotal;
+    final lastWeekSpent = widget.state.lastWeekExpenseTotal;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Weekly KPI Row
+        Row(
+          children: [
+            Expanded(
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                decoration: BoxDecoration(
+                  color: AppTheme.surface,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AppTheme.surfaceBorder),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          width: 8,
+                          height: 8,
+                          decoration: const BoxDecoration(
+                            color: AppTheme.primaryTeal,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          "THIS WEEK",
+                          style: TextStyle(color: AppTheme.textSecondary, fontSize: 10, fontWeight: FontWeight.w600),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      AppTheme.formatCurrency(thisWeekSpent),
+                      style: TextStyle(color: AppTheme.textPrimary, fontSize: 16, fontWeight: FontWeight.w700),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                decoration: BoxDecoration(
+                  color: AppTheme.surface,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AppTheme.surfaceBorder),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          width: 8,
+                          height: 8,
+                          decoration: BoxDecoration(
+                            color: AppTheme.textMuted,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          "LAST WEEK",
+                          style: TextStyle(color: AppTheme.textSecondary, fontSize: 10, fontWeight: FontWeight.w600),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      AppTheme.formatCurrency(lastWeekSpent),
+                      style: TextStyle(color: AppTheme.textPrimary, fontSize: 16, fontWeight: FontWeight.w700),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 18),
+
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              "Weekly Trends (${weeklyGroups.length} Weeks)",
+              style: TextStyle(color: AppTheme.textPrimary, fontSize: 15, fontWeight: FontWeight.w600),
+            ),
+            Text(
+              "Mon – Sun Breakdown",
+              style: TextStyle(color: AppTheme.textMuted, fontSize: 12),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+
+        if (weeklyGroups.isEmpty)
+          _buildEmptyState("No weekly expense records found.")
+        else
+          ...weeklyGroups.map((week) {
+            // Find max day spend in this week for proportional bar heights
+            final maxDaySpend = week.dailySpending.fold<double>(0.0, (max, v) => v > max ? v : max);
+            final dayLabels = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+
+            // Match any filtered transactions in this week
+            final weekItems = filteredExpenses.where((t) {
+              return !t.date.isBefore(week.startDate) && !t.date.isAfter(week.endDate);
+            }).toList();
+
+            return Container(
+              margin: const EdgeInsets.only(bottom: 16),
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: AppTheme.surface,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: week.weekIndex == 0
+                      ? AppTheme.primaryTeal.withValues(alpha: 0.4)
+                      : AppTheme.surfaceBorder,
+                ),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Week Header
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Text(
+                                week.label,
+                                style: TextStyle(
+                                  color: week.weekIndex == 0 ? AppTheme.primaryTeal : AppTheme.textPrimary,
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                              if (week.weekIndex == 0) ...[
+                                const SizedBox(width: 8),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: AppTheme.primaryTeal.withValues(alpha: 0.15),
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                  child: const Text(
+                                    "CURRENT",
+                                    style: TextStyle(color: AppTheme.primaryTeal, fontSize: 9, fontWeight: FontWeight.w700),
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            week.dateRangeFormatted,
+                            style: TextStyle(color: AppTheme.textMuted, fontSize: 12),
+                          ),
+                        ],
+                      ),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Text(
+                            AppTheme.formatCurrency(week.totalExpense),
+                            style: const TextStyle(
+                              color: AppTheme.expenseCoral,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          Text(
+                            "${week.items.length} ${week.items.length == 1 ? 'expense' : 'expenses'}",
+                            style: TextStyle(color: AppTheme.textMuted, fontSize: 11),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+
+                  // 7-Day Sparkline Bar Chart
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+                    decoration: BoxDecoration(
+                      color: AppTheme.surfaceLight.withValues(alpha: 0.5),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          "7-DAY SPENDING INTENSITY",
+                          style: TextStyle(
+                            color: AppTheme.textMuted,
+                            fontSize: 9,
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        SizedBox(
+                          height: 52,
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: List.generate(7, (i) {
+                              final spent = week.dailySpending[i];
+                              final ratio = maxDaySpend > 0 ? (spent / maxDaySpend).clamp(0.08, 1.0) : 0.08;
+                              final hasSpent = spent > 0;
+
+                              return Expanded(
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(horizontal: 3),
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.end,
+                                    children: [
+                                      Expanded(
+                                        child: Align(
+                                          alignment: Alignment.bottomCenter,
+                                          child: Container(
+                                            height: 38 * ratio,
+                                            decoration: BoxDecoration(
+                                              color: hasSpent
+                                                  ? (spent == maxDaySpend && maxDaySpend > 0
+                                                      ? AppTheme.expenseCoral
+                                                      : AppTheme.primaryTeal.withValues(alpha: 0.8))
+                                                  : AppTheme.surfaceBorder.withValues(alpha: 0.5),
+                                              borderRadius: BorderRadius.circular(4),
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        dayLabels[i],
+                                        style: TextStyle(
+                                          color: hasSpent ? AppTheme.textSecondary : AppTheme.textMuted,
+                                          fontSize: 10,
+                                          fontWeight: hasSpent ? FontWeight.w600 : FontWeight.w400,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            }),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  // Transactions list under this week
+                  if (weekItems.isNotEmpty) ...[
+                    const SizedBox(height: 14),
+                    ...weekItems.map((tx) => _buildTransactionCard(tx)),
+                  ],
+                ],
+              ),
+            );
+          }),
+      ],
+    );
+  }
+
+  // --- 3. MONTHLY EXPENSES SECTION (with Category Distribution Pills) ---
+  Widget _buildMonthlyExpensesSection(List<TransactionItem> filteredExpenses) {
+    final monthlyGroups = widget.state.monthlyExpenseHistory;
+    final totalSpentThisMonth = widget.state.totalExpensesThisMonth;
+    final budgetLeft = widget.state.spendingBalanceLeft;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Monthly KPI Row
+        Row(
+          children: [
+            Expanded(
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                decoration: BoxDecoration(
+                  color: AppTheme.surface,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AppTheme.surfaceBorder),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      "THIS MONTH SPENT",
+                      style: TextStyle(color: AppTheme.textSecondary, fontSize: 10, fontWeight: FontWeight.w600),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      AppTheme.formatCurrency(totalSpentThisMonth),
+                      style: TextStyle(color: AppTheme.textPrimary, fontSize: 16, fontWeight: FontWeight.w700),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                decoration: BoxDecoration(
+                  color: AppTheme.surface,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AppTheme.surfaceBorder),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      "SPENDING POOL LEFT",
+                      style: TextStyle(color: AppTheme.textSecondary, fontSize: 10, fontWeight: FontWeight.w600),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      AppTheme.formatCurrency(budgetLeft),
+                      style: const TextStyle(color: AppTheme.primaryTeal, fontSize: 16, fontWeight: FontWeight.w700),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 18),
+
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              "Monthly History (${monthlyGroups.length} Months)",
+              style: TextStyle(color: AppTheme.textPrimary, fontSize: 15, fontWeight: FontWeight.w600),
+            ),
+            Text(
+              "Category Breakdown",
+              style: TextStyle(color: AppTheme.textMuted, fontSize: 12),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+
+        if (monthlyGroups.isEmpty)
+          _buildEmptyState("No monthly expenses logged yet.")
+        else
+          ...monthlyGroups.map((month) {
+            final now = DateTime.now();
+            final isCurrentMonth = month.year == now.year && month.month == now.month;
+
+            final monthItems = filteredExpenses.where((t) {
+              return t.date.year == month.year && t.date.month == month.month;
+            }).toList();
+
+            return Container(
+              margin: const EdgeInsets.only(bottom: 16),
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: AppTheme.surface,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: isCurrentMonth
+                      ? AppTheme.primaryTeal.withValues(alpha: 0.4)
+                      : AppTheme.surfaceBorder,
+                ),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Month Header
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.calendar_month_rounded,
+                            size: 18,
+                            color: isCurrentMonth ? AppTheme.primaryTeal : AppTheme.textSecondary,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            month.label,
+                            style: TextStyle(
+                              color: isCurrentMonth ? AppTheme.primaryTeal : AppTheme.textPrimary,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          if (isCurrentMonth) ...[
+                            const SizedBox(width: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: AppTheme.primaryTeal.withValues(alpha: 0.15),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: const Text(
+                                "ACTIVE",
+                                style: TextStyle(color: AppTheme.primaryTeal, fontSize: 9, fontWeight: FontWeight.w700),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                      Text(
+                        AppTheme.formatCurrency(month.totalExpense),
+                        style: const TextStyle(
+                          color: AppTheme.expenseCoral,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+
+                  // Category Breakdown Chips
+                  if (month.categoryBreakdown.isNotEmpty) ...[
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 6,
+                      children: month.categoryBreakdown.entries.map((entry) {
+                        final cat = widget.state.getCategoryById(entry.key);
+                        return Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: cat.color.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: cat.color.withValues(alpha: 0.3)),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(cat.icon, size: 12, color: cat.color),
+                              const SizedBox(width: 5),
+                              Text(
+                                "${cat.name}: ${AppTheme.formatCurrency(entry.value)}",
+                                style: TextStyle(
+                                  color: AppTheme.textPrimary,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                    const SizedBox(height: 14),
+                  ],
+
+                  // Transactions list
+                  if (monthItems.isNotEmpty)
+                    ...monthItems.map((tx) => _buildTransactionCard(tx))
+                  else
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      child: Text(
+                        "No transactions matching current filter for this month.",
+                        style: TextStyle(color: AppTheme.textMuted, fontSize: 12, fontStyle: FontStyle.italic),
+                      ),
+                    ),
+                ],
+              ),
+            );
+          }),
       ],
     );
   }
