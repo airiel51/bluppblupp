@@ -276,30 +276,48 @@ class _SignInScreenState extends State<SignInScreen> {
                   children: [
                     const Spacer(flex: 3),
 
-                    // App Logo (White Fish & Wordmark) with floating breathing animation
+                    // App Logo & Wordmark with glowing glass badge
                     Center(
-                      child: Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Colors.black.withValues(alpha: 0.20),
-                          border: Border.all(
-                            color: Colors.white.withValues(alpha: 0.15),
-                            width: 1.0,
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.35),
-                              blurRadius: 28,
-                              offset: const Offset(0, 10),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            width: 96,
+                            height: 96,
+                            padding: const EdgeInsets.all(18),
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: Colors.white.withValues(alpha: 0.10),
+                              border: Border.all(
+                                color: Colors.white.withValues(alpha: 0.25),
+                                width: 1.5,
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: const Color(0xFF38BDF8).withValues(alpha: 0.30),
+                                  blurRadius: 36,
+                                  spreadRadius: 2,
+                                  offset: const Offset(0, 8),
+                                ),
+                              ],
                             ),
-                          ],
-                        ),
-                        child: const BluppLogo(
-                          size: 78,
-                          iconOnly: true,
-                          isDark: true,
-                        ),
+                            child: const BluppLogo(
+                              size: 60,
+                              iconOnly: true,
+                              isDark: true,
+                            ),
+                          ),
+                          const SizedBox(height: 14),
+                          const Text(
+                            'blupp',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 28,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: 2.0,
+                            ),
+                          ),
+                        ],
                       )
                           .animate()
                           .scale(begin: const Offset(0.92, 0.92), end: const Offset(1.0, 1.0), duration: 700.ms, curve: Curves.easeOutBack)
@@ -321,14 +339,15 @@ class _SignInScreenState extends State<SignInScreen> {
                     ).animate().fadeIn(duration: 400.ms, delay: 100.ms).slideY(begin: 0.08, end: 0),
                     const SizedBox(height: 12),
 
-                    // Subtitle matching reference
+                    // Catchy Tagline
                     Text(
-                      'Enter personal details to access your account & manage your intelligent finances.',
+                      'Master your money, silence impulse FOMO, and watch your net worth grow with AI clarity.',
                       style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.82),
-                        fontSize: 14,
+                        color: Colors.white.withValues(alpha: 0.88),
+                        fontSize: 15,
                         fontWeight: FontWeight.w400,
                         height: 1.45,
+                        letterSpacing: -0.2,
                       ),
                     ).animate().fadeIn(duration: 400.ms, delay: 200.ms).slideY(begin: 0.08, end: 0),
 
@@ -522,13 +541,19 @@ class _SignInScreenState extends State<SignInScreen> {
           ),
         ),
 
-        // Bottom White Card
-        Positioned.fill(
-          top: MediaQuery.of(context).size.height * 0.22,
-          child: Center(
+        // Bottom White Card - Anchored flush to screen bottom (zero gap)
+        Positioned(
+          top: MediaQuery.of(context).size.height * 0.18,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          child: Align(
+            alignment: Alignment.bottomCenter,
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 460),
               child: Container(
+                width: double.infinity,
+                height: double.infinity,
                 decoration: const BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
@@ -543,8 +568,13 @@ class _SignInScreenState extends State<SignInScreen> {
                 child: ClipRRect(
                   borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
                   child: SingleChildScrollView(
-                    physics: const BouncingScrollPhysics(),
-                    padding: const EdgeInsets.fromLTRB(28, 24, 28, 24),
+                    physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
+                    padding: EdgeInsets.fromLTRB(
+                      28,
+                      24,
+                      28,
+                      28 + MediaQuery.paddingOf(context).bottom,
+                    ),
                     child: Form(
                       key: _formKey,
                       child: Column(
