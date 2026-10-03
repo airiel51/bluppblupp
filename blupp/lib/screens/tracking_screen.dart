@@ -5,6 +5,9 @@ import '../models/currency_model.dart';
 import '../theme/app_theme.dart';
 import '../widgets/blupp_states.dart';
 import '../widgets/blupp_forms.dart';
+import '../widgets/ai_safe_to_spend_card.dart';
+import '../widgets/ai_quick_log_sheet.dart';
+import '../widgets/ai_receipt_scanner_sheet.dart';
 
 class TrackingScreen extends StatefulWidget {
   final FinanceState state;
@@ -49,6 +52,30 @@ class _TrackingScreenState extends State<TrackingScreen>
           ),
         ),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.bolt_rounded, color: Color(0xFF10B981)),
+            tooltip: "AI Quick-Log",
+            onPressed: () {
+              showModalBottomSheet(
+                context: context,
+                isScrollControlled: true,
+                backgroundColor: Colors.transparent,
+                builder: (_) => AiQuickLogSheet(state: widget.state),
+              );
+            },
+          ),
+          IconButton(
+            icon: const Icon(Icons.document_scanner_rounded, color: Color(0xFF00E5FF)),
+            tooltip: "Scan Receipt/QR",
+            onPressed: () {
+              showModalBottomSheet(
+                context: context,
+                isScrollControlled: true,
+                backgroundColor: Colors.transparent,
+                builder: (_) => AiReceiptScannerSheet(state: widget.state),
+              );
+            },
+          ),
           IconButton(
             icon: Icon(Icons.tune_rounded, color: AppTheme.textSecondary),
             tooltip: "Budget Settings",
@@ -174,6 +201,13 @@ class _TrackingScreenState extends State<TrackingScreen>
             ),
           ),
         ),
+        const SizedBox(height: 16),
+
+        // AI Safe-to-Spend Radar Card
+        AiSafeToSpendCard(state: widget.state)
+            .animate()
+            .fadeIn(duration: 250.ms)
+            .slideY(begin: 0.04, end: 0),
         const SizedBox(height: 16),
 
         // Budget & Spend Summary Card

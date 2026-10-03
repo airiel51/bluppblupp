@@ -6,6 +6,9 @@ import '../widgets/blupp_states.dart';
 import '../widgets/blupp_forms.dart';
 import '../widgets/blupp_logo.dart';
 import '../widgets/blupp_avatar.dart';
+import '../widgets/ai_safe_to_spend_card.dart';
+import '../widgets/ai_quick_log_sheet.dart';
+import '../widgets/ai_receipt_scanner_sheet.dart';
 
 class HomeScreen extends StatelessWidget {
   final FinanceState state;
@@ -40,12 +43,26 @@ class HomeScreen extends StatelessWidget {
                     .animate()
                     .fadeIn(duration: 300.ms)
                     .slideY(begin: 0.08, end: 0, duration: 300.ms, curve: Curves.easeOutCubic),
-                const SizedBox(height: 20),
+                const SizedBox(height: 16),
+
+                // 2. AI Safe-to-Spend Radar Card
+                AiSafeToSpendCard(state: state)
+                    .animate()
+                    .fadeIn(duration: 300.ms, delay: 40.ms)
+                    .slideY(begin: 0.08, end: 0, duration: 300.ms, curve: Curves.easeOutCubic),
+                const SizedBox(height: 14),
+
+                // 3. AI Feature Launch Dock (NLP Quick-Log & Vision Receipt/QR Scanner)
+                _buildAiFeatureDock(context)
+                    .animate()
+                    .fadeIn(duration: 300.ms, delay: 60.ms)
+                    .slideY(begin: 0.08, end: 0, duration: 300.ms, curve: Curves.easeOutCubic),
+                const SizedBox(height: 16),
 
                 // Quick Action Bar
                 _buildQuickActions(context)
                     .animate()
-                    .fadeIn(duration: 300.ms, delay: 60.ms)
+                    .fadeIn(duration: 300.ms, delay: 80.ms)
                     .slideY(begin: 0.08, end: 0, duration: 300.ms, curve: Curves.easeOutCubic),
                 const SizedBox(height: 24),
 
@@ -356,6 +373,98 @@ class HomeScreen extends StatelessWidget {
             ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
+          ),
+        ],
+      ),
+    );
+  }
+
+  // AI Feature Launch Dock
+  Widget _buildAiFeatureDock(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: AppTheme.surfaceLight,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppTheme.surfaceBorder),
+      ),
+      child: Row(
+        children: [
+          // Natural Language Quick-Logger
+          Expanded(
+            child: InkWell(
+              onTap: () {
+                showModalBottomSheet(
+                  context: context,
+                  isScrollControlled: true,
+                  backgroundColor: Colors.transparent,
+                  builder: (_) => AiQuickLogSheet(state: state),
+                );
+              },
+              borderRadius: BorderRadius.circular(12),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 11),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF10B981).withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: const Color(0xFF10B981).withValues(alpha: 0.3)),
+                ),
+                child: const Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.bolt_rounded, size: 16, color: Color(0xFF10B981)),
+                    SizedBox(width: 6),
+                    Text(
+                      "AI Quick-Log",
+                      style: TextStyle(
+                        color: Color(0xFF10B981),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+
+          // Vision AI Receipt Scanner
+          Expanded(
+            child: InkWell(
+              onTap: () {
+                showModalBottomSheet(
+                  context: context,
+                  isScrollControlled: true,
+                  backgroundColor: Colors.transparent,
+                  builder: (_) => AiReceiptScannerSheet(state: state),
+                );
+              },
+              borderRadius: BorderRadius.circular(12),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 11),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF00E5FF).withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: const Color(0xFF00E5FF).withValues(alpha: 0.3)),
+                ),
+                child: const Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.document_scanner_rounded, size: 15, color: Color(0xFF00E5FF)),
+                    SizedBox(width: 6),
+                    Text(
+                      "Scan Receipt/QR",
+                      style: TextStyle(
+                        color: Color(0xFF00E5FF),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
           ),
         ],
       ),

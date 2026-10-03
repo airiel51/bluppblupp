@@ -258,6 +258,38 @@ class AiFinancialDiagnosis {
   });
 }
 
+enum BurnRadarZone { safe, caution, over }
+
+class AiSafeToSpendRadar {
+  final double safeDailyAllowance;
+  final double spentToday;
+  final double safeBufferRemainingToday;
+  final int daysRemainingInMonth;
+  final double upcomingCommittedSpending;
+  final double uncommittedLiquidPool;
+  final BurnRadarZone zone;
+  final double projectedMonthEndSurplus;
+  final String statusHeadline;
+  final String statusAdvice;
+  final Color zoneColor;
+  final IconData zoneIcon;
+
+  const AiSafeToSpendRadar({
+    required this.safeDailyAllowance,
+    required this.spentToday,
+    required this.safeBufferRemainingToday,
+    required this.daysRemainingInMonth,
+    required this.upcomingCommittedSpending,
+    required this.uncommittedLiquidPool,
+    required this.zone,
+    required this.projectedMonthEndSurplus,
+    required this.statusHeadline,
+    required this.statusAdvice,
+    required this.zoneColor,
+    required this.zoneIcon,
+  });
+}
+
 class FinanceState extends ChangeNotifier {
   // Authentication & Profile State
   bool _isAuthenticated = false;
@@ -508,6 +540,81 @@ class FinanceState extends ChangeNotifier {
     await Future.delayed(const Duration(milliseconds: 1200));
     _isAiAnalyzingPersona = false;
     notifyListeners();
+  }
+
+  // --- AI SAFE-TO-SPEND RADAR ENGINE ---
+  int get daysRemainingInMonth {
+    final now = DateTime.now();
+    final lastDay = DateTime(now.year, now.month + 1, 0).day;
+    return (lastDay - now.day + 1).clamp(1, 31);
+  }
+
+  double get upcomingCommittedExpensesThisMonth {
+    final now = DateTime.now();
+    final startOfTomorrow = DateTime(now.year, now.month, now.day + 1);
+    final endOfMonth = DateTime(now.year, now.month + 1, 0, 23, 59, 59);
+
+    return _plannedExpenses
+        .where((p) =>
+            !p.isPaid &&
+            !p.date.isBefore(startOfTomorrow) &&
+            !p.date.isAfter(endOfMonth))
+        .fold(0.0, (sum, p) => sum + p.amount);
+  }
+
+  AiSafeToSpendRadar get aiSafeToSpendRadar {
+    final days = daysRemainingInMonth;
+    final committed = upcomingCommittedExpensesThisMonth;
+    final liquidPool = (spendingBalanceLeft - committed).clamp(0.0, double.infinity);
+    final safeDaily = days > 0 ? (liquidPool / days) : 0.0;
+    final spentToday = todayExpenseTotal;
+    final bufferRemaining = safeDaily - spentToday;
+
+    BurnRadarZone zone;
+    Color zoneColor;
+    IconData zoneIcon;
+    String statusHeadline;
+    String statusAdvice;
+
+    // Projected Month-End: based on current spending rate
+    final daysPassed = DateTime.now().day;
+    final avgDailyBurn = daysPassed > 0 ? (totalExpensesThisMonth / daysPassed) : safeDaily;
+    final projectedMonthEndSurplus = (monthlySpendingBudget - (avgDailyBurn * 30)).clamp(-999999.0, double.infinity);
+
+    if (bufferRemaining > safeDaily * 0.25 || (safeDaily == 0 && spentToday == 0)) {
+      zone = BurnRadarZone.safe;
+      zoneColor = const Color(0xFF10B981); // Emerald
+      zoneIcon = Icons.shield_rounded;
+      statusHeadline = "Smooth Sailing";
+      statusAdvice = "You have ${AppTheme.formatCurrency(bufferRemaining > 0 ? bufferRemaining : 0.0)} safe buffer left for today. Keep this pace to finish with a liquid surplus.";
+    } else if (bufferRemaining >= 0) {
+      zone = BurnRadarZone.caution;
+      zoneColor = const Color(0xFFF59E0B); // Amber
+      zoneIcon = Icons.speed_rounded;
+      statusHeadline = "Approaching Daily Ceiling";
+      statusAdvice = "Only ${AppTheme.formatCurrency(bufferRemaining)} buffer remaining today. Delay non-essential purchases until tomorrow.";
+    } else {
+      zone = BurnRadarZone.over;
+      zoneColor = const Color(0xFFEF4444); // Crimson Red
+      zoneIcon = Icons.local_fire_department_rounded;
+      statusHeadline = "Burn Overdrive (+${AppTheme.formatCurrency(bufferRemaining.abs())})";
+      statusAdvice = "Today's spending surpassed radar by ${AppTheme.formatCurrency(bufferRemaining.abs())}. AI recommends a zero-spend day tomorrow to rebalance your runway.";
+    }
+
+    return AiSafeToSpendRadar(
+      safeDailyAllowance: safeDaily,
+      spentToday: spentToday,
+      safeBufferRemainingToday: bufferRemaining,
+      daysRemainingInMonth: days,
+      upcomingCommittedSpending: committed,
+      uncommittedLiquidPool: liquidPool,
+      zone: zone,
+      projectedMonthEndSurplus: projectedMonthEndSurplus,
+      statusHeadline: statusHeadline,
+      statusAdvice: statusAdvice,
+      zoneColor: zoneColor,
+      zoneIcon: zoneIcon,
+    );
   }
 
   // Avatar Studio Customization

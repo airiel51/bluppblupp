@@ -8,6 +8,7 @@ import '../models/currency_model.dart';
 import '../theme/app_theme.dart';
 import '../widgets/blupp_states.dart';
 import '../widgets/blupp_forms.dart';
+import '../widgets/ai_devils_advocate_sheet.dart';
 
 class FomoScreen extends StatefulWidget {
   final FinanceState state;
@@ -303,6 +304,10 @@ class _FomoScreenState extends State<FomoScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _buildIntroHero(),
+            const SizedBox(height: 16),
+
+            // Conversational AI Devil's Advocate Live Chat Banner
+            _buildDevilsAdvocateHeroBanner(),
             const SizedBox(height: 20),
 
             _buildInputCard(),
@@ -1086,205 +1091,83 @@ class _FomoScreenState extends State<FomoScreen> {
     );
   }
 
+  Widget _buildDevilsAdvocateHeroBanner() {
+    return InkWell(
+      onTap: () => _showAiDevilsAdvocateSheet(context),
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: const Color(0xFF8B5CF6).withValues(alpha: 0.12),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: const Color(0xFF8B5CF6).withValues(alpha: 0.35)),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: const Color(0xFF8B5CF6).withValues(alpha: 0.2),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.psychology_rounded, color: Color(0xFFA78BFA), size: 24),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Text(
+                        "Talk Me Out of It",
+                        style: TextStyle(
+                          color: AppTheme.textPrimary,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF8B5CF6).withValues(alpha: 0.25),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: const Text(
+                          "LIVE AI CHAT",
+                          style: TextStyle(color: Color(0xFFA78BFA), fontSize: 9, fontWeight: FontWeight.w700),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    "Chat live with your AI Devil's Advocate to crush retail impulses.",
+                    style: TextStyle(color: AppTheme.textSecondary, fontSize: 12),
+                  ),
+                ],
+              ),
+            ),
+            const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: Color(0xFFA78BFA)),
+          ],
+        ),
+      ),
+    );
+  }
+
   void _showAiDevilsAdvocateSheet(BuildContext context) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: AppTheme.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(26)),
-      ),
+      backgroundColor: Colors.transparent,
       builder: (ctx) {
-        return Padding(
-          padding: EdgeInsets.only(
-            left: 20,
-            right: 20,
-            top: 16,
-            bottom: MediaQuery.of(ctx).viewInsets.bottom + 24,
-          ),
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Center(
-                  child: Container(
-                    width: 40,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: AppTheme.surfaceBorder,
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 18),
-
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF00E5FF).withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: const Icon(Icons.psychology_rounded, color: Color(0xFF00E5FF), size: 22),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            "Blupp AI Devil's Advocate",
-                            style: TextStyle(
-                              color: AppTheme.textPrimary,
-                              fontSize: 18,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                          Text(
-                            "Rational, unfiltered financial cross-examination",
-                            style: TextStyle(color: AppTheme.textSecondary, fontSize: 12),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 18),
-
-                // AI Dialogue Bubbles
-                _buildAdvocateBubble(
-                  "Hey ${widget.state.userName}, let's look at '$_evaluatedItem' without the retail dopamine fog.",
-                  Icons.auto_awesome_rounded,
-                  const Color(0xFF00E5FF),
-                ),
-                const SizedBox(height: 10),
-                _buildAdvocateBubble(
-                  "You selected the urge trigger: '$_selectedUrgency'. Marketing algorithms spent millions of dollars testing colors, ads, and discounts specifically to provoke this impulse.",
-                  Icons.insights_rounded,
-                  AppTheme.expenseCoral,
-                ),
-                const SizedBox(height: 10),
-                _buildAdvocateBubble(
-                  "At your current income, paying ${AppTheme.formatCurrency(_evaluatedCost)} demands ${_workHoursNeeded.toStringAsFixed(1)} hours of grueling physical or mental labor. Are you truly prepared to hand over ${(_workHoursNeeded / 8).toStringAsFixed(1)} full work days of your finite life for this item?",
-                  Icons.hourglass_bottom_rounded,
-                  const Color(0xFFF59E0B),
-                ),
-                const SizedBox(height: 10),
-                _buildAdvocateBubble(
-                  "If you put ${AppTheme.formatCurrency(_evaluatedCost)} into your investment compounding pot instead, it compounds to ${AppTheme.formatCurrency(_tenYearCompoundCost)} in 10 years without any effort on your part.",
-                  Icons.trending_up_rounded,
-                  AppTheme.incomeMint,
-                ),
-                const SizedBox(height: 20),
-
-                // Decision buttons
-                Row(
-                  children: [
-                    Expanded(
-                      child: ElevatedButton.icon(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppTheme.primaryTeal,
-                          foregroundColor: Colors.black,
-                          padding: const EdgeInsets.symmetric(vertical: 13),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        ),
-                        icon: const Icon(Icons.savings_rounded, size: 18),
-                        label: const Text(
-                          "I'll Resist & Save",
-                          style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
-                        ),
-                        onPressed: () {
-                          Navigator.pop(ctx);
-                          widget.state.recordFomoAvoidance(
-                            _evaluatedItem,
-                            _evaluatedCost,
-                            _selectedCategory,
-                            _verdict,
-                            _whyNotNeed,
-                          );
-                          setState(() {
-                            _hasResult = false;
-                            _itemController.clear();
-                            _costController.clear();
-                          });
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text("🎉 Victorious! You defeated FOMO and shielded ${AppTheme.formatCurrency(_evaluatedCost)}!"),
-                              backgroundColor: AppTheme.primaryTeal,
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: AppTheme.fomoPurple,
-                          side: const BorderSide(color: AppTheme.fomoPurple),
-                          padding: const EdgeInsets.symmetric(vertical: 13),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        ),
-                        icon: const Icon(Icons.timer_outlined, size: 18),
-                        label: const Text(
-                          "30-Day Cooldown",
-                          style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
-                        ),
-                        onPressed: () {
-                          Navigator.pop(ctx);
-                          widget.state.addToWishlist(
-                            _evaluatedItem,
-                            _evaluatedCost,
-                            _selectedCategory,
-                            _verdict,
-                            _whyNotNeed,
-                          );
-                          setState(() {
-                            _hasResult = false;
-                            _itemController.clear();
-                            _costController.clear();
-                          });
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text("Added to 30-Day Cooldown Wishlist. See if you still need it in a month!"),
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
+        return AiDevilsAdvocateSheet(
+          state: widget.state,
+          initialItem: _evaluatedItem.isNotEmpty ? _evaluatedItem : null,
+          initialPrice: _evaluatedCost > 0 ? _evaluatedCost : null,
         );
       },
-    );
-  }
-
-  Widget _buildAdvocateBubble(String text, IconData icon, Color color) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: AppTheme.surfaceLight,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withValues(alpha: 0.3)),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(icon, size: 18, color: color),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              text,
-              style: TextStyle(color: AppTheme.textPrimary.withValues(alpha: 0.95), fontSize: 12, height: 1.45),
-            ),
-          ),
-        ],
-      ),
     );
   }
 
