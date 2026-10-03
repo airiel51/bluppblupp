@@ -208,12 +208,16 @@ class _AiDevilsAdvocateSheetState extends State<AiDevilsAdvocateSheet> {
                     children: [
                       Row(
                         children: [
-                          Text(
-                            "AI Devil's Advocate",
-                            style: TextStyle(
-                              color: AppTheme.textPrimary,
-                              fontSize: 16,
-                              fontWeight: FontWeight.w700,
+                          Flexible(
+                            child: Text(
+                              "AI Devil's Advocate",
+                              style: TextStyle(
+                                color: AppTheme.textPrimary,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w700,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
                           const SizedBox(width: 8),

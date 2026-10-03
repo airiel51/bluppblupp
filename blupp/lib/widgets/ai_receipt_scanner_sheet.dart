@@ -44,13 +44,18 @@ class _AiReceiptScannerSheetState extends State<AiReceiptScannerSheet> {
   }
 
   Future<void> _startScan(ImageSource source) async {
-    setState(() {
-      _isScanning = true;
-    });
-
+    // Call scanReceipt directly within the user gesture without prior setState
+    // to prevent Safari on iOS from blocking the file/camera dialog
     final res = await AiReceiptScannerService.scanReceipt(
       source: source,
       state: widget.state,
+      onImagePicked: () {
+        if (mounted) {
+          setState(() {
+            _isScanning = true;
+          });
+        }
+      },
     );
 
     if (res != null) {
@@ -140,12 +145,16 @@ class _AiReceiptScannerSheetState extends State<AiReceiptScannerSheet> {
                     children: [
                       Row(
                         children: [
-                          Text(
-                            "AI Receipt & QR Scanner",
-                            style: TextStyle(
-                              color: AppTheme.textPrimary,
-                              fontSize: 16,
-                              fontWeight: FontWeight.w700,
+                          Flexible(
+                            child: Text(
+                              "AI Receipt & QR Scanner",
+                              style: TextStyle(
+                                color: AppTheme.textPrimary,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w700,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
                           const SizedBox(width: 8),

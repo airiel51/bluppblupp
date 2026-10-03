@@ -120,12 +120,16 @@ class _AiQuickLogSheetState extends State<AiQuickLogSheet> {
                     children: [
                       Row(
                         children: [
-                          Text(
-                            "AI Natural Language Logger",
-                            style: TextStyle(
-                              color: AppTheme.textPrimary,
-                              fontSize: 16,
-                              fontWeight: FontWeight.w700,
+                          Flexible(
+                            child: Text(
+                              "AI Natural Language Logger",
+                              style: TextStyle(
+                                color: AppTheme.textPrimary,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w700,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
                           const SizedBox(width: 8),

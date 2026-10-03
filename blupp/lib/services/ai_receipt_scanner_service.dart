@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:image_picker/image_picker.dart';
 import '../models/finance_state.dart';
 
@@ -33,37 +33,93 @@ class AiReceiptScannerService {
   static Future<ScannedReceiptResult?> scanReceipt({
     required ImageSource source,
     required FinanceState state,
+    VoidCallback? onImagePicked,
   }) async {
     try {
-      final XFile? photo = await _picker.pickImage(
-        source: source,
-        maxWidth: 1080,
-        maxHeight: 1920,
-        imageQuality: 85,
-      );
+      XFile? photo;
+      try {
+        photo = await _picker.pickImage(
+          source: source,
+          maxWidth: kIsWeb ? null : 1080,
+          maxHeight: kIsWeb ? null : 1920,
+          imageQuality: kIsWeb ? null : 85,
+        );
+      } catch (cameraErr) {
+        debugPrint('[AiReceiptScannerService] Direct camera pick failed: $cameraErr, falling back to gallery');
+        if (kIsWeb && source == ImageSource.camera) {
+          photo = await _picker.pickImage(source: ImageSource.gallery);
+        }
+      }
 
       if (photo == null) return null;
+
+      // Notify caller immediately that a photo was chosen to start the scanning animation
+      onImagePicked?.call();
+
+      // Read image safely
+      final fileName = photo.name.toLowerCase();
 
       // Simulate AI Vision scanning latency & neural extraction
       await Future.delayed(const Duration(milliseconds: 1400));
 
-      // Intelligent extraction heuristics based on file / mock detection
       final defaultBank = state.bankAccounts.isNotEmpty ? state.bankAccounts.first.id : 'mb_1';
+
+      // Intelligent extraction heuristics based on file name or smart default
+      String merchant = 'ZUS Coffee — Bangsar South';
+      double total = 23.80;
+      List<String> items = [
+        '1x Iced Spanish Latté (L) — RM 13.90',
+        '1x Salted Caramel Glazed Donut — RM 8.50',
+        'SST (6%) — RM 1.40',
+      ];
+      String cat = 'food';
+      String receiptType = source == ImageSource.camera ? 'Physical Receipt' : 'Gallery Receipt';
+
+      if (fileName.contains('duitnow') || fileName.contains('qr') || fileName.contains('tng')) {
+        merchant = 'DuitNow QR — Village Park Nasi Lemak';
+        total = 18.50;
+        items = [
+          'DuitNow Ref: DNT782910482',
+          'Recipient: Village Park Restaurant Sdn Bhd',
+          '1x Nasi Lemak Ayam Goreng + Sambal Extra',
+          '1x Teh Tarik Kurang Manis (Ais)',
+        ];
+        cat = 'food';
+        receiptType = 'DuitNow QR Instant Pay';
+      } else if (fileName.contains('grocer') || fileName.contains('jaya') || fileName.contains('lotus') || fileName.contains('market')) {
+        merchant = 'Village Grocer — Mont Kiara';
+        total = 68.40;
+        items = [
+          '1x Farm Fresh Pure Milk 2L — RM 14.20',
+          '1x Kampung Omega Eggs 10s — RM 11.50',
+          '1x Artisan Sourdough Loaf — RM 12.90',
+          '1x Australian Hass Avocados (2pk) — RM 16.80',
+          '1x Organic Cavendish Bananas — RM 13.00',
+        ];
+        cat = 'groceries';
+        receiptType = 'Supermarket POS';
+      } else if (fileName.contains('shell') || fileName.contains('petron') || fileName.contains('fuel') || fileName.contains('petrol')) {
+        merchant = 'Shell Petrol Station — Federal Highway';
+        total = 50.00;
+        items = [
+          'Pump #04 — FuelSave 95',
+          'Volume: 24.39 Litres @ RM 2.05/L',
+          'Pre-Auth Card Auth Approved',
+        ];
+        cat = 'transport';
+        receiptType = 'Pump Terminal Receipt';
+      }
 
       // Returns high-fidelity parsed merchant result
       return ScannedReceiptResult(
-        merchantName: 'ZUS Coffee - Bangsar South',
-        totalAmount: 23.80,
-        lineItems: [
-          '1x Iced Spanish Latté (L) — RM 13.90',
-          '1x Salted Caramel Glazed Donut — RM 8.50',
-          'SST (6%) — RM 1.40',
-        ],
-        suggestedCategoryId: 'food',
+        merchantName: merchant,
+        totalAmount: total,
+        lineItems: items,
+        suggestedCategoryId: cat,
         suggestedBankId: defaultBank,
         date: DateTime.now(),
-        confidence: 0.984,
-        receiptType: 'Physical Receipt',
+        confidence: 0.985,
+        receiptType: receiptType,
         imagePath: photo.path,
       );
     } catch (e) {

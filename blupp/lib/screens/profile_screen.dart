@@ -662,9 +662,19 @@ class ProfileScreen extends StatelessWidget {
                           child: InkWell(
                             onTap: () async {
                               final ok = await state.pickProfilePictureFromGallery();
-                              setSheetState(() {});
-                              if (ok && ctx.mounted) {
-                                Navigator.pop(ctx);
+                              if (ctx.mounted) {
+                                setSheetState(() {});
+                                if (ok) {
+                                  Navigator.pop(ctx);
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: const Text("Profile picture updated successfully!"),
+                                      backgroundColor: AppTheme.primaryTeal,
+                                      behavior: SnackBarBehavior.floating,
+                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                    ),
+                                  );
+                                }
                               }
                             },
                             borderRadius: BorderRadius.circular(12),
@@ -694,9 +704,19 @@ class ProfileScreen extends StatelessWidget {
                           child: InkWell(
                             onTap: () async {
                               final ok = await state.pickProfilePictureFromCamera();
-                              setSheetState(() {});
-                              if (ok && ctx.mounted) {
-                                Navigator.pop(ctx);
+                              if (ctx.mounted) {
+                                setSheetState(() {});
+                                if (ok) {
+                                  Navigator.pop(ctx);
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: const Text("Profile photo updated successfully!"),
+                                      backgroundColor: AppTheme.primaryTeal,
+                                      behavior: SnackBarBehavior.floating,
+                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                    ),
+                                  );
+                                }
                               }
                             },
                             borderRadius: BorderRadius.circular(12),

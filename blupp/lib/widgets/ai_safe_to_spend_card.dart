@@ -47,12 +47,16 @@ class AiSafeToSpendCard extends StatelessWidget {
                         children: [
                           Row(
                             children: [
-                              Text(
-                                "AI Safe-to-Spend Diagnostics",
-                                style: TextStyle(
-                                  color: AppTheme.textPrimary,
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w700,
+                              Flexible(
+                                child: Text(
+                                  "AI Safe-to-Spend Diagnostics",
+                                  style: TextStyle(
+                                    color: AppTheme.textPrimary,
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
                                 ),
                               ),
                               const SizedBox(width: 8),
@@ -296,39 +300,46 @@ class AiSafeToSpendCard extends StatelessWidget {
           children: [
             // Top Row
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Row(
-                  children: [
-                    Container(
-                      width: 8,
-                      height: 8,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: radar.zoneColor,
-                        boxShadow: [
-                          BoxShadow(
-                            color: radar.zoneColor.withValues(alpha: 0.6),
-                            blurRadius: 6,
-                            spreadRadius: 1,
+                Expanded(
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 8,
+                        height: 8,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: radar.zoneColor,
+                          boxShadow: [
+                            BoxShadow(
+                              color: radar.zoneColor.withValues(alpha: 0.6),
+                              blurRadius: 6,
+                              spreadRadius: 1,
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Flexible(
+                        child: Text(
+                          "AI SAFE-TO-SPEND RADAR",
+                          style: TextStyle(
+                            color: AppTheme.textSecondary,
+                            fontSize: 10.5,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 0.4,
                           ),
-                        ],
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      "AI SAFE-TO-SPEND RADAR",
-                      style: TextStyle(
-                        color: AppTheme.textSecondary,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 0.5,
-                      ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
+                const SizedBox(width: 8),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3.5),
                   decoration: BoxDecoration(
                     color: radar.zoneColor.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(8),
@@ -341,7 +352,12 @@ class AiSafeToSpendCard extends StatelessWidget {
                       const SizedBox(width: 4),
                       Text(
                         radar.statusHeadline,
-                        style: TextStyle(color: radar.zoneColor, fontSize: 10, fontWeight: FontWeight.w700),
+                        style: TextStyle(
+                          color: radar.zoneColor,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700,
+                        ),
+                        maxLines: 1,
                       ),
                     ],
                   ),
@@ -396,10 +412,15 @@ class AiSafeToSpendCard extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  "Spent today: ${AppTheme.formatCurrency(radar.spentToday)}",
-                  style: TextStyle(color: AppTheme.textMuted, fontSize: 11),
+                Expanded(
+                  child: Text(
+                    "Spent today: ${AppTheme.formatCurrency(radar.spentToday)}",
+                    style: TextStyle(color: AppTheme.textMuted, fontSize: 11),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
+                const SizedBox(width: 8),
                 Row(
                   children: [
                     Text(

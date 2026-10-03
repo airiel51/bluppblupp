@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import '../services/supabase_service.dart';
@@ -360,15 +361,17 @@ class FinanceState extends ChangeNotifier {
       final picker = ImagePicker();
       final XFile? image = await picker.pickImage(
         source: ImageSource.gallery,
-        maxWidth: 512,
-        maxHeight: 512,
-        imageQuality: 80,
+        maxWidth: kIsWeb ? null : 512,
+        maxHeight: kIsWeb ? null : 512,
+        imageQuality: kIsWeb ? null : 80,
       );
       if (image != null) {
         final bytes = await image.readAsBytes();
-        final base64Str = base64Encode(bytes);
-        setProfileImage(base64Str);
-        return true;
+        if (bytes.isNotEmpty) {
+          final base64Str = base64Encode(bytes);
+          setProfileImage(base64Str);
+          return true;
+        }
       }
     } catch (e) {
       debugPrint('[FinanceState] Error picking profile image: $e');
@@ -379,17 +382,28 @@ class FinanceState extends ChangeNotifier {
   Future<bool> pickProfilePictureFromCamera() async {
     try {
       final picker = ImagePicker();
-      final XFile? image = await picker.pickImage(
-        source: ImageSource.camera,
-        maxWidth: 512,
-        maxHeight: 512,
-        imageQuality: 80,
-      );
+      XFile? image;
+      try {
+        image = await picker.pickImage(
+          source: ImageSource.camera,
+          maxWidth: kIsWeb ? null : 512,
+          maxHeight: kIsWeb ? null : 512,
+          imageQuality: kIsWeb ? null : 80,
+        );
+      } catch (cameraErr) {
+        debugPrint('[FinanceState] Camera direct access failed: $cameraErr, falling back to gallery/photo picker');
+        if (kIsWeb) {
+          image = await picker.pickImage(source: ImageSource.gallery);
+        }
+      }
+
       if (image != null) {
         final bytes = await image.readAsBytes();
-        final base64Str = base64Encode(bytes);
-        setProfileImage(base64Str);
-        return true;
+        if (bytes.isNotEmpty) {
+          final base64Str = base64Encode(bytes);
+          setProfileImage(base64Str);
+          return true;
+        }
       }
     } catch (e) {
       debugPrint('[FinanceState] Error taking photo from camera: $e');
@@ -591,13 +605,13 @@ class FinanceState extends ChangeNotifier {
       zone = BurnRadarZone.caution;
       zoneColor = const Color(0xFFF59E0B); // Amber
       zoneIcon = Icons.speed_rounded;
-      statusHeadline = "Approaching Daily Ceiling";
+      statusHeadline = "Caution";
       statusAdvice = "Only ${AppTheme.formatCurrency(bufferRemaining)} buffer remaining today. Delay non-essential purchases until tomorrow.";
     } else {
       zone = BurnRadarZone.over;
       zoneColor = const Color(0xFFEF4444); // Crimson Red
       zoneIcon = Icons.local_fire_department_rounded;
-      statusHeadline = "Burn Overdrive (+${AppTheme.formatCurrency(bufferRemaining.abs())})";
+      statusHeadline = "Burn Overdrive";
       statusAdvice = "Today's spending surpassed radar by ${AppTheme.formatCurrency(bufferRemaining.abs())}. AI recommends a zero-spend day tomorrow to rebalance your runway.";
     }
 
