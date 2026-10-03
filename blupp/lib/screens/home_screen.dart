@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../models/finance_state.dart';
@@ -6,6 +5,7 @@ import '../theme/app_theme.dart';
 import '../widgets/blupp_states.dart';
 import '../widgets/blupp_forms.dart';
 import '../widgets/blupp_logo.dart';
+import '../widgets/blupp_avatar.dart';
 
 class HomeScreen extends StatelessWidget {
   final FinanceState state;
@@ -162,35 +162,11 @@ class HomeScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 8),
-            InkWell(
+            BluppAvatar(
+              state: state,
+              size: 40,
+              showEditBadge: false,
               onTap: () => onNavigateTab(5),
-              borderRadius: BorderRadius.circular(10),
-              child: Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: AppTheme.surfaceLight,
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: AppTheme.surfaceBorder),
-                ),
-                child: state.hasCustomProfileImage
-                    ? ClipRRect(
-                        borderRadius: BorderRadius.circular(9),
-                        child: Image.memory(
-                          base64Decode(state.profileImageBase64!),
-                          width: 40,
-                          height: 40,
-                          fit: BoxFit.cover,
-                        ),
-                      )
-                    : Center(
-                        child: Icon(
-                          Icons.person_rounded,
-                          size: 20,
-                          color: AppTheme.textSecondary,
-                        ),
-                      ),
-              ),
             ),
           ],
         ),
@@ -1110,13 +1086,22 @@ class HomeScreen extends StatelessWidget {
                       ],
                     ),
                   ),
-                  Text(
-                    "${isExpense ? '-' : '+'}${AppTheme.formatCurrency(tx.amount)}",
-                    style: TextStyle(
-                      color: isExpense ? AppTheme.expenseCoral : AppTheme.incomeMint,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                    ),
+                  Builder(
+                    builder: (context) {
+                      final isTransfer = tx.isTransfer || state.isTransferOrTopUp(tx);
+                      return Text(
+                        isTransfer
+                            ? "⇄ ${AppTheme.formatCurrency(tx.amount)}"
+                            : "${isExpense ? '-' : '+'}${AppTheme.formatCurrency(tx.amount)}",
+                        style: TextStyle(
+                          color: isTransfer
+                              ? const Color(0xFF38BDF8)
+                              : (isExpense ? AppTheme.expenseCoral : AppTheme.incomeMint),
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      );
+                    },
                   ),
                   const SizedBox(width: 10),
                   InkWell(
@@ -1669,6 +1654,9 @@ class HomeScreen extends StatelessWidget {
   // Dialog: Add Money to Bank Account
   void _showAddMoneyDialog(BuildContext context, BankAccount bank) {
     final amountController = TextEditingController();
+    final otherBanks = state.bankAccounts.where((b) => b.id != bank.id).toList();
+    bool isTransferMode = false;
+    String fromBankId = otherBanks.isNotEmpty ? otherBanks.first.id : '';
     final noteController = TextEditingController(text: 'Top up to ${bank.name}');
 
     showDialog(
@@ -1682,21 +1670,33 @@ class HomeScreen extends StatelessWidget {
               });
             }
 
+            final fromBank = otherBanks.isNotEmpty
+                ? state.getBankById(fromBankId)
+                : null;
+
             return AlertDialog(
               backgroundColor: AppTheme.surface,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-                side: BorderSide(color: AppTheme.primaryTeal.withValues(alpha: 0.3)),
+                borderRadius: BorderRadius.circular(16),
+                side: BorderSide(
+                  color: isTransferMode
+                      ? const Color(0xFF38BDF8).withValues(alpha: 0.4)
+                      : AppTheme.primaryTeal.withValues(alpha: 0.3),
+                ),
               ),
               title: Row(
                 children: [
                   Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: AppTheme.primaryTeal.withValues(alpha: 0.15),
+                      color: (isTransferMode ? const Color(0xFF38BDF8) : AppTheme.primaryTeal).withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: Icon(Icons.add_card_rounded, color: AppTheme.primaryTeal, size: 22),
+                    child: Icon(
+                      isTransferMode ? Icons.swap_horiz_rounded : Icons.add_card_rounded,
+                      color: isTransferMode ? const Color(0xFF38BDF8) : AppTheme.primaryTeal,
+                      size: 22,
+                    ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -1704,12 +1704,16 @@ class HomeScreen extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          "Add Money",
-                          style: TextStyle(color: AppTheme.textPrimary, fontWeight: FontWeight.w500, fontSize: 18),
+                          isTransferMode ? "Transfer To Bank" : "Add Money",
+                          style: TextStyle(color: AppTheme.textPrimary, fontWeight: FontWeight.w700, fontSize: 17),
                         ),
                         Text(
                           bank.name,
-                          style: TextStyle(color: AppTheme.primaryTeal, fontSize: 13, fontWeight: FontWeight.w600),
+                          style: TextStyle(
+                            color: isTransferMode ? const Color(0xFF38BDF8) : AppTheme.primaryTeal,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                       ],
                     ),
@@ -1722,10 +1726,139 @@ class HomeScreen extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      "Current Balance: ${AppTheme.formatCurrency(bank.balance)}",
-                      style: TextStyle(color: AppTheme.textSecondary, fontSize: 13),
+                      "Target Bank Balance: ${AppTheme.formatCurrency(bank.balance)}",
+                      style: TextStyle(color: AppTheme.textSecondary, fontSize: 12),
                     ),
-                    const SizedBox(height: 14),
+                    const SizedBox(height: 12),
+
+                    // Top up Mode Selector (if other banks exist)
+                    if (otherBanks.isNotEmpty) ...[
+                      Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: BoxDecoration(
+                          color: AppTheme.surfaceLight,
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: AppTheme.surfaceBorder),
+                        ),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: InkWell(
+                                onTap: () {
+                                  setDialogState(() {
+                                    isTransferMode = false;
+                                    noteController.text = 'Top up to ${bank.name}';
+                                  });
+                                },
+                                borderRadius: BorderRadius.circular(8),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(vertical: 8),
+                                  decoration: BoxDecoration(
+                                    color: !isTransferMode ? AppTheme.primaryTeal : Colors.transparent,
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Text(
+                                    "Direct Deposit",
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(
+                                      color: !isTransferMode ? Colors.black : AppTheme.textMuted,
+                                      fontWeight: !isTransferMode ? FontWeight.w700 : FontWeight.w500,
+                                      fontSize: 11,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            Expanded(
+                              child: InkWell(
+                                onTap: () {
+                                  setDialogState(() {
+                                    isTransferMode = true;
+                                    noteController.text = 'Top up from ${fromBank?.name ?? "another bank"}';
+                                  });
+                                },
+                                borderRadius: BorderRadius.circular(8),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(vertical: 8),
+                                  decoration: BoxDecoration(
+                                    color: isTransferMode ? const Color(0xFF38BDF8) : Colors.transparent,
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Text(
+                                    "From Other Bank",
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(
+                                      color: isTransferMode ? Colors.black : AppTheme.textMuted,
+                                      fontWeight: isTransferMode ? FontWeight.w700 : FontWeight.w500,
+                                      fontSize: 11,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                    ],
+
+                    // If Transfer Mode: Show Source Bank Dropdown and Helper Info
+                    if (isTransferMode && fromBank != null) ...[
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF38BDF8).withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: const Color(0xFF38BDF8).withValues(alpha: 0.25)),
+                        ),
+                        child: const Row(
+                          children: [
+                            Icon(Icons.shield_outlined, size: 14, color: Color(0xFF38BDF8)),
+                            SizedBox(width: 6),
+                            Expanded(
+                              child: Text(
+                                "Internal transfers do NOT count in your monthly living expenses.",
+                                style: TextStyle(color: Color(0xFF38BDF8), fontSize: 11),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      Text("Transfer From:", style: TextStyle(color: AppTheme.textSecondary, fontSize: 11, fontWeight: FontWeight.w600)),
+                      const SizedBox(height: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        decoration: BoxDecoration(
+                          color: AppTheme.surfaceLight,
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: AppTheme.surfaceBorder),
+                        ),
+                        child: DropdownButtonHideUnderline(
+                          child: DropdownButton<String>(
+                            value: fromBankId,
+                            isExpanded: true,
+                            dropdownColor: AppTheme.surface,
+                            style: TextStyle(color: AppTheme.textPrimary, fontSize: 13),
+                            items: otherBanks.map((b) {
+                              return DropdownMenuItem(
+                                value: b.id,
+                                child: Text("${b.name} (${AppTheme.formatCurrency(b.balance)})"),
+                              );
+                            }).toList(),
+                            onChanged: (val) {
+                              if (val != null) {
+                                setDialogState(() {
+                                  fromBankId = val;
+                                  noteController.text = 'Top up from ${state.getBankById(val)?.name ?? "bank"}';
+                                });
+                              }
+                            },
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                    ],
 
                     // Quick Chips
                     Wrap(
@@ -1744,13 +1877,17 @@ class HomeScreen extends StatelessWidget {
                             ),
                             child: Text(
                               "+RM ${amt.toInt()}",
-                              style: TextStyle(color: AppTheme.primaryTeal, fontSize: 11, fontWeight: FontWeight.w500),
+                              style: TextStyle(
+                                color: isTransferMode ? const Color(0xFF38BDF8) : AppTheme.primaryTeal,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
                           ),
                         );
                       }).toList(),
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 14),
 
                     TextField(
                       controller: amountController,
@@ -1758,9 +1895,9 @@ class HomeScreen extends StatelessWidget {
                       autofocus: true,
                       style: TextStyle(color: AppTheme.textPrimary, fontSize: 16, fontWeight: FontWeight.bold),
                       decoration: InputDecoration(
-                        labelText: "Amount to Add (RM)",
+                        labelText: "Amount (RM)",
                         labelStyle: TextStyle(color: AppTheme.textSecondary),
-                        prefixIcon: Icon(Icons.payments_outlined, color: AppTheme.primaryTeal),
+                        prefixIcon: Icon(Icons.payments_outlined, color: isTransferMode ? const Color(0xFF38BDF8) : AppTheme.primaryTeal),
                         filled: true,
                         fillColor: AppTheme.surfaceLight,
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
@@ -1769,7 +1906,7 @@ class HomeScreen extends StatelessWidget {
                     const SizedBox(height: 12),
                     TextField(
                       controller: noteController,
-                      style: TextStyle(color: AppTheme.textPrimary, fontSize: 14),
+                      style: TextStyle(color: AppTheme.textPrimary, fontSize: 13),
                       decoration: InputDecoration(
                         labelText: "Note / Description",
                         labelStyle: TextStyle(color: AppTheme.textSecondary),
@@ -1789,26 +1926,294 @@ class HomeScreen extends StatelessWidget {
                 ),
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppTheme.primaryTeal,
+                    backgroundColor: isTransferMode ? const Color(0xFF38BDF8) : AppTheme.primaryTeal,
                     foregroundColor: Colors.black,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   ),
                   onPressed: () {
                     final amount = double.tryParse(amountController.text.trim()) ?? 0.0;
                     if (amount > 0) {
-                      state.addMoneyToBank(bank.id, amount, note: noteController.text.trim());
+                      if (isTransferMode && fromBank != null) {
+                        if (fromBank.balance < amount) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              backgroundColor: AppTheme.expenseCoral,
+                              content: Text("Insufficient funds in ${fromBank.name} (${AppTheme.formatCurrency(fromBank.balance)})"),
+                            ),
+                          );
+                          return;
+                        }
+                        state.addMoneyToBank(
+                          bank.id,
+                          amount,
+                          note: noteController.text.trim(),
+                          fromBankId: fromBank.id,
+                        );
+                        Navigator.pop(ctx);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            backgroundColor: AppTheme.surfaceLight,
+                            behavior: SnackBarBehavior.floating,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            content: Row(
+                              children: [
+                                const Icon(Icons.check_circle_rounded, color: Color(0xFF38BDF8), size: 18),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    "Transferred ${AppTheme.formatCurrency(amount)} from ${fromBank.name} to ${bank.name} (Exempt from Expenses)",
+                                    style: TextStyle(color: AppTheme.textPrimary, fontWeight: FontWeight.w500),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      } else {
+                        state.addMoneyToBank(bank.id, amount, note: noteController.text.trim());
+                        Navigator.pop(ctx);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            backgroundColor: AppTheme.surfaceLight,
+                            behavior: SnackBarBehavior.floating,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            content: Row(
+                              children: [
+                                Icon(Icons.check_circle_rounded, color: AppTheme.primaryTeal, size: 18),
+                                const SizedBox(width: 8),
+                                Text(
+                                  "Added ${AppTheme.formatCurrency(amount)} to ${bank.name}",
+                                  style: TextStyle(color: AppTheme.textPrimary, fontWeight: FontWeight.w500),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      }
+                    }
+                  },
+                  child: Text(
+                    isTransferMode ? "Confirm Transfer" : "Confirm Deposit",
+                    style: const TextStyle(fontWeight: FontWeight.w700),
+                  ),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _showTransferMoneyDialog(BuildContext context, [BankAccount? defaultFromBank]) {
+    if (state.bankAccounts.length < 2) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: AppTheme.surfaceLight,
+          content: Text(
+            "You need at least 2 bank accounts to transfer between them.",
+            style: TextStyle(color: AppTheme.textPrimary),
+          ),
+        ),
+      );
+      return;
+    }
+
+    String fromBankId = defaultFromBank?.id ?? state.bankAccounts.first.id;
+    String toBankId = state.bankAccounts.firstWhere((b) => b.id != fromBankId, orElse: () => state.bankAccounts.last).id;
+
+    final amountController = TextEditingController();
+    final noteController = TextEditingController(text: 'Transfer between accounts');
+
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (dialogCtx, setDialogState) {
+            final fromBank = state.getBankById(fromBankId);
+            final toBank = state.getBankById(toBankId);
+
+            return AlertDialog(
+              backgroundColor: AppTheme.surface,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+                side: BorderSide(color: const Color(0xFF38BDF8).withValues(alpha: 0.35)),
+              ),
+              title: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF38BDF8).withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(Icons.swap_horiz_rounded, color: Color(0xFF38BDF8), size: 22),
+                  ),
+                  const SizedBox(width: 12),
+                  Text(
+                    "Transfer Between Banks",
+                    style: TextStyle(color: AppTheme.textPrimary, fontWeight: FontWeight.w700, fontSize: 17),
+                  ),
+                ],
+              ),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF38BDF8).withValues(alpha: 0.08),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Row(
+                        children: [
+                          Icon(Icons.info_outline_rounded, size: 14, color: Color(0xFF38BDF8)),
+                          SizedBox(width: 6),
+                          Expanded(
+                            child: Text(
+                              "Internal bank transfers reallocate money and are NOT counted as living expenses.",
+                              style: TextStyle(color: Color(0xFF38BDF8), fontSize: 11),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+
+                    // From Bank
+                    Text("From Source Bank:", style: TextStyle(color: AppTheme.textSecondary, fontSize: 11, fontWeight: FontWeight.w600)),
+                    const SizedBox(height: 6),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      decoration: BoxDecoration(color: AppTheme.surfaceLight, borderRadius: BorderRadius.circular(10)),
+                      child: DropdownButtonHideUnderline(
+                        child: DropdownButton<String>(
+                          value: fromBankId,
+                          isExpanded: true,
+                          dropdownColor: AppTheme.surface,
+                          style: TextStyle(color: AppTheme.textPrimary, fontSize: 13),
+                          items: state.bankAccounts.map((b) {
+                            return DropdownMenuItem(
+                              value: b.id,
+                              child: Text("${b.name} (${AppTheme.formatCurrency(b.balance)})"),
+                            );
+                          }).toList(),
+                          onChanged: (val) {
+                            if (val != null) {
+                              setDialogState(() {
+                                fromBankId = val;
+                                if (toBankId == fromBankId) {
+                                  toBankId = state.bankAccounts.firstWhere((b) => b.id != fromBankId).id;
+                                }
+                              });
+                            }
+                          },
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+
+                    // To Bank
+                    Text("To Destination Bank:", style: TextStyle(color: AppTheme.textSecondary, fontSize: 11, fontWeight: FontWeight.w600)),
+                    const SizedBox(height: 6),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      decoration: BoxDecoration(color: AppTheme.surfaceLight, borderRadius: BorderRadius.circular(10)),
+                      child: DropdownButtonHideUnderline(
+                        child: DropdownButton<String>(
+                          value: toBankId,
+                          isExpanded: true,
+                          dropdownColor: AppTheme.surface,
+                          style: TextStyle(color: AppTheme.textPrimary, fontSize: 13),
+                          items: state.bankAccounts.where((b) => b.id != fromBankId).map((b) {
+                            return DropdownMenuItem(
+                              value: b.id,
+                              child: Text("${b.name} (${AppTheme.formatCurrency(b.balance)})"),
+                            );
+                          }).toList(),
+                          onChanged: (val) {
+                            if (val != null) {
+                              setDialogState(() {
+                                toBankId = val;
+                              });
+                            }
+                          },
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+
+                    TextField(
+                      controller: amountController,
+                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      style: TextStyle(color: AppTheme.textPrimary, fontSize: 16, fontWeight: FontWeight.bold),
+                      decoration: InputDecoration(
+                        labelText: "Transfer Amount (RM)",
+                        labelStyle: TextStyle(color: AppTheme.textSecondary),
+                        prefixIcon: const Icon(Icons.payments_outlined, color: Color(0xFF38BDF8)),
+                        filled: true,
+                        fillColor: AppTheme.surfaceLight,
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+
+                    TextField(
+                      controller: noteController,
+                      style: TextStyle(color: AppTheme.textPrimary, fontSize: 13),
+                      decoration: InputDecoration(
+                        labelText: "Note / Description",
+                        labelStyle: TextStyle(color: AppTheme.textSecondary),
+                        prefixIcon: Icon(Icons.edit_note_rounded, color: AppTheme.textMuted),
+                        filled: true,
+                        fillColor: AppTheme.surfaceLight,
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: Text("Cancel", style: TextStyle(color: AppTheme.textMuted)),
+                ),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF38BDF8),
+                    foregroundColor: Colors.black,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  onPressed: () {
+                    final amount = double.tryParse(amountController.text.trim()) ?? 0.0;
+                    if (amount > 0 && fromBank != null && toBank != null) {
+                      if (fromBank.balance < amount) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            backgroundColor: AppTheme.expenseCoral,
+                            content: Text("Insufficient balance in ${fromBank.name} (${AppTheme.formatCurrency(fromBank.balance)})"),
+                          ),
+                        );
+                        return;
+                      }
+                      state.transferBetweenBanks(
+                        fromBankId: fromBank.id,
+                        toBankId: toBank.id,
+                        amount: amount,
+                        note: noteController.text.trim(),
+                      );
                       Navigator.pop(ctx);
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
                           backgroundColor: AppTheme.surfaceLight,
-                          behavior: SnackBarBehavior.floating,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                           content: Row(
                             children: [
-                              Icon(Icons.check_circle_rounded, color: AppTheme.primaryTeal, size: 18),
+                              const Icon(Icons.check_circle_rounded, color: Color(0xFF38BDF8), size: 18),
                               const SizedBox(width: 8),
                               Text(
-                                "Added ${AppTheme.formatCurrency(amount)} to ${bank.name}",
+                                "Transferred ${AppTheme.formatCurrency(amount)} from ${fromBank.name} to ${toBank.name}",
                                 style: TextStyle(color: AppTheme.textPrimary, fontWeight: FontWeight.w500),
                               ),
                             ],
@@ -1817,7 +2222,7 @@ class HomeScreen extends StatelessWidget {
                       );
                     }
                   },
-                  child: const Text("Confirm Deposit", style: TextStyle(fontWeight: FontWeight.w500)),
+                  child: const Text("Confirm Transfer", style: TextStyle(fontWeight: FontWeight.w700)),
                 ),
               ],
             );
@@ -1997,6 +2402,48 @@ class HomeScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 12),
+
+              if (state.bankAccounts.length >= 2) ...[
+                // Action: Transfer Between Banks
+                InkWell(
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    _showTransferMoneyDialog(context, bank);
+                  },
+                  borderRadius: BorderRadius.circular(16),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF38BDF8).withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: const Color(0xFF38BDF8).withValues(alpha: 0.3)),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.swap_horiz_rounded, color: Color(0xFF38BDF8), size: 22),
+                        SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                "Transfer to Another Bank",
+                                style: TextStyle(color: Color(0xFF38BDF8), fontSize: 14, fontWeight: FontWeight.w600),
+                              ),
+                              Text(
+                                "Move money to or from another bank without adding to expenses",
+                                style: TextStyle(color: AppTheme.textSecondary, fontSize: 11),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Icon(Icons.arrow_forward_ios_rounded, color: Color(0xFF38BDF8), size: 14),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+              ],
 
               // Action 2: Minus / Withdraw Money
               InkWell(

@@ -96,6 +96,7 @@ class TransactionItem {
   final DateTime date;
   final String bankAccountId;
   final String? note;
+  final bool isTransfer;
 
   TransactionItem({
     required this.id,
@@ -106,6 +107,7 @@ class TransactionItem {
     required this.date,
     required this.bankAccountId,
     this.note,
+    this.isTransfer = false,
   });
 }
 
@@ -236,27 +238,261 @@ class FinanceState extends ChangeNotifier {
     return false;
   }
 
+  Future<bool> pickProfilePictureFromCamera() async {
+    try {
+      final picker = ImagePicker();
+      final XFile? image = await picker.pickImage(
+        source: ImageSource.camera,
+        maxWidth: 512,
+        maxHeight: 512,
+        imageQuality: 80,
+      );
+      if (image != null) {
+        final bytes = await image.readAsBytes();
+        final base64Str = base64Encode(bytes);
+        setProfileImage(base64Str);
+        return true;
+      }
+    } catch (e) {
+      debugPrint('[FinanceState] Error taking photo from camera: $e');
+    }
+    return false;
+  }
+
   void removeProfilePicture() {
     setProfileImage(null);
   }
 
-  // Personalized Avatar Presets (Fallback)
-  int _avatarIndex = 0;
-  int get avatarIndex => _avatarIndex;
-  
-  static const List<Map<String, dynamic>> avatarPresets = [
-    {'name': 'Zinc Minimal', 'icon': Icons.bolt_rounded, 'color': Color(0xFF10B981)},
-    {'name': 'Emerald Pulse', 'icon': Icons.account_balance_wallet_rounded, 'color': Color(0xFF06B6D4)},
-    {'name': 'Vault Master', 'icon': Icons.shield_rounded, 'color': Color(0xFF8B5CF6)},
-    {'name': 'Cyber Flow', 'icon': Icons.auto_awesome_rounded, 'color': Color(0xFFF59E0B)},
-    {'name': 'Zenith', 'icon': Icons.all_inclusive_rounded, 'color': Color(0xFFEC4899)},
+  // Persona Label (Financial Archetype)
+  String _userPersona = '⚡ High-Growth Wealth Builder';
+  String get userPersona => _userPersona;
+
+  static const List<String> personaPresets = [
+    '⚡ High-Growth Wealth Builder',
+    '🛡️ Disciplined Saver & Strategist',
+    '🎯 Balanced Budget Master',
+    '🚀 Tech & Crypto Explorer',
+    '🌿 Mindful Minimalist',
+    '💎 Diamond Hands Investor',
+    '👑 Financial Sovereign',
+    '💼 Executive Portfolio Planner',
   ];
 
-  void setAvatarIndex(int index) {
-    if (index >= 0 && index < avatarPresets.length) {
-      _avatarIndex = index;
+  void setUserPersona(String persona) {
+    if (persona.trim().isNotEmpty) {
+      _userPersona = persona.trim();
       notifyListeners();
+      SupabaseService.instance.updateUserProfile(
+        name: _userName,
+        email: _userEmail,
+      );
     }
+  }
+
+  // Avatar Studio Customization
+  String _avatarType = 'preset'; // 'image', 'preset', 'monogram'
+  String get avatarType => hasCustomProfileImage ? 'image' : _avatarType;
+
+  int _avatarPresetIndex = 0;
+  int get avatarPresetIndex => _avatarPresetIndex;
+
+  int _monogramColorIndex = 0;
+  int get monogramColorIndex => _monogramColorIndex;
+
+  static const List<Map<String, dynamic>> characterAvatarPresets = [
+    {
+      'id': 'dolphin',
+      'name': 'Blupp Dolphin',
+      'subtitle': 'Agile & Intelligent',
+      'icon': Icons.bubble_chart_rounded,
+      'colors': [Color(0xFF00E5FF), Color(0xFF00897B)],
+    },
+    {
+      'id': 'shark',
+      'name': 'Apex Shark',
+      'subtitle': 'Market Predator',
+      'icon': Icons.sailing_rounded,
+      'colors': [Color(0xFF1E3A8A), Color(0xFF3B82F6)],
+    },
+    {
+      'id': 'lion',
+      'name': 'Wealth Lion',
+      'subtitle': 'King of Capital',
+      'icon': Icons.military_tech_rounded,
+      'colors': [Color(0xFFF59E0B), Color(0xFFB45309)],
+    },
+    {
+      'id': 'bull',
+      'name': 'Market Bull',
+      'subtitle': 'Unstoppable Momentum',
+      'icon': Icons.trending_up_rounded,
+      'colors': [Color(0xFF10B981), Color(0xFF047857)],
+    },
+    {
+      'id': 'diamond',
+      'name': 'Diamond Hands',
+      'subtitle': 'Unwavering Conviction',
+      'icon': Icons.diamond_rounded,
+      'colors': [Color(0xFF06B6D4), Color(0xFF3B82F6)],
+    },
+    {
+      'id': 'crown',
+      'name': 'Financial Sovereign',
+      'subtitle': 'Independent & Sovereign',
+      'icon': Icons.workspace_premium_rounded,
+      'colors': [Color(0xFFFFD700), Color(0xFFD97706)],
+    },
+    {
+      'id': 'falcon',
+      'name': 'Falcon Vision',
+      'subtitle': 'Sharp Strategic Eyes',
+      'icon': Icons.flight_takeoff_rounded,
+      'colors': [Color(0xFF8B5CF6), Color(0xFF5B21B6)],
+    },
+    {
+      'id': 'phoenix',
+      'name': 'Fire Phoenix',
+      'subtitle': 'Resilient Compounding',
+      'icon': Icons.local_fire_department_rounded,
+      'colors': [Color(0xFFFF5722), Color(0xFFBE123C)],
+    },
+    {
+      'id': 'robot',
+      'name': 'AI Cyborg',
+      'subtitle': 'Algorithmic Precision',
+      'icon': Icons.smart_toy_rounded,
+      'colors': [Color(0xFF14B8A6), Color(0xFF4F46E5)],
+    },
+    {
+      'id': 'fox',
+      'name': 'Tactical Fox',
+      'subtitle': 'Resourceful & Savvy',
+      'icon': Icons.psychology_rounded,
+      'colors': [Color(0xFFFB923C), Color(0xFFC2410C)],
+    },
+    {
+      'id': 'owl',
+      'name': 'Wise Owl',
+      'subtitle': 'Long-term Thinker',
+      'icon': Icons.visibility_rounded,
+      'colors': [Color(0xFF6366F1), Color(0xFF312E81)],
+    },
+    {
+      'id': 'rocket',
+      'name': 'Crypto Pioneer',
+      'subtitle': 'Hyper-Growth Hunter',
+      'icon': Icons.rocket_launch_rounded,
+      'colors': [Color(0xFFEC4899), Color(0xFF9D174D)],
+    },
+  ];
+
+  static const List<Map<String, dynamic>> monogramGradients = [
+    {'name': 'Emerald Mint', 'colors': [Color(0xFF00D09C), Color(0xFF00897B)]},
+    {'name': 'Electric Cyan', 'colors': [Color(0xFF00E5FF), Color(0xFF0284C7)]},
+    {'name': 'Cosmic Purple', 'colors': [Color(0xFFA855F7), Color(0xFF6366F1)]},
+    {'name': 'Sunset Amber', 'colors': [Color(0xFFF59E0B), Color(0xFFEA580C)]},
+    {'name': 'Neon Rose', 'colors': [Color(0xFFF43F5E), Color(0xFFE11D48)]},
+    {'name': 'Ocean Blue', 'colors': [Color(0xFF3B82F6), Color(0xFF1D4ED8)]},
+    {'name': 'Cyber Indigo', 'colors': [Color(0xFF6366F1), Color(0xFF1E1B4B)]},
+    {'name': 'Titanium Slate', 'colors': [Color(0xFF475569), Color(0xFF0F172A)]},
+  ];
+
+  void setAvatarPreset(int index) {
+    if (index >= 0 && index < characterAvatarPresets.length) {
+      _avatarType = 'preset';
+      _avatarPresetIndex = index;
+      _profileImageBase64 = null;
+      notifyListeners();
+      SupabaseService.instance.updateUserProfileImage(null);
+    }
+  }
+
+  void setMonogram(int colorIndex) {
+    if (colorIndex >= 0 && colorIndex < monogramGradients.length) {
+      _avatarType = 'monogram';
+      _monogramColorIndex = colorIndex;
+      _profileImageBase64 = null;
+      notifyListeners();
+      SupabaseService.instance.updateUserProfileImage(null);
+    }
+  }
+
+  // --- FINANCIAL PERFORMANCE & STATISTICS ---
+  int get financialHealthScore {
+    int score = 0;
+    final totalAssets = totalBankBalance + totalInvestmentsAndSavings;
+    final totalDebt = totalLoans;
+
+    // 1. Debt-to-Asset ratio (up to 35 pts)
+    if (totalDebt <= 0) {
+      score += 35;
+    } else {
+      final ratio = totalAssets / totalDebt;
+      if (ratio >= 3.0) {
+        score += 35;
+      } else if (ratio >= 2.0) {
+        score += 28;
+      } else if (ratio >= 1.2) {
+        score += 20;
+      } else {
+        score += 10;
+      }
+    }
+
+    // 2. Budget Discipline (up to 35 pts)
+    if (_monthlySpendingBudget > 0) {
+      final budgetRemainingRatio = spendingBalanceLeft / _monthlySpendingBudget;
+      if (budgetRemainingRatio >= 0.5) {
+        score += 35;
+      } else if (budgetRemainingRatio >= 0.25) {
+        score += 26;
+      } else if (budgetRemainingRatio > 0) {
+        score += 18;
+      } else {
+        score += 5;
+      }
+    } else {
+      score += 30;
+    }
+
+    // 3. Asset & Savings Buffer (up to 30 pts)
+    final buffer = _monthlySpendingBudget > 0 ? totalAssets / _monthlySpendingBudget : totalAssets / 1000;
+    if (buffer >= 5.0) {
+      score += 30;
+    } else if (buffer >= 2.5) {
+      score += 22;
+    } else if (buffer >= 1.0) {
+      score += 15;
+    } else {
+      score += 8;
+    }
+
+    return score.clamp(0, 100);
+  }
+
+  String get financialHealthGrade {
+    final s = financialHealthScore;
+    if (s >= 90) return 'A+ Sovereign';
+    if (s >= 80) return 'A Excellent';
+    if (s >= 70) return 'B+ Strong';
+    if (s >= 60) return 'B Steady';
+    return 'C Focused';
+  }
+
+  double get savingsRatePercentage {
+    if (totalIncomeThisMonth <= 0) return 0.0;
+    final netSaved = totalIncomeThisMonth - totalExpensesThisMonth;
+    return ((netSaved / totalIncomeThisMonth) * 100).clamp(0.0, 100.0);
+  }
+
+  double get budgetUsedPercentage {
+    if (_monthlySpendingBudget <= 0) return 0.0;
+    return ((totalExpensesThisMonth / _monthlySpendingBudget) * 100).clamp(0.0, 100.0);
+  }
+
+  double get assetToDebtRatio {
+    if (totalLoans <= 0) return 99.9;
+    return (totalBankBalance + totalInvestmentsAndSavings) / totalLoans;
   }
 
   // Loading & Error State for Skeletons
@@ -388,6 +624,13 @@ class FinanceState extends ChangeNotifier {
   // Categories
   final List<CategoryItem> _categories = [
     // Expenses
+    const CategoryItem(
+      id: 'bank_transfer',
+      name: 'Bank Transfer & Top-Up',
+      icon: Icons.swap_horiz_rounded,
+      color: Color(0xFF00B4D8),
+      type: TransactionType.expense,
+    ),
     const CategoryItem(
       id: 'withdrawal',
       name: 'Cash & Withdrawal',
@@ -801,23 +1044,60 @@ class FinanceState extends ChangeNotifier {
     return _loans.fold(0.0, (sum, l) => sum + l.remainingBalance);
   }
 
-  // Monthly Expenses (calculated from transactions logged this month)
+  // Helper to detect if a transaction is an inter-bank transfer or top-up
+  // (Prevents top-ups from inflating monthly expenses or monthly salary income)
+  bool isTransferOrTopUp(TransactionItem t) {
+    if (t.isTransfer || t.categoryId == 'bank_transfer') return true;
+    final lowerTitle = t.title.toLowerCase();
+    final lowerNote = (t.note ?? '').toLowerCase();
+    final combined = '$lowerTitle $lowerNote';
+
+    // Match Bank Islam and inter-bank topups / transfers
+    if (combined.contains('bank islam') &&
+        (combined.contains('topup') ||
+            combined.contains('top-up') ||
+            combined.contains('top up') ||
+            combined.contains('transfer'))) {
+      return true;
+    }
+    if ((combined.contains('transfer') ||
+            combined.contains('topup') ||
+            combined.contains('top up') ||
+            combined.contains('top-up')) &&
+        (combined.contains('from bank') ||
+            combined.contains('to bank') ||
+            combined.contains('bank to bank') ||
+            combined.contains('interbank') ||
+            combined.contains('inter-bank') ||
+            combined.contains('cimb') ||
+            combined.contains('maybank') ||
+            combined.contains('islam') ||
+            combined.contains('another bank') ||
+            combined.contains('internal'))) {
+      return true;
+    }
+    return false;
+  }
+
+  // Monthly Expenses (calculated from transactions logged this month, excluding internal bank transfers / topups)
   double get totalExpensesThisMonth {
     final now = DateTime.now();
     return _transactions
         .where((t) =>
             t.type == TransactionType.expense &&
+            !isTransferOrTopUp(t) &&
             t.date.year == now.year &&
             t.date.month == now.month)
         .fold(0.0, (sum, t) => sum + t.amount);
   }
 
-  // Monthly Income (calculated from transactions logged this month)
+  // Monthly Income (calculated from transactions logged this month, excluding internal bank transfers / topups)
   double get totalIncomeThisMonth {
     final now = DateTime.now();
     return _transactions
         .where((t) =>
             t.type == TransactionType.income &&
+            !isTransferOrTopUp(t) &&
             t.date.year == now.year &&
             t.date.month == now.month)
         .fold(0.0, (sum, t) => sum + t.amount);
@@ -882,12 +1162,13 @@ class FinanceState extends ChangeNotifier {
     }
   }
 
-  // Category expense breakdown for Analytics
+  // Category expense breakdown for Analytics (excluding internal bank transfers / topups)
   Map<String, double> get categoryExpenseBreakdown {
     final now = DateTime.now();
     final Map<String, double> map = {};
     for (final t in _transactions) {
       if (t.type == TransactionType.expense &&
+          !isTransferOrTopUp(t) &&
           t.date.year == now.year &&
           t.date.month == now.month) {
         map[t.categoryId] = (map[t.categoryId] ?? 0.0) + t.amount;
@@ -1079,20 +1360,97 @@ class FinanceState extends ChangeNotifier {
     notifyListeners();
   }
 
+  // Inter-bank transfer: Moves money from one bank to another without counting as an expense
+  void transferBetweenBanks({
+    required String fromBankId,
+    required String toBankId,
+    required double amount,
+    String? note,
+  }) {
+    if (fromBankId == toBankId || amount <= 0) return;
+    final fromBank = getBankById(fromBankId);
+    final toBank = getBankById(toBankId);
+    if (fromBank == null || toBank == null) return;
+    if (fromBank.balance < amount) return;
+
+    // Deduct from source bank
+    fromBank.balance -= amount;
+    // Add to target bank
+    toBank.balance += amount;
+
+    SupabaseService.instance.updateBankBalance(fromBank.id, fromBank.balance);
+    SupabaseService.instance.updateBankBalance(toBank.id, toBank.balance);
+
+    final now = DateTime.now();
+    final timeStr = now.millisecondsSinceEpoch;
+
+    // Outflow transaction on source bank
+    final outTx = TransactionItem(
+      id: 'tx_tf_out_$timeStr',
+      title: 'Transfer to ${toBank.name}',
+      amount: amount,
+      type: TransactionType.expense,
+      categoryId: 'bank_transfer',
+      date: now,
+      bankAccountId: fromBank.id,
+      note: note ?? 'Transfer from ${fromBank.name} to ${toBank.name}',
+      isTransfer: true,
+    );
+
+    // Inflow transaction on target bank
+    final inTx = TransactionItem(
+      id: 'tx_tf_in_${timeStr + 1}',
+      title: 'Top-Up from ${fromBank.name}',
+      amount: amount,
+      type: TransactionType.income,
+      categoryId: 'bank_transfer',
+      date: now,
+      bankAccountId: toBank.id,
+      note: note ?? 'Received from ${fromBank.name}',
+      isTransfer: true,
+    );
+
+    _transactions.insert(0, outTx);
+    _transactions.insert(0, inTx);
+
+    SupabaseService.instance.insertTransaction(outTx);
+    SupabaseService.instance.insertTransaction(inTx);
+
+    notifyListeners();
+  }
+
   // Add money / top up bank account balance
-  void addMoneyToBank(String bankId, double amount, {String? note}) {
+  void addMoneyToBank(String bankId, double amount, {String? note, String? fromBankId}) {
+    if (fromBankId != null && fromBankId.isNotEmpty && fromBankId != bankId) {
+      transferBetweenBanks(
+        fromBankId: fromBankId,
+        toBankId: bankId,
+        amount: amount,
+        note: note,
+      );
+      return;
+    }
+
     final bank = getBankById(bankId);
     if (bank != null && amount > 0) {
-      addTransaction(TransactionItem(
+      bank.balance += amount;
+      SupabaseService.instance.updateBankBalance(bank.id, bank.balance);
+
+      final tx = TransactionItem(
         id: 'tx_topup_${DateTime.now().millisecondsSinceEpoch}',
         title: '${bank.name} Top-Up',
         amount: amount,
         type: TransactionType.income,
-        categoryId: 'income_general',
+        categoryId: 'bank_transfer',
         date: DateTime.now(),
         bankAccountId: bankId,
         note: note ?? 'Top up into ${bank.name}',
-      ));
+        isTransfer: true,
+      );
+
+      _transactions.insert(0, tx);
+      SupabaseService.instance.insertTransaction(tx);
+      notifyListeners();
     }
   }
 

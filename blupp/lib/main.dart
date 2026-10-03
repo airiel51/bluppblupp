@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -12,6 +11,7 @@ import 'screens/calendar_screen.dart';
 import 'screens/sign_in_screen.dart';
 import 'screens/profile_screen.dart';
 import 'services/supabase_service.dart';
+import 'widgets/blupp_avatar.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -301,8 +301,6 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
 
   Widget _buildProfileNavItem({required int index}) {
     final isSelected = _currentTabIndex == index;
-    final hasCustomImage = widget.state.profileImageBase64 != null;
-
     return Expanded(
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
@@ -325,19 +323,10 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
                       width: 1.5,
                     ),
                   ),
-                  child: CircleAvatar(
-                    radius: 12,
-                    backgroundColor: AppTheme.isDark ? const Color(0xFF27272A) : const Color(0xFFE4E4E7),
-                    backgroundImage: hasCustomImage
-                        ? MemoryImage(base64Decode(widget.state.profileImageBase64!))
-                        : null,
-                    child: !hasCustomImage
-                        ? Icon(
-                            isSelected ? Icons.person_rounded : Icons.person_outline_rounded,
-                            size: 15,
-                            color: isSelected ? AppTheme.textPrimary : AppTheme.textMuted,
-                          )
-                        : null,
+                  child: BluppAvatar(
+                    state: widget.state,
+                    size: 24,
+                    showEditBadge: false,
                   ),
                 ),
               ),

@@ -765,90 +765,6 @@ class _SignInScreenState extends State<SignInScreen> {
 
                           const SizedBox(height: 24),
 
-                          // Divider: "Sign in with" / "Sign up with"
-                          Row(
-                            children: [
-                              const Expanded(
-                                child: Divider(color: Color(0xFFE2E8F0), thickness: 1),
-                              ),
-                              Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 14),
-                                child: Text(
-                                  isSignUp ? 'Sign up with' : 'Sign in with',
-                                  style: const TextStyle(
-                                    color: Color(0xFF94A3B8),
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                              ),
-                              const Expanded(
-                                child: Divider(color: Color(0xFFE2E8F0), thickness: 1),
-                              ),
-                            ],
-                          ),
-
-                          const SizedBox(height: 18),
-
-                          // 4 Social Login Icons matching Reference
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              // Facebook
-                              _buildSocialIcon(
-                                backgroundColor: const Color(0xFF1877F2),
-                                onTap: () => _handleSocialLogin('Facebook'),
-                                child: const Text(
-                                  'f',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 22,
-                                    fontWeight: FontWeight.bold,
-                                    fontFamily: 'sans-serif',
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 18),
-
-                              // Twitter / X
-                              _buildSocialIcon(
-                                backgroundColor: const Color(0xFF0F172A),
-                                onTap: () => _handleSocialLogin('Twitter / X'),
-                                child: const Text(
-                                  '𝕏',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 18),
-
-                              // Google
-                              _buildSocialIcon(
-                                backgroundColor: Colors.white,
-                                border: Border.all(color: const Color(0xFFE2E8F0), width: 1.2),
-                                onTap: () => _handleSocialLogin('Google'),
-                                child: _buildGoogleGIcon(),
-                              ),
-                              const SizedBox(width: 18),
-
-                              // Apple
-                              _buildSocialIcon(
-                                backgroundColor: Colors.black,
-                                onTap: () => _handleSocialLogin('Apple'),
-                                child: const Icon(
-                                  Icons.apple,
-                                  color: Colors.white,
-                                  size: 22,
-                                ),
-                              ),
-                            ],
-                          ),
-
-                          const SizedBox(height: 24),
-
                           // Footer switch link
                           Row(
                             mainAxisAlignment: MainAxisAlignment.center,
@@ -957,70 +873,7 @@ class _SignInScreenState extends State<SignInScreen> {
     );
   }
 
-  /// Social Login Circular Button
-  Widget _buildSocialIcon({
-    required Widget child,
-    required Color backgroundColor,
-    required VoidCallback onTap,
-    Border? border,
-  }) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(22),
-      child: Container(
-        width: 44,
-        height: 44,
-        decoration: BoxDecoration(
-          color: backgroundColor,
-          shape: BoxShape.circle,
-          border: border,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.06),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Center(child: child),
-      ),
-    );
-  }
 
-  /// Clean Google 'G' Icon
-  Widget _buildGoogleGIcon() {
-    return const Text(
-      'G',
-      style: TextStyle(
-        color: Color(0xFF4285F4),
-        fontSize: 20,
-        fontWeight: FontWeight.w800,
-        fontFamily: 'sans-serif',
-      ),
-    );
-  }
-
-  void _handleSocialLogin(String provider) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        backgroundColor: const Color(0xFF1E293B),
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        content: Row(
-          children: [
-            const Icon(Icons.info_outline_rounded, color: Color(0xFF93C5FD), size: 20),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Text(
-                'Connecting to $provider... You can also test with Instant Demo mode.',
-                style: const TextStyle(color: Colors.white, fontSize: 13),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 }
 
 // ---------------------------------------------------------------------------
@@ -1050,7 +903,6 @@ class _ForgotPasswordSheetState extends State<_ForgotPasswordSheet> {
   final _confirmPassCtrl = TextEditingController();
 
   late int _step; // 1: Email, 2: OTP, 3: New Password, 4: Success
-  int _otpLength = 8;
   String _generatedCode = '';
   String? _errorMessage;
   bool _isLoading = false;
@@ -1100,8 +952,8 @@ class _ForgotPasswordSheetState extends State<_ForgotPasswordSheet> {
 
   Future<void> _verifyCode() async {
     final entered = _codeCtrl.text.trim();
-    if (entered.length != _otpLength && entered.length != 6 && entered.length != 8) {
-      setState(() => _errorMessage = 'Please enter your complete $_otpLength-digit PIN.');
+    if (entered.length != 6) {
+      setState(() => _errorMessage = 'Please enter your complete 6-digit PIN.');
       return;
     }
     setState(() { _isLoading = true; _errorMessage = null; });
@@ -1357,46 +1209,6 @@ class _ForgotPasswordSheetState extends State<_ForgotPasswordSheet> {
     );
   }
 
-  Widget _buildLengthTab(int length, String label) {
-    final isSelected = _otpLength == length;
-    return GestureDetector(
-      onTap: () {
-        if (_otpLength != length) {
-          setState(() {
-            _otpLength = length;
-            _codeCtrl.clear();
-            _errorMessage = null;
-          });
-        }
-      },
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
-        decoration: BoxDecoration(
-          color: isSelected ? Colors.white : Colors.transparent,
-          borderRadius: BorderRadius.circular(8),
-          boxShadow: isSelected
-              ? [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.06),
-                    blurRadius: 4,
-                    offset: const Offset(0, 2),
-                  ),
-                ]
-              : null,
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            fontSize: 12,
-            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-            color: isSelected ? const Color(0xFF1E293B) : const Color(0xFF64748B),
-          ),
-        ),
-      ),
-    );
-  }
-
   // ── Step 1: Enter Email ───────────────────────────
   Widget _buildStep1({required Key key}) {
     return Column(
@@ -1499,7 +1311,7 @@ class _ForgotPasswordSheetState extends State<_ForgotPasswordSheet> {
             text: TextSpan(
               style: const TextStyle(color: Color(0xFF64748B), fontSize: 13, height: 1.5),
               children: [
-                TextSpan(text: 'Enter the $_otpLength-digit PIN sent to\n'),
+                const TextSpan(text: 'Enter the 6-digit PIN sent to\n'),
                 TextSpan(
                   text: _emailCtrl.text.trim(),
                   style: const TextStyle(
@@ -1511,25 +1323,6 @@ class _ForgotPasswordSheetState extends State<_ForgotPasswordSheet> {
             ),
           ),
         ),
-        const SizedBox(height: 16),
-
-        // OTP Length Selector Tabs
-        Center(
-          child: Container(
-            padding: const EdgeInsets.all(3),
-            decoration: BoxDecoration(
-              color: const Color(0xFFF1F5F9),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                _buildLengthTab(8, '8 Digits'),
-                _buildLengthTab(6, '6 Digits'),
-              ],
-            ),
-          ),
-        ),
         const SizedBox(height: 20),
 
         if (_errorMessage != null) ...[
@@ -1537,17 +1330,12 @@ class _ForgotPasswordSheetState extends State<_ForgotPasswordSheet> {
           const SizedBox(height: 16),
         ],
 
-        // OTP Input
+        // 6-Digit OTP Input
         BluppBoxedOtpInput(
-          key: ValueKey('otp_box_$_otpLength'),
-          length: _otpLength,
+          key: const ValueKey('forgot_otp_6'),
+          length: 6,
           onChanged: (code) {
             _codeCtrl.text = code;
-            if (code.length == 8 && _otpLength != 8) {
-              setState(() => _otpLength = 8);
-            } else if (code.length == 6 && _otpLength != 6) {
-              setState(() => _otpLength = 6);
-            }
           },
           onCompleted: (code) {
             _codeCtrl.text = code;
@@ -1975,7 +1763,6 @@ class _SignUpVerificationSheet extends StatefulWidget {
 
 class _SignUpVerificationSheetState extends State<_SignUpVerificationSheet> {
   final _codeCtrl = TextEditingController();
-  int _otpLength = 8;
   bool _isLoading = false;
   String? _errorMessage;
   bool _isSuccess = false;
@@ -1988,8 +1775,8 @@ class _SignUpVerificationSheetState extends State<_SignUpVerificationSheet> {
 
   Future<void> _verify() async {
     final entered = _codeCtrl.text.trim();
-    if (entered.length != _otpLength && entered.length != 6 && entered.length != 8) {
-      setState(() => _errorMessage = 'Please enter the complete $_otpLength-digit PIN.');
+    if (entered.length != 6) {
+      setState(() => _errorMessage = 'Please enter your complete 6-digit verification code.');
       return;
     }
 
@@ -2020,46 +1807,6 @@ class _SignUpVerificationSheetState extends State<_SignUpVerificationSheet> {
         _errorMessage = widget.state.authError ?? 'Invalid verification code. Please check your inbox and try again.';
       });
     }
-  }
-
-  Widget _buildLengthTab(int length, String label) {
-    final isSelected = _otpLength == length;
-    return GestureDetector(
-      onTap: () {
-        if (_otpLength != length) {
-          setState(() {
-            _otpLength = length;
-            _codeCtrl.clear();
-            _errorMessage = null;
-          });
-        }
-      },
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
-        decoration: BoxDecoration(
-          color: isSelected ? Colors.white : Colors.transparent,
-          borderRadius: BorderRadius.circular(8),
-          boxShadow: isSelected
-              ? [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.06),
-                    blurRadius: 4,
-                    offset: const Offset(0, 2),
-                  ),
-                ]
-              : null,
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            fontSize: 12,
-            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-            color: isSelected ? const Color(0xFF1E293B) : const Color(0xFF64748B),
-          ),
-        ),
-      ),
-    );
   }
 
   @override
@@ -2146,30 +1893,11 @@ class _SignUpVerificationSheetState extends State<_SignUpVerificationSheet> {
                       text: TextSpan(
                         style: const TextStyle(color: Color(0xFF64748B), fontSize: 13, height: 1.5),
                         children: [
-                          const TextSpan(text: 'We sent a verification code to\n'),
+                          const TextSpan(text: 'We sent a 6-digit verification code to\n'),
                           TextSpan(
                             text: widget.email,
                             style: const TextStyle(color: Color(0xFF355FE5), fontWeight: FontWeight.w600),
                           ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-
-                  // 8 or 6 digit toggle
-                  Center(
-                    child: Container(
-                      padding: const EdgeInsets.all(3),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFF1F5F9),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          _buildLengthTab(8, '8 Digits'),
-                          _buildLengthTab(6, '6 Digits'),
                         ],
                       ),
                     ),
@@ -2200,16 +1928,12 @@ class _SignUpVerificationSheetState extends State<_SignUpVerificationSheet> {
                     const SizedBox(height: 16),
                   ],
 
+                  // 6-Digit OTP Input
                   BluppBoxedOtpInput(
-                    key: ValueKey('signup_otp_$_otpLength'),
-                    length: _otpLength,
+                    key: const ValueKey('signup_otp_6'),
+                    length: 6,
                     onChanged: (code) {
                       _codeCtrl.text = code;
-                      if (code.length == 8 && _otpLength != 8) {
-                        setState(() => _otpLength = 8);
-                      } else if (code.length == 6 && _otpLength != 6) {
-                        setState(() => _otpLength = 6);
-                      }
                     },
                     onCompleted: (code) {
                       _codeCtrl.text = code;

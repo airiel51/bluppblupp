@@ -345,15 +345,26 @@ class SupabaseService {
 
       final List<dynamic> data = response;
       return data.map((json) {
+        final catId = json['category_id'] ?? 'other_exp';
+        final title = json['title'] ?? 'Expense';
+        final note = json['note'];
+        final isTf = (catId == 'bank_transfer') ||
+            (title.toString().toLowerCase().contains('transfer')) ||
+            (title.toString().toLowerCase().contains('top-up')) ||
+            (title.toString().toLowerCase().contains('topup')) ||
+            (title.toString().toLowerCase().contains('top up')) ||
+            (note != null && note.toString().toLowerCase().contains('transfer'));
+
         return TransactionItem(
           id: json['id']?.toString() ?? '',
-          title: json['title'] ?? 'Expense',
+          title: title,
           amount: (json['amount'] as num?)?.toDouble() ?? 0.0,
           type: (json['type'] == 'income') ? TransactionType.income : TransactionType.expense,
-          categoryId: json['category_id'] ?? 'other_exp',
+          categoryId: catId,
           date: json['date'] != null ? DateTime.tryParse(json['date']) ?? DateTime.now() : DateTime.now(),
           bankAccountId: json['bank_account_id'] ?? 'mb_1',
-          note: json['note'],
+          note: note,
+          isTransfer: isTf,
         );
       }).toList();
     } catch (e) {

@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../models/finance_state.dart';
@@ -7,52 +6,1176 @@ import '../theme/app_theme.dart';
 import '../widgets/blupp_states.dart';
 import '../widgets/blupp_forms.dart';
 import '../widgets/blupp_logo.dart';
+import '../widgets/blupp_avatar.dart';
 
 class ProfileScreen extends StatelessWidget {
   final FinanceState state;
 
   const ProfileScreen({super.key, required this.state});
 
-  Future<void> _pickProfilePhoto(BuildContext context) async {
-    // Show loading overlay
+  void _showPersonaSelectorSheet(BuildContext context) {
+    final customCtrl = TextEditingController(text: state.userPersona);
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: AppTheme.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(26)),
+      ),
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (sheetCtx, setSheetState) {
+            return Padding(
+              padding: EdgeInsets.only(
+                left: 20,
+                right: 20,
+                top: 16,
+                bottom: MediaQuery.of(sheetCtx).viewInsets.bottom + 24,
+              ),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Center(
+                      child: Container(
+                        width: 40,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: AppTheme.surfaceBorder,
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 18),
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: AppTheme.primaryTeal.withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: const Icon(Icons.psychology_rounded, color: AppTheme.primaryTeal, size: 20),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                "Financial Identity & Persona",
+                                style: TextStyle(
+                                  color: AppTheme.textPrimary,
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                              Text(
+                                "Label your wealth journey and financial archetype",
+                                style: TextStyle(color: AppTheme.textSecondary, fontSize: 12),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 18),
+
+                    // Preset Personas
+                    Text(
+                      "RECOMMENDED ARCHETYPES",
+                      style: TextStyle(
+                        color: AppTheme.textSecondary,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 0.8,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: FinanceState.personaPresets.map((preset) {
+                        final isSelected = state.userPersona == preset;
+                        return InkWell(
+                          onTap: () {
+                            state.setUserPersona(preset);
+                            customCtrl.text = preset;
+                            setSheetState(() {});
+                          },
+                          borderRadius: BorderRadius.circular(12),
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 200),
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                            decoration: BoxDecoration(
+                              color: isSelected
+                                  ? AppTheme.primaryTeal.withValues(alpha: 0.18)
+                                  : AppTheme.surfaceLight,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: isSelected
+                                    ? AppTheme.primaryTeal
+                                    : AppTheme.surfaceBorder,
+                                width: isSelected ? 1.5 : 1.0,
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  preset,
+                                  style: TextStyle(
+                                    color: isSelected ? AppTheme.primaryTeal : AppTheme.textPrimary,
+                                    fontSize: 12,
+                                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                                  ),
+                                ),
+                                if (isSelected) ...[
+                                  const SizedBox(width: 6),
+                                  const Icon(Icons.check_circle_rounded, color: AppTheme.primaryTeal, size: 14),
+                                ],
+                              ],
+                            ),
+                          ),
+                        );
+                      }).toList(),
+                    ),
+
+                    const SizedBox(height: 20),
+
+                    // Custom Persona Input
+                    Text(
+                      "OR CUSTOM IDENTITY LABEL",
+                      style: TextStyle(
+                        color: AppTheme.textSecondary,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 0.8,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    TextField(
+                      controller: customCtrl,
+                      style: TextStyle(color: AppTheme.textPrimary, fontSize: 14),
+                      decoration: InputDecoration(
+                        hintText: "e.g. Sovereign Wealth Architect, Future Millionaire",
+                        hintStyle: TextStyle(color: AppTheme.textMuted, fontSize: 13),
+                        prefixIcon: const Icon(Icons.edit_note_rounded, color: AppTheme.primaryTeal),
+                        filled: true,
+                        fillColor: AppTheme.surfaceLight,
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+
+                    SizedBox(
+                      width: double.infinity,
+                      height: 48,
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppTheme.primaryTeal,
+                          foregroundColor: Colors.black,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                        onPressed: () {
+                          if (customCtrl.text.trim().isNotEmpty) {
+                            state.setUserPersona(customCtrl.text.trim());
+                            Navigator.pop(ctx);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                backgroundColor: AppTheme.surfaceLight,
+                                behavior: SnackBarBehavior.floating,
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                content: Row(
+                                  children: [
+                                    const Icon(Icons.check_circle_rounded, color: AppTheme.primaryTeal, size: 18),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      "Persona updated to \"${customCtrl.text.trim()}\"",
+                                      style: TextStyle(color: AppTheme.textPrimary, fontWeight: FontWeight.w500),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          }
+                        },
+                        child: const Text("Apply Persona Label", style: TextStyle(fontWeight: FontWeight.w700)),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _showAvatarStudioSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: AppTheme.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(26)),
+      ),
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (sheetCtx, setSheetState) {
+            return Container(
+              constraints: BoxConstraints(
+                maxHeight: MediaQuery.of(sheetCtx).size.height * 0.88,
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Center(
+                      child: Container(
+                        width: 40,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: AppTheme.surfaceBorder,
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Header with live preview
+                    Row(
+                      children: [
+                        BluppAvatar(
+                          state: state,
+                          size: 64,
+                          showEditBadge: false,
+                        ),
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                "Avatar Studio",
+                                style: TextStyle(
+                                  color: AppTheme.textPrimary,
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                "Choose a character, monogram, or upload a photo",
+                                style: TextStyle(color: AppTheme.textSecondary, fontSize: 12),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
+                    Divider(color: AppTheme.surfaceBorder, height: 1),
+                    const SizedBox(height: 18),
+
+                    // 1. CHARACTER AVATARS
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          "CHARACTER AVATARS",
+                          style: TextStyle(
+                            color: AppTheme.textSecondary,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: 0.8,
+                          ),
+                        ),
+                        Text(
+                          "12 Presets",
+                          style: TextStyle(color: AppTheme.primaryTeal, fontSize: 11, fontWeight: FontWeight.w600),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+
+                    GridView.builder(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 4,
+                        childAspectRatio: 0.82,
+                        crossAxisSpacing: 10,
+                        mainAxisSpacing: 12,
+                      ),
+                      itemCount: FinanceState.characterAvatarPresets.length,
+                      itemBuilder: (context, index) {
+                        final preset = FinanceState.characterAvatarPresets[index];
+                        final isSelected = !state.hasCustomProfileImage &&
+                            state.avatarType == 'preset' &&
+                            state.avatarPresetIndex == index;
+                        final List<Color> colors = preset['colors'] as List<Color>;
+                        final IconData icon = preset['icon'] as IconData;
+
+                        return InkWell(
+                          onTap: () {
+                            state.setAvatarPreset(index);
+                            setSheetState(() {});
+                          },
+                          borderRadius: BorderRadius.circular(14),
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: isSelected
+                                  ? AppTheme.primaryTeal.withValues(alpha: 0.15)
+                                  : AppTheme.surfaceLight,
+                              borderRadius: BorderRadius.circular(14),
+                              border: Border.all(
+                                color: isSelected ? AppTheme.primaryTeal : AppTheme.surfaceBorder,
+                                width: isSelected ? 2 : 1,
+                              ),
+                            ),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Stack(
+                                  alignment: Alignment.center,
+                                  children: [
+                                    Container(
+                                      width: 44,
+                                      height: 44,
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        gradient: LinearGradient(
+                                          begin: Alignment.topLeft,
+                                          end: Alignment.bottomRight,
+                                          colors: colors,
+                                        ),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: colors.first.withValues(alpha: 0.35),
+                                            blurRadius: 8,
+                                            offset: const Offset(0, 2),
+                                          ),
+                                        ],
+                                      ),
+                                      child: Icon(icon, color: Colors.white, size: 22),
+                                    ),
+                                    if (isSelected)
+                                      Positioned(
+                                        bottom: -2,
+                                        right: -2,
+                                        child: Container(
+                                          padding: const EdgeInsets.all(2),
+                                          decoration: const BoxDecoration(
+                                            color: AppTheme.primaryTeal,
+                                            shape: BoxShape.circle,
+                                          ),
+                                          child: const Icon(Icons.check, size: 10, color: Colors.black),
+                                        ),
+                                      ),
+                                  ],
+                                ),
+                                const SizedBox(height: 6),
+                                Text(
+                                  preset['name'].toString().split(' ').last,
+                                  style: TextStyle(
+                                    color: isSelected ? AppTheme.primaryTeal : AppTheme.textPrimary,
+                                    fontSize: 10,
+                                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+
+                    const SizedBox(height: 20),
+
+                    // 2. MONOGRAM GRADIENTS
+                    Text(
+                      "MONOGRAM INITIALS",
+                      style: TextStyle(
+                        color: AppTheme.textSecondary,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 0.8,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+
+                    SizedBox(
+                      height: 52,
+                      child: ListView.separated(
+                        scrollDirection: Axis.horizontal,
+                        itemCount: FinanceState.monogramGradients.length,
+                        separatorBuilder: (_, _) => const SizedBox(width: 10),
+                        itemBuilder: (context, index) {
+                          final mono = FinanceState.monogramGradients[index];
+                          final List<Color> colors = mono['colors'] as List<Color>;
+                          final isSelected = !state.hasCustomProfileImage &&
+                              state.avatarType == 'monogram' &&
+                              state.monogramColorIndex == index;
+
+                          final initial = state.userName.trim().isNotEmpty ? state.userName.trim()[0].toUpperCase() : 'B';
+
+                          return InkWell(
+                            onTap: () {
+                              state.setMonogram(index);
+                              setSheetState(() {});
+                            },
+                            borderRadius: BorderRadius.circular(26),
+                            child: Container(
+                              width: 48,
+                              height: 48,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                gradient: LinearGradient(
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                  colors: colors,
+                                ),
+                                border: Border.all(
+                                  color: isSelected ? Colors.white : Colors.transparent,
+                                  width: 2.2,
+                                ),
+                                boxShadow: isSelected
+                                    ? [
+                                        BoxShadow(
+                                          color: colors.first.withValues(alpha: 0.6),
+                                          blurRadius: 8,
+                                          spreadRadius: 1,
+                                        ),
+                                      ]
+                                    : null,
+                              ),
+                              child: Center(
+                                child: Text(
+                                  initial,
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w800,
+                                    fontSize: 18,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+
+                    const SizedBox(height: 24),
+
+                    // 3. UPLOAD FROM GALLERY OR CAMERA
+                    Text(
+                      "DEVICE PHOTO & CAMERA",
+                      style: TextStyle(
+                        color: AppTheme.textSecondary,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 0.8,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+
+                    Row(
+                      children: [
+                        Expanded(
+                          child: InkWell(
+                            onTap: () async {
+                              final ok = await state.pickProfilePictureFromGallery();
+                              setSheetState(() {});
+                              if (ok && ctx.mounted) {
+                                Navigator.pop(ctx);
+                              }
+                            },
+                            borderRadius: BorderRadius.circular(12),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              decoration: BoxDecoration(
+                                color: AppTheme.surfaceLight,
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(color: AppTheme.surfaceBorder),
+                              ),
+                              child: const Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(Icons.photo_library_outlined, size: 18, color: AppTheme.primaryTeal),
+                                  SizedBox(width: 8),
+                                  Text(
+                                    "Gallery",
+                                    style: TextStyle(color: AppTheme.primaryTeal, fontWeight: FontWeight.w600, fontSize: 13),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: InkWell(
+                            onTap: () async {
+                              final ok = await state.pickProfilePictureFromCamera();
+                              setSheetState(() {});
+                              if (ok && ctx.mounted) {
+                                Navigator.pop(ctx);
+                              }
+                            },
+                            borderRadius: BorderRadius.circular(12),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              decoration: BoxDecoration(
+                                color: AppTheme.surfaceLight,
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(color: AppTheme.surfaceBorder),
+                              ),
+                              child: const Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(Icons.camera_alt_outlined, size: 18, color: AppTheme.primaryTeal),
+                                  SizedBox(width: 8),
+                                  Text(
+                                    "Camera",
+                                    style: TextStyle(color: AppTheme.primaryTeal, fontWeight: FontWeight.w600, fontSize: 13),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+
+                    if (state.hasCustomProfileImage) ...[
+                      const SizedBox(height: 12),
+                      Center(
+                        child: TextButton.icon(
+                          onPressed: () {
+                            state.removeProfilePicture();
+                            setSheetState(() {});
+                          },
+                          icon: const Icon(Icons.delete_outline_rounded, size: 16, color: AppTheme.expenseCoral),
+                          label: const Text(
+                            "Remove Custom Photo & Use Preset",
+                            style: TextStyle(color: AppTheme.expenseCoral, fontSize: 12, fontWeight: FontWeight.w500),
+                          ),
+                        ),
+                      ),
+                    ],
+
+                    const SizedBox(height: 10),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _showTransferMoneyDialog(BuildContext context, [BankAccount? defaultFromBank]) {
+    if (state.bankAccounts.length < 2) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: AppTheme.surfaceLight,
+          content: Text(
+            "You need at least 2 bank accounts to transfer between them.",
+            style: TextStyle(color: AppTheme.textPrimary),
+          ),
+        ),
+      );
+      return;
+    }
+
+    String fromBankId = defaultFromBank?.id ?? state.bankAccounts.first.id;
+    String toBankId = state.bankAccounts.firstWhere((b) => b.id != fromBankId, orElse: () => state.bankAccounts.last).id;
+
+    final amountController = TextEditingController();
+    final noteController = TextEditingController(text: 'Transfer between accounts');
+
     showDialog(
       context: context,
-      barrierDismissible: false,
-      builder: (_) => const Center(
-        child: CircularProgressIndicator(color: AppTheme.primaryTeal),
-      ),
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (dialogCtx, setDialogState) {
+            final fromBank = state.getBankById(fromBankId);
+            final toBank = state.getBankById(toBankId);
+
+            return AlertDialog(
+              backgroundColor: AppTheme.surface,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+                side: BorderSide(color: const Color(0xFF38BDF8).withValues(alpha: 0.35)),
+              ),
+              title: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF38BDF8).withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(Icons.swap_horiz_rounded, color: Color(0xFF38BDF8), size: 22),
+                  ),
+                  const SizedBox(width: 12),
+                  Text(
+                    "Transfer Between Banks",
+                    style: TextStyle(color: AppTheme.textPrimary, fontWeight: FontWeight.w700, fontSize: 17),
+                  ),
+                ],
+              ),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF38BDF8).withValues(alpha: 0.08),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Row(
+                        children: [
+                          Icon(Icons.info_outline_rounded, size: 14, color: Color(0xFF38BDF8)),
+                          SizedBox(width: 6),
+                          Expanded(
+                            child: Text(
+                              "Internal bank transfers reallocate money and are NOT counted as living expenses.",
+                              style: TextStyle(color: Color(0xFF38BDF8), fontSize: 11),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+
+                    // From Bank
+                    Text("From Source Bank:", style: TextStyle(color: AppTheme.textSecondary, fontSize: 11, fontWeight: FontWeight.w600)),
+                    const SizedBox(height: 6),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      decoration: BoxDecoration(color: AppTheme.surfaceLight, borderRadius: BorderRadius.circular(10)),
+                      child: DropdownButtonHideUnderline(
+                        child: DropdownButton<String>(
+                          value: fromBankId,
+                          isExpanded: true,
+                          dropdownColor: AppTheme.surface,
+                          style: TextStyle(color: AppTheme.textPrimary, fontSize: 13),
+                          items: state.bankAccounts.map((b) {
+                            return DropdownMenuItem(
+                              value: b.id,
+                              child: Text("${b.name} (${AppTheme.formatCurrency(b.balance)})"),
+                            );
+                          }).toList(),
+                          onChanged: (val) {
+                            if (val != null) {
+                              setDialogState(() {
+                                fromBankId = val;
+                                if (toBankId == fromBankId) {
+                                  toBankId = state.bankAccounts.firstWhere((b) => b.id != fromBankId).id;
+                                }
+                              });
+                            }
+                          },
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+
+                    // To Bank
+                    Text("To Destination Bank:", style: TextStyle(color: AppTheme.textSecondary, fontSize: 11, fontWeight: FontWeight.w600)),
+                    const SizedBox(height: 6),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      decoration: BoxDecoration(color: AppTheme.surfaceLight, borderRadius: BorderRadius.circular(10)),
+                      child: DropdownButtonHideUnderline(
+                        child: DropdownButton<String>(
+                          value: toBankId,
+                          isExpanded: true,
+                          dropdownColor: AppTheme.surface,
+                          style: TextStyle(color: AppTheme.textPrimary, fontSize: 13),
+                          items: state.bankAccounts.where((b) => b.id != fromBankId).map((b) {
+                            return DropdownMenuItem(
+                              value: b.id,
+                              child: Text("${b.name} (${AppTheme.formatCurrency(b.balance)})"),
+                            );
+                          }).toList(),
+                          onChanged: (val) {
+                            if (val != null) {
+                              setDialogState(() {
+                                toBankId = val;
+                              });
+                            }
+                          },
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+
+                    TextField(
+                      controller: amountController,
+                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      style: TextStyle(color: AppTheme.textPrimary, fontSize: 16, fontWeight: FontWeight.bold),
+                      decoration: InputDecoration(
+                        labelText: "Transfer Amount (RM)",
+                        labelStyle: TextStyle(color: AppTheme.textSecondary),
+                        prefixIcon: const Icon(Icons.payments_outlined, color: Color(0xFF38BDF8)),
+                        filled: true,
+                        fillColor: AppTheme.surfaceLight,
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+
+                    TextField(
+                      controller: noteController,
+                      style: TextStyle(color: AppTheme.textPrimary, fontSize: 13),
+                      decoration: InputDecoration(
+                        labelText: "Note / Description",
+                        labelStyle: TextStyle(color: AppTheme.textSecondary),
+                        prefixIcon: Icon(Icons.edit_note_rounded, color: AppTheme.textMuted),
+                        filled: true,
+                        fillColor: AppTheme.surfaceLight,
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: Text("Cancel", style: TextStyle(color: AppTheme.textMuted)),
+                ),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF38BDF8),
+                    foregroundColor: Colors.black,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  onPressed: () {
+                    final amount = double.tryParse(amountController.text.trim()) ?? 0.0;
+                    if (amount > 0 && fromBank != null && toBank != null) {
+                      if (fromBank.balance < amount) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            backgroundColor: AppTheme.expenseCoral,
+                            content: Text("Insufficient balance in ${fromBank.name} (${AppTheme.formatCurrency(fromBank.balance)})"),
+                          ),
+                        );
+                        return;
+                      }
+                      state.transferBetweenBanks(
+                        fromBankId: fromBank.id,
+                        toBankId: toBank.id,
+                        amount: amount,
+                        note: noteController.text.trim(),
+                      );
+                      Navigator.pop(ctx);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          backgroundColor: AppTheme.surfaceLight,
+                          content: Row(
+                            children: [
+                              const Icon(Icons.check_circle_rounded, color: Color(0xFF38BDF8), size: 18),
+                              const SizedBox(width: 8),
+                              Text(
+                                "Transferred ${AppTheme.formatCurrency(amount)} from ${fromBank.name} to ${toBank.name}",
+                                style: TextStyle(color: AppTheme.textPrimary, fontWeight: FontWeight.w500),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    }
+                  },
+                  child: const Text("Confirm Transfer", style: TextStyle(fontWeight: FontWeight.w700)),
+                ),
+              ],
+            );
+          },
+        );
+      },
     );
-    final success = await state.pickProfilePictureFromGallery();
-    if (!context.mounted) return;
-    Navigator.of(context, rootNavigator: true).pop(); // dismiss loading
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        backgroundColor: AppTheme.surfaceLight,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        content: Row(
+  }
+
+  Widget _buildFinancialStatisticsSection(BuildContext context) {
+    final healthScore = state.financialHealthScore;
+    final healthGrade = state.financialHealthGrade;
+    final savingsRate = state.savingsRatePercentage;
+    final budgetUsed = state.budgetUsedPercentage;
+    final fomoSaved = state.totalFomoSaved;
+    final assetDebtRatio = state.assetToDebtRatio;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Icon(
-              success ? Icons.check_circle_rounded : Icons.error_outline_rounded,
-              color: success ? AppTheme.primaryTeal : AppTheme.expenseCoral,
-              size: 20,
+            Text(
+              "FINANCIAL INTELLIGENCE & PERFORMANCE",
+              style: TextStyle(
+                color: AppTheme.textSecondary,
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 0.8,
+              ),
             ),
-            const SizedBox(width: 10),
-            Expanded(
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              decoration: BoxDecoration(
+                color: AppTheme.primaryTeal.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(8),
+              ),
               child: Text(
-                success
-                    ? 'Profile picture updated successfully'
-                    : 'Could not pick image. Please check permissions.',
-                style: TextStyle(
-                  color: AppTheme.textPrimary,
-                  fontWeight: FontWeight.w500,
-                  fontSize: 13,
+                healthGrade,
+                style: const TextStyle(
+                  color: AppTheme.primaryTeal,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.4,
                 ),
               ),
             ),
           ],
         ),
-      ),
+        const SizedBox(height: 10),
+
+        // 1. Hero Health Score Banner
+        Container(
+          padding: const EdgeInsets.all(18),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                AppTheme.surfaceLight,
+                AppTheme.surface,
+              ],
+            ),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: AppTheme.primaryTeal.withValues(alpha: 0.35)),
+          ),
+          child: Column(
+            children: [
+              Row(
+                children: [
+                  // Circular Score Indicator
+                  Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      SizedBox(
+                        width: 58,
+                        height: 58,
+                        child: CircularProgressIndicator(
+                          value: (healthScore / 100).clamp(0.0, 1.0),
+                          strokeWidth: 6,
+                          backgroundColor: AppTheme.surfaceBorder,
+                          valueColor: const AlwaysStoppedAnimation(AppTheme.primaryTeal),
+                        ),
+                      ),
+                      Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            "$healthScore",
+                            style: TextStyle(
+                              color: AppTheme.textPrimary,
+                              fontSize: 18,
+                              fontWeight: FontWeight.w800,
+                              height: 1.0,
+                            ),
+                          ),
+                          Text(
+                            "/100",
+                            style: TextStyle(color: AppTheme.textMuted, fontSize: 9),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          "Financial Health Score",
+                          style: TextStyle(
+                            color: AppTheme.textPrimary,
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        const SizedBox(height: 3),
+                        Text(
+                          healthScore >= 80
+                              ? "Superb solvency, strong liquidity & disciplined spending buffer."
+                              : "Healthy balance with room to compound additional monthly savings.",
+                          style: TextStyle(color: AppTheme.textSecondary, fontSize: 11, height: 1.3),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Divider(color: AppTheme.surfaceBorder, height: 1),
+              const SizedBox(height: 14),
+
+              // 3 Sub-pills
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  _buildStatMiniBadge(
+                    icon: Icons.shield_rounded,
+                    label: state.totalLoans == 0 ? "Debt-Free" : "${assetDebtRatio > 20 ? '20+' : assetDebtRatio.toStringAsFixed(1)}x Assets",
+                    caption: "Leverage",
+                    color: AppTheme.primaryTeal,
+                  ),
+                  _buildStatMiniBadge(
+                    icon: Icons.track_changes_rounded,
+                    label: "${(100 - budgetUsed).clamp(0, 100).toStringAsFixed(0)}% Left",
+                    caption: "Discipline",
+                    color: AppTheme.incomeMint,
+                  ),
+                  _buildStatMiniBadge(
+                    icon: Icons.lock_clock_rounded,
+                    label: "${state.fomoWishlist.where((w) => w.avoided).length} Blocked",
+                    caption: "FOMO Shield",
+                    color: const Color(0xFF8B5CF6),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 12),
+
+        // 2. 2x2 Performance Metrics Grid
+        Row(
+          children: [
+            // Card 1: Savings Rate %
+            Expanded(
+              child: Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: AppTheme.surfaceLight,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: AppTheme.surfaceBorder),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Icon(Icons.savings_rounded, color: AppTheme.incomeMint, size: 18),
+                        Text(
+                          "RATE",
+                          style: TextStyle(color: AppTheme.textMuted, fontSize: 9, fontWeight: FontWeight.w700),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    Text(
+                      "${savingsRate.toStringAsFixed(1)}%",
+                      style: TextStyle(
+                        color: AppTheme.textPrimary,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      "Monthly Savings",
+                      style: TextStyle(color: AppTheme.textSecondary, fontSize: 11),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(width: 10),
+
+            // Card 2: Budget Utilization
+            Expanded(
+              child: Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: AppTheme.surfaceLight,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: AppTheme.surfaceBorder),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Icon(Icons.pie_chart_outline_rounded, color: Color(0xFF38BDF8), size: 18),
+                        Text(
+                          "BUDGET",
+                          style: TextStyle(color: AppTheme.textMuted, fontSize: 9, fontWeight: FontWeight.w700),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    Text(
+                      "${budgetUsed.toStringAsFixed(0)}%",
+                      style: TextStyle(
+                        color: AppTheme.textPrimary,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      "${AppTheme.formatCurrency(state.spendingBalanceLeft)} left",
+                      style: TextStyle(color: AppTheme.textSecondary, fontSize: 11),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+
+        Row(
+          children: [
+            // Card 3: FOMO Impulses Avoided
+            Expanded(
+              child: Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: AppTheme.surfaceLight,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: AppTheme.surfaceBorder),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Icon(Icons.sentiment_very_satisfied_rounded, color: Color(0xFFF59E0B), size: 18),
+                        Text(
+                          "IMPULSE",
+                          style: TextStyle(color: AppTheme.textMuted, fontSize: 9, fontWeight: FontWeight.w700),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    Text(
+                      AppTheme.formatCurrency(fomoSaved),
+                      style: TextStyle(
+                        color: AppTheme.textPrimary,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      "Protected from FOMO",
+                      style: TextStyle(color: AppTheme.textSecondary, fontSize: 11),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(width: 10),
+
+            // Card 4: Linked Net Accounts
+            Expanded(
+              child: Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: AppTheme.surfaceLight,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: AppTheme.surfaceBorder),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Icon(Icons.account_balance_rounded, color: AppTheme.primaryTeal, size: 18),
+                        Text(
+                          "NETWORK",
+                          style: TextStyle(color: AppTheme.textMuted, fontSize: 9, fontWeight: FontWeight.w700),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    Text(
+                      "${state.bankAccounts.length + state.investments.length + state.loans.length} Portfolios",
+                      style: TextStyle(
+                        color: AppTheme.textPrimary,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      "${state.bankAccounts.length} Banks • ${state.investments.length} Assets",
+                      style: TextStyle(color: AppTheme.textSecondary, fontSize: 11),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildStatMiniBadge({
+    required IconData icon,
+    required String label,
+    required String caption,
+    required Color color,
+  }) {
+    return Row(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(6),
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.15),
+            shape: BoxShape.circle,
+          ),
+          child: Icon(icon, color: color, size: 14),
+        ),
+        const SizedBox(width: 8),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              label,
+              style: TextStyle(color: AppTheme.textPrimary, fontSize: 12, fontWeight: FontWeight.w700),
+            ),
+            Text(
+              caption,
+              style: TextStyle(color: AppTheme.textMuted, fontSize: 10),
+            ),
+          ],
+        ),
+      ],
     );
   }
 
@@ -190,7 +1313,7 @@ class ProfileScreen extends StatelessWidget {
 
   void _showChangePasswordDialog(BuildContext context) {
     int step = 1; // 1: Send Code, 2: Enter Code, 3: Enter New Password
-    int otpLength = 8;
+    const int otpLength = 6;
     String sentCode = '';
     final codeCtrl = TextEditingController();
     final newPassCtrl = TextEditingController();
@@ -229,10 +1352,10 @@ class ProfileScreen extends StatelessWidget {
 
           Future<void> verifyCode() async {
             final entered = codeCtrl.text.trim();
-            if (entered.length != otpLength && entered.length != 6 && entered.length != 8) {
+            if (entered.length != 6) {
               setDialogState(() {
                 localErrorWhere = 'Verification PIN';
-                localErrorWhy = 'Please enter your $otpLength-digit PIN sent to your email.';
+                localErrorWhy = 'Please enter the complete 6-digit PIN sent to your email.';
               });
               return;
             }
@@ -388,20 +1511,15 @@ class ProfileScreen extends StatelessWidget {
                   // STEP 2: Enter Code with Horizontal Boxed Cells
                   if (step == 2) ...[
                     Text(
-                      'Enter the $otpLength-digit verification code sent to ${state.userEmail}:',
+                      'Enter the 6-digit verification code sent to ${state.userEmail}:',
                       style: TextStyle(color: AppTheme.textSecondary, fontSize: 13, height: 1.4),
                     ),
                     const SizedBox(height: 16),
                     BluppBoxedOtpInput(
-                      key: ValueKey('profile_otp_$otpLength'),
+                      key: const ValueKey('profile_otp_6'),
                       length: otpLength,
                       onChanged: (code) {
                         codeCtrl.text = code;
-                        if (code.length == 8 && otpLength != 8) {
-                          setDialogState(() => otpLength = 8);
-                        } else if (code.length == 6 && otpLength != 6) {
-                          setDialogState(() => otpLength = 6);
-                        }
                       },
                       onCompleted: (code) {
                         codeCtrl.text = code;
@@ -2028,84 +3146,137 @@ class ProfileScreen extends StatelessWidget {
       );
     }
     return Column(
-      children: state.bankAccounts.map((bank) {
-        return Container(
-          margin: const EdgeInsets.only(bottom: 12),
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            color: AppTheme.surfaceLight,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: bank.color.withValues(alpha: 0.3)),
-          ),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: bank.color.withValues(alpha: 0.2),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(bank.icon, color: bank.color, size: 18),
+      children: [
+        if (state.bankAccounts.length >= 2) ...[
+          InkWell(
+            onTap: () {
+              Navigator.pop(sheetCtx);
+              _showTransferMoneyDialog(context);
+            },
+            borderRadius: BorderRadius.circular(12),
+            child: Container(
+              margin: const EdgeInsets.only(bottom: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              decoration: BoxDecoration(
+                color: const Color(0xFF38BDF8).withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFF38BDF8).withValues(alpha: 0.35)),
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      bank.name,
-                      style: TextStyle(color: AppTheme.textPrimary, fontWeight: FontWeight.w500, fontSize: 14),
+              child: const Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.swap_horiz_rounded, color: Color(0xFF38BDF8), size: 18),
+                  SizedBox(width: 8),
+                  Text(
+                    "Transfer Between Banks",
+                    style: TextStyle(
+                      color: Color(0xFF38BDF8),
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
                     ),
-                    Text(
-                      AppTheme.formatCurrency(bank.balance),
-                      style: TextStyle(color: bank.color, fontWeight: FontWeight.w500, fontSize: 13),
-                    ),
-                  ],
-                ),
+                  ),
+                ],
               ),
-              ElevatedButton.icon(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppTheme.primaryTeal,
-                  foregroundColor: Colors.black,
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                  minimumSize: Size.zero,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                ),
-                onPressed: () {
-                  Navigator.pop(sheetCtx);
-                  _showAddMoneyDialog(context, bank);
-                },
-                icon: const Icon(Icons.add_rounded, size: 14),
-                label: const Text('Add', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w500)),
-              ),
-              const SizedBox(width: 6),
-              ElevatedButton.icon(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.orangeAccent,
-                  foregroundColor: Colors.black,
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                  minimumSize: Size.zero,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                ),
-                onPressed: () {
-                  Navigator.pop(sheetCtx);
-                  _showMinusBankMoneyDialog(context, bank);
-                },
-                icon: const Icon(Icons.remove_rounded, size: 14),
-                label: const Text('Minus', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w500)),
-              ),
-              const SizedBox(width: 6),
-              IconButton(
-                icon: Icon(Icons.delete_outline_rounded, color: AppTheme.expenseCoral, size: 20),
-                onPressed: () {
-                  Navigator.pop(sheetCtx);
-                  _confirmDeleteBank(context, bank);
-                },
-              ),
-            ],
+            ),
           ),
-        );
-      }).toList(),
+        ],
+        ...state.bankAccounts.map((bank) {
+          return Container(
+            margin: const EdgeInsets.only(bottom: 12),
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: AppTheme.surfaceLight,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: bank.color.withValues(alpha: 0.3)),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: bank.color.withValues(alpha: 0.2),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(bank.icon, color: bank.color, size: 18),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        bank.name,
+                        style: TextStyle(color: AppTheme.textPrimary, fontWeight: FontWeight.w500, fontSize: 14),
+                      ),
+                      Text(
+                        AppTheme.formatCurrency(bank.balance),
+                        style: TextStyle(color: bank.color, fontWeight: FontWeight.w500, fontSize: 13),
+                      ),
+                    ],
+                  ),
+                ),
+                ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppTheme.primaryTeal,
+                    foregroundColor: Colors.black,
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                    minimumSize: Size.zero,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  ),
+                  onPressed: () {
+                    Navigator.pop(sheetCtx);
+                    _showAddMoneyDialog(context, bank);
+                  },
+                  icon: const Icon(Icons.add_rounded, size: 14),
+                  label: const Text('Add', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w500)),
+                ),
+                const SizedBox(width: 6),
+                if (state.bankAccounts.length >= 2) ...[
+                  ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF38BDF8),
+                      foregroundColor: Colors.black,
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                      minimumSize: Size.zero,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
+                    onPressed: () {
+                      Navigator.pop(sheetCtx);
+                      _showTransferMoneyDialog(context, bank);
+                    },
+                    icon: const Icon(Icons.swap_horiz_rounded, size: 14),
+                    label: const Text('Transfer', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600)),
+                  ),
+                  const SizedBox(width: 6),
+                ],
+                ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.orangeAccent,
+                    foregroundColor: Colors.black,
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                    minimumSize: Size.zero,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  ),
+                  onPressed: () {
+                    Navigator.pop(sheetCtx);
+                    _showMinusBankMoneyDialog(context, bank);
+                  },
+                  icon: const Icon(Icons.remove_rounded, size: 14),
+                  label: const Text('Minus', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w500)),
+                ),
+                const SizedBox(width: 6),
+                IconButton(
+                  icon: Icon(Icons.delete_outline_rounded, color: AppTheme.expenseCoral, size: 20),
+                  onPressed: () {
+                    Navigator.pop(sheetCtx);
+                    _confirmDeleteBank(context, bank);
+                  },
+                ),
+              ],
+            ),
+          );
+        }),
+      ],
     );
   }
 
@@ -2361,63 +3532,16 @@ class ProfileScreen extends StatelessWidget {
                   children: [
                     Row(
                       children: [
-                        // Avatar: Custom Gallery Photo or Default Profile Picture
-                        InkWell(
-                          onTap: () => _pickProfilePhoto(context),
-                          borderRadius: BorderRadius.circular(32),
-                          child: Stack(
-                            children: [
-                              Container(
-                                width: 60,
-                                height: 60,
-                                decoration: BoxDecoration(
-                                  color: AppTheme.surfaceLight,
-                                  shape: BoxShape.circle,
-                                  border: Border.all(
-                                    color: AppTheme.primaryTeal.withValues(alpha: 0.6),
-                                    width: 1.8,
-                                  ),
-                                ),
-                                child: state.hasCustomProfileImage
-                                    ? ClipOval(
-                                        child: Image.memory(
-                                          base64Decode(state.profileImageBase64!),
-                                          width: 60,
-                                          height: 60,
-                                          fit: BoxFit.cover,
-                                        ),
-                                      )
-                                    : Center(
-                                        child: Icon(
-                                          Icons.person_rounded,
-                                          color: AppTheme.textSecondary,
-                                          size: 32,
-                                        ),
-                                      ),
-                              ),
-                              Positioned(
-                                bottom: 0,
-                                right: 0,
-                                child: Container(
-                                  padding: const EdgeInsets.all(4),
-                                  decoration: BoxDecoration(
-                                    color: AppTheme.primaryTeal,
-                                    shape: BoxShape.circle,
-                                    border: Border.all(color: AppTheme.surface, width: 2),
-                                  ),
-                                  child: const Icon(
-                                    Icons.camera_alt_rounded,
-                                    size: 11,
-                                    color: Colors.black,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
+                        // Avatar Studio Trigger with BluppAvatar
+                        BluppAvatar(
+                          state: state,
+                          size: 64,
+                          showEditBadge: true,
+                          onTap: () => _showAvatarStudioSheet(context),
                         ),
                         const SizedBox(width: 16),
 
-                        // Name, Email & Verification Badge
+                        // Name, Email, Persona & Verification Badge
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -2462,7 +3586,44 @@ class ProfileScreen extends StatelessWidget {
                                 ),
                                 overflow: TextOverflow.ellipsis,
                               ),
-                              const SizedBox(height: 8),
+                              const SizedBox(height: 6),
+
+                              // Editable Financial Persona Archetype Pill
+                              InkWell(
+                                onTap: () => _showPersonaSelectorSheet(context),
+                                borderRadius: BorderRadius.circular(20),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: AppTheme.primaryTeal.withValues(alpha: 0.16),
+                                    borderRadius: BorderRadius.circular(20),
+                                    border: Border.all(
+                                      color: AppTheme.primaryTeal.withValues(alpha: 0.4),
+                                    ),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      const Icon(Icons.psychology_rounded, color: AppTheme.primaryTeal, size: 13),
+                                      const SizedBox(width: 5),
+                                      Flexible(
+                                        child: Text(
+                                          state.userPersona,
+                                          style: const TextStyle(
+                                            color: AppTheme.primaryTeal,
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.w700,
+                                          ),
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 4),
+                                      const Icon(Icons.edit_rounded, color: AppTheme.primaryTeal, size: 10),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 6),
 
                               // Status Pill
                               Container(
@@ -2500,44 +3661,86 @@ class ProfileScreen extends StatelessWidget {
                     Divider(color: AppTheme.surfaceBorder, height: 1),
                     const SizedBox(height: 14),
 
-                    // Quick Edit Profile Action
-                    InkWell(
-                      onTap: () => _showEditProfileSheet(context),
-                      borderRadius: BorderRadius.circular(12),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 14),
-                        decoration: BoxDecoration(
-                          color: AppTheme.surfaceLight,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: AppTheme.surfaceBorder.withValues(alpha: 0.6),
-                          ),
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(Icons.edit_rounded, color: AppTheme.primaryTeal, size: 16),
-                            const SizedBox(width: 8),
-                            Text(
-                              'Edit Profile & Information',
-                              style: TextStyle(
-                                color: AppTheme.textPrimary,
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
+                    // Quick Actions: Edit Profile & Customize Avatar
+                    Row(
+                      children: [
+                        Expanded(
+                          child: InkWell(
+                            onTap: () => _showEditProfileSheet(context),
+                            borderRadius: BorderRadius.circular(12),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 10),
+                              decoration: BoxDecoration(
+                                color: AppTheme.surfaceLight,
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: AppTheme.surfaceBorder.withValues(alpha: 0.6),
+                                ),
+                              ),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(Icons.edit_rounded, color: AppTheme.primaryTeal, size: 15),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    'Edit Info',
+                                    style: TextStyle(
+                                      color: AppTheme.textPrimary,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
-                          ],
+                          ),
                         ),
-                      ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: InkWell(
+                            onTap: () => _showAvatarStudioSheet(context),
+                            borderRadius: BorderRadius.circular(12),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 10),
+                              decoration: BoxDecoration(
+                                color: AppTheme.primaryTeal.withValues(alpha: 0.12),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: AppTheme.primaryTeal.withValues(alpha: 0.35),
+                                ),
+                              ),
+                              child: const Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(Icons.face_retouching_natural_rounded, color: AppTheme.primaryTeal, size: 15),
+                                  SizedBox(width: 6),
+                                  Text(
+                                    'Avatar Studio',
+                                    style: TextStyle(
+                                      color: AppTheme.primaryTeal,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
               ).animate().fadeIn(duration: 350.ms, delay: 60.ms).slideY(begin: 0.06, end: 0),
               const SizedBox(height: 20),
 
-              // PROFILE PICTURE (Custom Gallery Upload or Default)
+              // 2. FINANCIAL INTELLIGENCE & PERFORMANCE STATISTICS
+              _buildFinancialStatisticsSection(context).animate().fadeIn(duration: 350.ms, delay: 100.ms).slideY(begin: 0.06, end: 0),
+              const SizedBox(height: 20),
+
+              // 3. AVATAR & IDENTITY STUDIO CARD
               Text(
-                "PROFILE PICTURE",
+                "AVATAR & IDENTITY STUDIO",
                 style: TextStyle(
                   color: AppTheme.textSecondary,
                   fontSize: 11,
@@ -2550,30 +3753,10 @@ class ProfileScreen extends StatelessWidget {
                 padding: const EdgeInsets.all(16),
                 child: Row(
                   children: [
-                    Container(
-                      width: 52,
-                      height: 52,
-                      decoration: BoxDecoration(
-                        color: AppTheme.surfaceLight,
-                        shape: BoxShape.circle,
-                        border: Border.all(color: AppTheme.surfaceBorder, width: 1.5),
-                      ),
-                      child: state.hasCustomProfileImage
-                          ? ClipOval(
-                              child: Image.memory(
-                                base64Decode(state.profileImageBase64!),
-                                width: 52,
-                                height: 52,
-                                fit: BoxFit.cover,
-                              ),
-                            )
-                          : Center(
-                              child: Icon(
-                                Icons.person_rounded,
-                                color: AppTheme.textMuted,
-                                size: 28,
-                              ),
-                            ),
+                    BluppAvatar(
+                      state: state,
+                      size: 52,
+                      showEditBadge: false,
                     ),
                     const SizedBox(width: 14),
                     Expanded(
@@ -2581,7 +3764,11 @@ class ProfileScreen extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            state.hasCustomProfileImage ? "Custom Picture" : "Default Profile Picture",
+                            state.hasCustomProfileImage
+                                ? "Custom Photo Avatar"
+                                : state.avatarType == 'preset'
+                                    ? "Preset: ${FinanceState.characterAvatarPresets[state.avatarPresetIndex]['name']}"
+                                    : "Monogram Initial",
                             style: TextStyle(
                               color: AppTheme.textPrimary,
                               fontSize: 14,
@@ -2590,41 +3777,30 @@ class ProfileScreen extends StatelessWidget {
                           ),
                           const SizedBox(height: 3),
                           Text(
-                            state.hasCustomProfileImage
-                                ? "Photo selected from your gallery"
-                                : "Choose your own picture from device gallery",
-                            style: TextStyle(color: AppTheme.textMuted, fontSize: 11),
+                            "Persona: ${state.userPersona}",
+                            style: TextStyle(color: AppTheme.textSecondary, fontSize: 11),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ],
                       ),
                     ),
                     const SizedBox(width: 8),
                     ElevatedButton.icon(
-                      onPressed: () => _pickProfilePhoto(context),
+                      onPressed: () => _showAvatarStudioSheet(context),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: AppTheme.surfaceLight,
-                        foregroundColor: AppTheme.textPrimary,
+                        backgroundColor: AppTheme.primaryTeal,
+                        foregroundColor: Colors.black,
                         elevation: 0,
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                          side: BorderSide(color: AppTheme.surfaceBorder),
-                        ),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                       ),
-                      icon: const Icon(Icons.photo_library_outlined, size: 16),
-                      label: Text(
-                        state.hasCustomProfileImage ? "Change" : "Upload",
-                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+                      icon: const Icon(Icons.palette_outlined, size: 15),
+                      label: const Text(
+                        "Studio",
+                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
                       ),
                     ),
-                    if (state.hasCustomProfileImage) ...[
-                      const SizedBox(width: 4),
-                      IconButton(
-                        onPressed: state.removeProfilePicture,
-                        tooltip: "Reset to default picture",
-                        icon: const Icon(Icons.delete_outline_rounded, size: 18, color: AppTheme.expenseCoral),
-                      ),
-                    ],
                   ],
                 ),
               ).animate().fadeIn(duration: 350.ms, delay: 120.ms).slideY(begin: 0.06, end: 0),

@@ -545,7 +545,6 @@ class _TrackingScreenState extends State<TrackingScreen>
   Widget _buildTransactionCard(TransactionItem tx, [int index = 0]) {
     final category = widget.state.getCategoryById(tx.categoryId);
     final bank = widget.state.getBankById(tx.bankAccountId);
-    final isExpense = tx.type == TransactionType.expense;
 
     return Dismissible(
       key: Key(tx.id),
@@ -644,26 +643,38 @@ class _TrackingScreenState extends State<TrackingScreen>
                 ],
               ),
             ),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Text(
-                  "${isExpense ? '-' : '+'}${AppTheme.formatCurrency(tx.amount)}",
-                  style: TextStyle(
-                    color: isExpense ? AppTheme.expenseCoral : AppTheme.incomeMint,
-                    fontSize: 15,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  _formatDate(tx.date),
-                  style: TextStyle(
-                    color: AppTheme.textMuted,
-                    fontSize: 10,
-                  ),
-                ),
-              ],
+            Builder(
+              builder: (context) {
+                final isTransfer = tx.isTransfer || widget.state.isTransferOrTopUp(tx);
+                final isExpense = tx.type == TransactionType.expense;
+
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(
+                      isTransfer
+                          ? "⇄ ${AppTheme.formatCurrency(tx.amount)}"
+                          : "${isExpense ? '-' : '+'}${AppTheme.formatCurrency(tx.amount)}",
+                      style: TextStyle(
+                        color: isTransfer
+                            ? const Color(0xFF38BDF8)
+                            : (isExpense ? AppTheme.expenseCoral : AppTheme.incomeMint),
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      isTransfer ? "Internal Transfer" : _formatDate(tx.date),
+                      style: TextStyle(
+                        color: isTransfer ? const Color(0xFF38BDF8).withValues(alpha: 0.8) : AppTheme.textMuted,
+                        fontSize: 10,
+                        fontWeight: isTransfer ? FontWeight.w500 : FontWeight.normal,
+                      ),
+                    ),
+                  ],
+                );
+              },
             ),
             const SizedBox(width: 10),
             // Visible Delete Button
