@@ -1996,54 +1996,52 @@ class ProfileScreen extends StatelessWidget {
       builder: (ctx) => AlertDialog(
         backgroundColor: AppTheme.surface,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-          side: BorderSide(color: (state.isDemoAccount ? AppTheme.primaryTeal : AppTheme.expenseCoral).withValues(alpha: 0.3)),
+          borderRadius: BorderRadius.circular(16),
+          side: BorderSide(color: AppTheme.expenseCoral.withValues(alpha: 0.3)),
         ),
         title: Row(
           children: [
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: (state.isDemoAccount ? AppTheme.primaryTeal : AppTheme.expenseCoral).withValues(alpha: 0.15),
+                color: AppTheme.expenseCoral.withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: Icon(
-                state.isDemoAccount ? Icons.login_rounded : Icons.logout_rounded,
-                color: state.isDemoAccount ? AppTheme.primaryTeal : AppTheme.expenseCoral,
+              child: const Icon(
+                Icons.logout_rounded,
+                color: AppTheme.expenseCoral,
                 size: 20,
               ),
             ),
             const SizedBox(width: 12),
-            Text(
-              state.isDemoAccount ? 'Sign In to Your Account' : 'Sign Out',
-              style: TextStyle(color: AppTheme.textPrimary, fontWeight: FontWeight.w500),
+            const Text(
+              'Log Out / Switch Account',
+              style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 17),
             ),
           ],
         ),
-        content: Text(
-          state.isDemoAccount
-              ? 'Ready to sign in to your personal account? You will be taken to the sign-in screen.'
-              : 'Are you sure you want to sign out of Blupp? You will need to enter your credentials to access your financial dashboard again.',
-          style: TextStyle(color: AppTheme.textSecondary, fontSize: 14, height: 1.4),
+        content: const Text(
+          'Are you sure you want to log out or switch account? You can log back into Blupp anytime.',
+          style: TextStyle(color: Color(0xFFA1A1AA), fontSize: 14, height: 1.4),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: Text('Cancel', style: TextStyle(color: AppTheme.textMuted)),
+            child: const Text('Cancel', style: TextStyle(color: Color(0xFF71717A))),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: state.isDemoAccount ? AppTheme.primaryTeal : AppTheme.expenseCoral,
-              foregroundColor: state.isDemoAccount ? Colors.black : Colors.white,
+              backgroundColor: AppTheme.expenseCoral,
+              foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             ),
             onPressed: () {
               Navigator.pop(ctx);
               state.signOut();
             },
-            child: Text(
-              state.isDemoAccount ? 'Sign In' : 'Sign Out',
-              style: const TextStyle(fontWeight: FontWeight.w600),
+            child: const Text(
+              'Log Out',
+              style: TextStyle(fontWeight: FontWeight.w600),
             ),
           ),
         ],
@@ -4222,41 +4220,45 @@ class ProfileScreen extends StatelessWidget {
               ),
               const SizedBox(height: 28),
 
-              // 6. SIGN OUT BUTTON (Clean Revolut style)
-              SizedBox(
+              // 6. LOG OUT / SWITCH ACCOUNT BUTTON (Clean, luxury fintech aesthetic)
+              Container(
                 width: double.infinity,
                 height: 52,
-                child: OutlinedButton(
-                  style: OutlinedButton.styleFrom(
-                    backgroundColor: AppTheme.expenseCoral.withValues(alpha: 0.08),
-                    side: BorderSide(
-                      color: AppTheme.expenseCoral.withValues(alpha: 0.4),
-                      width: 1.2,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
+                decoration: BoxDecoration(
+                  color: AppTheme.expenseCoral.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: AppTheme.expenseCoral.withValues(alpha: 0.32),
+                    width: 1.2,
                   ),
-                  onPressed: () => _showSignOutConfirmDialog(context),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        state.isDemoAccount ? Icons.login_rounded : Icons.logout_rounded,
-                        color: state.isDemoAccount ? const Color(0xFF38BDF8) : AppTheme.expenseCoral,
-                        size: 20,
+                ),
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: () => _showSignOutConfirmDialog(context),
+                    borderRadius: BorderRadius.circular(16),
+                    child: const Center(
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.logout_rounded,
+                            color: AppTheme.expenseCoral,
+                            size: 19,
+                          ),
+                          SizedBox(width: 9),
+                          Text(
+                            'Log Out / Switch Account',
+                            style: TextStyle(
+                              color: AppTheme.expenseCoral,
+                              fontSize: 14.5,
+                              fontWeight: FontWeight.w600,
+                              letterSpacing: 0.2,
+                            ),
+                          ),
+                        ],
                       ),
-                      const SizedBox(width: 10),
-                      Text(
-                        state.isDemoAccount ? 'Sign In / Switch Account' : 'Sign Out',
-                        style: TextStyle(
-                          color: state.isDemoAccount ? const Color(0xFF38BDF8) : AppTheme.expenseCoral,
-                          fontSize: 15,
-                          fontWeight: FontWeight.w500,
-                          letterSpacing: 0.2,
-                        ),
-                      ),
-                    ],
+                    ),
                   ),
                 ),
               ),

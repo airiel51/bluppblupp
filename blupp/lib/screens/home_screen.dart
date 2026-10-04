@@ -1006,40 +1006,41 @@ class HomeScreen extends StatelessWidget {
                             style: TextStyle(
                               color: AppTheme.textPrimary,
                               fontSize: 13,
-                              fontWeight: FontWeight.w500,
+                              fontWeight: FontWeight.w600,
                             ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
                           const SizedBox(height: 2),
-                          Row(
-                            children: [
-                              Text(
-                                inv.institution,
-                                style: TextStyle(
-                                  color: AppTheme.textMuted,
-                                  fontSize: 11,
-                                ),
+                          Text(
+                            inv.institution,
+                            style: TextStyle(
+                              color: AppTheme.textMuted,
+                              fontSize: 11,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 4),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: AppTheme.primaryTeal.withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Text(
+                              "+${inv.returnRateAnnual}% p.a.",
+                              style: const TextStyle(
+                                color: AppTheme.primaryTeal,
+                                fontSize: 9.5,
+                                fontWeight: FontWeight.w600,
                               ),
-                              const SizedBox(width: 6),
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
-                                decoration: BoxDecoration(
-                                  color: AppTheme.primaryTeal.withValues(alpha: 0.15),
-                                  borderRadius: BorderRadius.circular(6),
-                                ),
-                                child: Text(
-                                  "+${inv.returnRateAnnual}% p.a.",
-                                  style: TextStyle(
-                                    color: AppTheme.primaryTeal,
-                                    fontSize: 9,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                              ),
-                            ],
+                            ),
                           ),
                         ],
                       ),
                     ),
+                    const SizedBox(width: 10),
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
@@ -1191,40 +1192,41 @@ class HomeScreen extends StatelessWidget {
                             style: TextStyle(
                               color: AppTheme.textPrimary,
                               fontSize: 13,
-                              fontWeight: FontWeight.w500,
+                              fontWeight: FontWeight.w600,
                             ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
-                          const SizedBox(height: 3),
-                          Row(
-                            children: [
-                              Text(
-                                "Due on ${loan.dueDayOfMonth}th",
-                                style: TextStyle(
-                                  color: AppTheme.textMuted,
-                                  fontSize: 11,
-                                ),
+                          const SizedBox(height: 2),
+                          Text(
+                            "Due on ${loan.dueDayOfMonth}th",
+                            style: TextStyle(
+                              color: AppTheme.textMuted,
+                              fontSize: 11,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 4),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: loan.color.withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Text(
+                              "Monthly: ${AppTheme.formatCurrency(loan.monthlyInstallment)}",
+                              style: TextStyle(
+                                color: loan.color,
+                                fontSize: 9.5,
+                                fontWeight: FontWeight.w600,
                               ),
-                              const SizedBox(width: 8),
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                decoration: BoxDecoration(
-                                  color: loan.color.withValues(alpha: 0.15),
-                                  borderRadius: BorderRadius.circular(6),
-                                ),
-                                child: Text(
-                                  "Monthly: ${AppTheme.formatCurrency(loan.monthlyInstallment)}",
-                                  style: TextStyle(
-                                    color: loan.color,
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                              ),
-                            ],
+                            ),
                           ),
                         ],
                       ),
                     ),
+                    const SizedBox(width: 10),
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
