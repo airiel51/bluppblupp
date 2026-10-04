@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../services/universal_image_picker/universal_image_picker.dart';
 import '../services/supabase_service.dart';
 import '../theme/app_theme.dart';
@@ -349,11 +350,11 @@ class AiSafeToSpendRadar {
 
 class FinanceState extends ChangeNotifier {
   // Authentication & Profile State
-  bool _isAuthenticated = true; // Default to authenticated in Demo mode
-  bool _isDemoAccount = true;   // Default account is demo account
-  String _userName = 'man';
-  String _userEmail = 'man@blupp.ai';
-  String _userPhone = '+60 12-000 0000';
+  bool _isAuthenticated = false; // Default to unauthenticated: shows SignInScreen
+  bool _isDemoAccount = false;   // Demo mode is only active when user explicitly clicks Demo
+  String _userName = '';
+  String _userEmail = '';
+  String _userPhone = '';
   final bool _isVerified = true;
   bool _notificationsEnabled = true;
   bool _biometricsEnabled = true;
@@ -391,10 +392,10 @@ class FinanceState extends ChangeNotifier {
         }
       }
     } else {
-      // No signed-in session on this device: default to demo account (man)
-      _isAuthenticated = true;
-      _isDemoAccount = true;
-      loadDemoData();
+      // No active session on this device: default to Sign In page (not demo account)
+      _isAuthenticated = false;
+      _isDemoAccount = false;
+      clearAllData();
     }
 
     // Listen to session changes to dynamically preserve signed-in identity
@@ -416,6 +417,12 @@ class FinanceState extends ChangeNotifier {
             _cachedProfileBytes = base64Decode(img);
           } catch (_) {}
         }
+        notifyListeners();
+        syncWithSupabase();
+      } else if (data.event == AuthChangeEvent.signedOut) {
+        _isAuthenticated = false;
+        _isDemoAccount = false;
+        clearAllData();
         notifyListeners();
       }
     });
@@ -2442,19 +2449,54 @@ class FinanceState extends ChangeNotifier {
               email: _userEmail,
             );
             _isAuthenticated = true;
+            _isDemoAccount = false;
             _isAuthLoading = false;
             _authError = null;
             notifyListeners();
             syncWithSupabase();
             return true;
           } else {
-            // Confirm email is ON in Supabase - user needs to verify PIN code
+            // In many Supabase setups with Confirm Email OFF, signUp creates the user but returns session == null.
+            // Attempt immediate sign-in with password!
+            try {
+              final signInRes = await SupabaseService.instance.signInWithPassword(
+                email: email.trim(),
+                password: password,
+              );
+              if (signInRes?.session != null) {
+                await SupabaseService.instance.updateUserProfile(
+                  name: _userName,
+                  email: _userEmail,
+                );
+                _isAuthenticated = true;
+                _isDemoAccount = false;
+                _isAuthLoading = false;
+                _authError = null;
+                notifyListeners();
+                syncWithSupabase();
+                return true;
+              }
+            } catch (signInErr) {
+              final errStr = signInErr.toString().toLowerCase();
+              if (errStr.contains('email not confirmed') || errStr.contains('confirm')) {
+                // Confirm email is truly ON in Supabase - user needs to verify PIN code
+                _isAuthLoading = false;
+                _requiresSignUpVerification = true;
+                _pendingSignUpEmail = _userEmail;
+                _authError = null;
+                notifyListeners();
+                return false;
+              }
+            }
+
+            // Session established or user ready without confirmation
+            _isAuthenticated = true;
+            _isDemoAccount = false;
             _isAuthLoading = false;
-            _requiresSignUpVerification = true;
-            _pendingSignUpEmail = _userEmail;
             _authError = null;
             notifyListeners();
-            return false;
+            syncWithSupabase();
+            return true;
           }
         }
       } else {
@@ -2462,6 +2504,7 @@ class FinanceState extends ChangeNotifier {
         _userEmail = email.trim();
         _userName = name ?? email.trim().split('@').first;
         _isAuthenticated = true;
+        _isDemoAccount = false;
         _isAuthLoading = false;
         _authError = null;
         notifyListeners();
@@ -2475,12 +2518,30 @@ class FinanceState extends ChangeNotifier {
     } catch (e) {
       _isAuthLoading = false;
       String msg = e.toString().replaceAll('Exception: ', '').replaceAll('AuthException: ', '');
-      if (msg.contains('Error sending confirmation email') || msg.contains('unexpected_failure')) {
-        msg = 'Failed to send confirmation email. Check your Supabase SMTP settings, or if using Resend onboarding domain, test with your Resend account email.';
+      if (msg.contains('User already registered') || msg.contains('already registered')) {
+        // User already registered! Attempt immediate sign in with the password provided
+        try {
+          final signInRes = await SupabaseService.instance.signInWithPassword(
+            email: email.trim(),
+            password: password,
+          );
+          if (signInRes?.session != null) {
+            _userEmail = email.trim();
+            _userName = name ?? email.trim().split('@').first;
+            _isAuthenticated = true;
+            _isDemoAccount = false;
+            _isAuthLoading = false;
+            _authError = null;
+            notifyListeners();
+            syncWithSupabase();
+            return true;
+          }
+        } catch (_) {}
+        msg = 'An account with this email already exists. Please switch to Sign In or use Forgot Password.';
+      } else if (msg.contains('Error sending confirmation email') || msg.contains('unexpected_failure')) {
+        msg = 'Failed to send confirmation email. Check your Supabase SMTP settings.';
       } else if (msg.contains('over_email_send_rate_limit') || msg.contains('rate limit')) {
-        msg = 'Supabase email limit reached (max 2 emails/hour on free tier). Connect custom SMTP in Supabase to send unlimited emails!';
-      } else if (msg.contains('User already registered')) {
-        msg = 'An account with this email already exists. Please sign in or use Forgot Password.';
+        msg = 'Supabase email limit reached. Please disable "Confirm email" in Supabase providers.';
       }
       _authError = msg;
       notifyListeners();
@@ -2560,9 +2621,9 @@ class FinanceState extends ChangeNotifier {
       clearAllData();
       _isAuthenticated = false;
       _isDemoAccount = false;
-      _userName = 'man';
-      _userEmail = 'man@blupp.ai';
-      _userPhone = '+60 12-000 0000';
+      _userName = '';
+      _userEmail = '';
+      _userPhone = '';
       _profileImageBase64 = null;
       _cachedProfileBytes = null;
       _isAuthLoading = false;

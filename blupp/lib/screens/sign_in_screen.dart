@@ -26,7 +26,7 @@ class _SignInScreenState extends State<SignInScreen> {
   final _passwordController = TextEditingController();
   final _nameController = TextEditingController();
 
-  AuthView _currentView = AuthView.welcome;
+  AuthView _currentView = AuthView.signIn;
   bool _obscurePassword = true;
   bool _rememberMe = true;
   bool _agreeToDataProcessing = true;
@@ -920,6 +920,26 @@ class _SignInScreenState extends State<SignInScreen> {
                               ),
                             ],
                           ).animate().fadeIn(duration: 350.ms, delay: 280.ms),
+
+                          const SizedBox(height: 14),
+
+                          // Quick Demo Mode option (Only for demo testing)
+                          Center(
+                            child: TextButton.icon(
+                              onPressed: widget.state.isAuthLoading
+                                  ? null
+                                  : () => widget.state.signInDemo(),
+                              icon: const Icon(Icons.flash_on_rounded, size: 14, color: Color(0xFF64748B)),
+                              label: const Text(
+                                'Explore Demo Account (man)',
+                                style: TextStyle(
+                                  color: Color(0xFF64748B),
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ),
+                          ),
 
                           const SizedBox(height: 16),
                         ],
