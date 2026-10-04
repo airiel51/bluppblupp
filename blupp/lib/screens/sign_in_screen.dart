@@ -1784,7 +1784,7 @@ class _ForgotPasswordSheetState extends State<_ForgotPasswordSheet> {
               SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  'Received an email with a "Reset password" button instead of a code? Tap that button in your email to open the reset form directly.',
+                  'Password reset emails are delivered from bluppbluppfinance@gmail.com. Check your inbox or spam folder if not visible immediately.',
                   style: TextStyle(
                     fontSize: 12,
                     color: Color(0xFF64748B),
@@ -2280,7 +2280,12 @@ class _SignUpVerificationSheetState extends State<_SignUpVerificationSheet> {
                       text: TextSpan(
                         style: const TextStyle(color: Color(0xFF64748B), fontSize: 13, height: 1.5),
                         children: [
-                          const TextSpan(text: 'We sent a 6-digit verification code to\n'),
+                          const TextSpan(text: 'We sent a 6-digit verification code from\n'),
+                          const TextSpan(
+                            text: 'bluppbluppfinance@gmail.com\n',
+                            style: TextStyle(color: Color(0xFF10B981), fontWeight: FontWeight.w600),
+                          ),
+                          const TextSpan(text: 'to '),
                           TextSpan(
                             text: widget.email,
                             style: const TextStyle(color: Color(0xFF355FE5), fontWeight: FontWeight.w600),
@@ -2367,7 +2372,7 @@ class _SignUpVerificationSheetState extends State<_SignUpVerificationSheet> {
                         SizedBox(width: 8),
                         Expanded(
                           child: Text(
-                            'Received an email with a "Confirm your mail" link? You can tap that link in your email to verify directly.',
+                            'Codes are delivered from bluppbluppfinance@gmail.com. If not visible in your inbox within a minute, please check your Spam/Junk folder.',
                             style: TextStyle(fontSize: 12, color: Color(0xFF64748B), height: 1.4),
                           ),
                         ),

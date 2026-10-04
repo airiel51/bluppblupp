@@ -364,12 +364,61 @@ class FinanceState extends ChangeNotifier {
     if (initialAuthenticated == false) {
       _isAuthenticated = false;
       _isDemoAccount = false;
+    } else if (initialAuthenticated == true) {
+      _isAuthenticated = true;
+      _isDemoAccount = true;
+      loadDemoData();
+    } else if (SupabaseService.instance.hasActiveSession) {
+      // User has already signed in to their real account (e.g. Airiel) on this device!
+      // Retain their active session and restore their profile:
+      _isAuthenticated = true;
+      _isDemoAccount = false;
+      final user = SupabaseService.instance.currentUser;
+      if (user != null) {
+        _userEmail = user.email ?? _userEmail;
+        final name = user.userMetadata?['full_name'];
+        if (name is String && name.isNotEmpty) {
+          _userName = name;
+        } else if (user.email != null) {
+          _userName = user.email!.split('@').first;
+        }
+        final img = user.userMetadata?['profile_image'] ?? user.userMetadata?['avatar_url'];
+        if (img is String && img.isNotEmpty) {
+          _profileImageBase64 = img;
+          try {
+            _cachedProfileBytes = base64Decode(img);
+          } catch (_) {}
+        }
+      }
     } else {
-      // By default, demo account is the default account (does not take previous user info)
+      // No signed-in session on this device: default to demo account (man)
       _isAuthenticated = true;
       _isDemoAccount = true;
       loadDemoData();
     }
+
+    // Listen to session changes to dynamically preserve signed-in identity
+    SupabaseService.instance.authStateChanges?.listen((data) {
+      if (data.session?.user != null && !_isDemoAccount) {
+        final user = data.session!.user;
+        _isAuthenticated = true;
+        _userEmail = user.email ?? _userEmail;
+        final name = user.userMetadata?['full_name'];
+        if (name is String && name.isNotEmpty) {
+          _userName = name;
+        } else if (user.email != null) {
+          _userName = user.email!.split('@').first;
+        }
+        final img = user.userMetadata?['profile_image'] ?? user.userMetadata?['avatar_url'];
+        if (img is String && img.isNotEmpty) {
+          _profileImageBase64 = img;
+          try {
+            _cachedProfileBytes = base64Decode(img);
+          } catch (_) {}
+        }
+        notifyListeners();
+      }
+    });
   }
 
   bool get isAuthenticated => _isAuthenticated;

@@ -2087,8 +2087,8 @@ class ProfileScreen extends StatelessWidget {
             ),
             SizedBox(height: 12),
             Text(
-              'Cloud Sync: Powered by Supabase Realtime Engine.',
-              style: TextStyle(color: AppTheme.primaryTeal, fontSize: 12, fontWeight: FontWeight.w600),
+              'Cloud Sync: Powered by Supabase Realtime Engine.\nOfficial Contact: bluppbluppfinance@gmail.com',
+              style: TextStyle(color: AppTheme.primaryTeal, fontSize: 12, fontWeight: FontWeight.w600, height: 1.4),
             ),
           ],
         ),
@@ -2132,7 +2132,7 @@ class ProfileScreen extends StatelessWidget {
               Text('Data Ownership', style: TextStyle(color: AppTheme.primaryTeal, fontWeight: FontWeight.w500)),
               SizedBox(height: 6),
               Text(
-                'You maintain 100% control and ownership of your financial records. No personal data is shared with unauthorized third parties.',
+                'You maintain 100% control and ownership of your financial records. Official inquiries: bluppbluppfinance@gmail.com.',
                 style: TextStyle(color: AppTheme.textSecondary, fontSize: 13, height: 1.4),
               ),
             ],
