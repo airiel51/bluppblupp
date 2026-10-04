@@ -26,7 +26,7 @@ class _SignInScreenState extends State<SignInScreen> {
   final _passwordController = TextEditingController();
   final _nameController = TextEditingController();
 
-  AuthView _currentView = AuthView.signIn;
+  AuthView _currentView = AuthView.welcome;
   bool _obscurePassword = true;
   bool _rememberMe = true;
   bool _agreeToDataProcessing = true;
