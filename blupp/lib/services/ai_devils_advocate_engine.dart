@@ -29,7 +29,7 @@ class AiDevilsAdvocateEngine {
     required List<Map<String, dynamic>> conversationHistory,
   }) {
     final lower = userMessage.toLowerCase();
-    final name = state.userName.isNotEmpty ? state.userName : 'Airiel';
+    final name = state.userName.isNotEmpty ? state.userName : 'man';
     final balanceLeft = state.spendingBalanceLeft;
     final dailyAllowance = state.aiSafeToSpendRadar.safeDailyAllowance;
     final monthlyIncome = state.totalIncomeThisMonth > 0 ? state.totalIncomeThisMonth : 4500.0;

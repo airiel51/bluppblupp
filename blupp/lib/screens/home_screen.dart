@@ -123,7 +123,7 @@ class HomeScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  state.userName.isNotEmpty ? state.userName : "Airiel",
+                  state.userName.isNotEmpty ? state.userName : "man",
                   style: TextStyle(
                     color: AppTheme.textPrimary,
                     fontSize: 22,

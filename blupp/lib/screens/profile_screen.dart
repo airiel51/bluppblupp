@@ -1997,27 +1997,33 @@ class ProfileScreen extends StatelessWidget {
         backgroundColor: AppTheme.surface,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
-          side: BorderSide(color: AppTheme.expenseCoral.withValues(alpha: 0.3)),
+          side: BorderSide(color: (state.isDemoAccount ? AppTheme.primaryTeal : AppTheme.expenseCoral).withValues(alpha: 0.3)),
         ),
         title: Row(
           children: [
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: AppTheme.expenseCoral.withValues(alpha: 0.15),
+                color: (state.isDemoAccount ? AppTheme.primaryTeal : AppTheme.expenseCoral).withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: Icon(Icons.logout_rounded, color: AppTheme.expenseCoral, size: 20),
+              child: Icon(
+                state.isDemoAccount ? Icons.login_rounded : Icons.logout_rounded,
+                color: state.isDemoAccount ? AppTheme.primaryTeal : AppTheme.expenseCoral,
+                size: 20,
+              ),
             ),
             const SizedBox(width: 12),
             Text(
-              'Sign Out',
+              state.isDemoAccount ? 'Sign In to Your Account' : 'Sign Out',
               style: TextStyle(color: AppTheme.textPrimary, fontWeight: FontWeight.w500),
             ),
           ],
         ),
         content: Text(
-          'Are you sure you want to sign out of Blupp? You will need to enter your credentials to access your financial dashboard again.',
+          state.isDemoAccount
+              ? 'Ready to sign in to your personal account? You will be taken to the sign-in screen.'
+              : 'Are you sure you want to sign out of Blupp? You will need to enter your credentials to access your financial dashboard again.',
           style: TextStyle(color: AppTheme.textSecondary, fontSize: 14, height: 1.4),
         ),
         actions: [
@@ -2027,15 +2033,18 @@ class ProfileScreen extends StatelessWidget {
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.expenseCoral,
-              foregroundColor: Colors.white,
+              backgroundColor: state.isDemoAccount ? AppTheme.primaryTeal : AppTheme.expenseCoral,
+              foregroundColor: state.isDemoAccount ? Colors.black : Colors.white,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             ),
             onPressed: () {
               Navigator.pop(ctx);
               state.signOut();
             },
-            child: const Text('Sign Out', style: TextStyle(fontWeight: FontWeight.w500)),
+            child: Text(
+              state.isDemoAccount ? 'Sign In' : 'Sign Out',
+              style: const TextStyle(fontWeight: FontWeight.w600),
+            ),
           ),
         ],
       ),
@@ -4229,15 +4238,19 @@ class ProfileScreen extends StatelessWidget {
                     ),
                   ),
                   onPressed: () => _showSignOutConfirmDialog(context),
-                  child: const Row(
+                  child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.logout_rounded, color: AppTheme.expenseCoral, size: 20),
-                      SizedBox(width: 10),
+                      Icon(
+                        state.isDemoAccount ? Icons.login_rounded : Icons.logout_rounded,
+                        color: state.isDemoAccount ? const Color(0xFF38BDF8) : AppTheme.expenseCoral,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 10),
                       Text(
-                        'Sign Out',
+                        state.isDemoAccount ? 'Sign In / Switch Account' : 'Sign Out',
                         style: TextStyle(
-                          color: AppTheme.expenseCoral,
+                          color: state.isDemoAccount ? const Color(0xFF38BDF8) : AppTheme.expenseCoral,
                           fontSize: 15,
                           fontWeight: FontWeight.w500,
                           letterSpacing: 0.2,

@@ -349,10 +349,11 @@ class AiSafeToSpendRadar {
 
 class FinanceState extends ChangeNotifier {
   // Authentication & Profile State
-  bool _isAuthenticated = false;
-  String _userName = 'Airiel';
-  String _userEmail = 'airiel@blupp.ai';
-  String _userPhone = '+60 12-345 6789';
+  bool _isAuthenticated = true; // Default to authenticated in Demo mode
+  bool _isDemoAccount = true;   // Default account is demo account
+  String _userName = 'man';
+  String _userEmail = 'man@blupp.ai';
+  String _userPhone = '+60 12-000 0000';
   final bool _isVerified = true;
   bool _notificationsEnabled = true;
   bool _biometricsEnabled = true;
@@ -360,36 +361,19 @@ class FinanceState extends ChangeNotifier {
   String? _authError;
 
   FinanceState({bool? initialAuthenticated}) {
-    if (initialAuthenticated != null) {
-      _isAuthenticated = initialAuthenticated;
-      if (initialAuthenticated) {
-        loadDemoData();
-      }
-    } else if (SupabaseService.instance.hasActiveSession) {
-      _isAuthenticated = true;
-      final user = SupabaseService.instance.currentUser;
-      if (user != null) {
-        _userEmail = user.email ?? _userEmail;
-        final name = user.userMetadata?['full_name'];
-        if (name is String && name.isNotEmpty) {
-          _userName = name;
-        } else if (user.email != null) {
-          _userName = user.email!.split('@').first;
-        }
-        final img = user.userMetadata?['profile_image'] ?? user.userMetadata?['avatar_url'];
-        if (img is String && img.isNotEmpty) {
-          _profileImageBase64 = img;
-          try {
-            _cachedProfileBytes = base64Decode(img);
-          } catch (_) {}
-        }
-      }
-    } else {
+    if (initialAuthenticated == false) {
       _isAuthenticated = false;
+      _isDemoAccount = false;
+    } else {
+      // By default, demo account is the default account (does not take previous user info)
+      _isAuthenticated = true;
+      _isDemoAccount = true;
+      loadDemoData();
     }
   }
 
   bool get isAuthenticated => _isAuthenticated;
+  bool get isDemoAccount => _isDemoAccount;
   String get userName => _userName;
   String get userEmail => _userEmail;
   String get userPhone => _userPhone;
@@ -427,7 +411,9 @@ class FinanceState extends ChangeNotifier {
       _cachedProfileBytes = null;
     }
     notifyListeners();
-    SupabaseService.instance.updateUserProfileImage(base64Str);
+    if (!_isDemoAccount) {
+      SupabaseService.instance.updateUserProfileImage(base64Str);
+    }
   }
 
   Future<bool> pickProfilePictureFromGallery() async {
@@ -1149,6 +1135,11 @@ class FinanceState extends ChangeNotifier {
 
   /// Explicitly loads sample data only when Demo Mode is clicked
   void loadDemoData() {
+    _userName = 'man';
+    _userEmail = 'man@blupp.ai';
+    _userPhone = '+60 12-000 0000';
+    _profileImageBase64 = null;
+    _cachedProfileBytes = null;
     _monthlySpendingBudget = 3200.00;
     _bankAccounts.clear();
     _bankAccounts.addAll([
@@ -1747,6 +1738,8 @@ class FinanceState extends ChangeNotifier {
 
   Future<void> syncWithSupabase() async {
     if (!SupabaseService.instance.isConfigured) return;
+    // When running in default demo account, do not take previous user information from Supabase
+    if (_isDemoAccount) return;
 
     _isLoadingFromSupabase = true;
     notifyListeners();
@@ -2340,6 +2333,7 @@ class FinanceState extends ChangeNotifier {
       }
 
       _isAuthenticated = true;
+      _isDemoAccount = false;
       _isAuthLoading = false;
       _authError = null;
       notifyListeners();
@@ -2469,6 +2463,7 @@ class FinanceState extends ChangeNotifier {
             email: _userEmail,
           );
           _isAuthenticated = true;
+          _isDemoAccount = false;
           _requiresSignUpVerification = false;
           _pendingSignUpEmail = '';
           _isAuthLoading = false;
@@ -2492,13 +2487,16 @@ class FinanceState extends ChangeNotifier {
 
   void signInDemo() {
     clearAllData();
-    loadDemoData();
     _isAuthenticated = true;
-    _userName = 'Airiel';
-    _userEmail = 'airiel@blupp.ai';
+    _isDemoAccount = true;
+    _userName = 'man';
+    _userEmail = 'man@blupp.ai';
+    _userPhone = '+60 12-000 0000';
+    _profileImageBase64 = null;
+    _cachedProfileBytes = null;
     _authError = null;
+    loadDemoData();
     notifyListeners();
-    syncWithSupabase();
   }
 
   Future<void> signOut() async {
@@ -2512,6 +2510,12 @@ class FinanceState extends ChangeNotifier {
     } finally {
       clearAllData();
       _isAuthenticated = false;
+      _isDemoAccount = false;
+      _userName = 'man';
+      _userEmail = 'man@blupp.ai';
+      _userPhone = '+60 12-000 0000';
+      _profileImageBase64 = null;
+      _cachedProfileBytes = null;
       _isAuthLoading = false;
       _authError = null;
       notifyListeners();
@@ -2524,40 +2528,46 @@ class FinanceState extends ChangeNotifier {
     if (phone != null && phone.trim().isNotEmpty) {
       _userPhone = phone.trim();
     }
-    SupabaseService.instance.updateUserProfile(
-      name: _userName,
-      email: _userEmail,
-      phone: _userPhone,
-      notificationsEnabled: _notificationsEnabled,
-      biometricsEnabled: _biometricsEnabled,
-      monthlyBudget: _monthlySpendingBudget,
-    );
+    if (!_isDemoAccount) {
+      SupabaseService.instance.updateUserProfile(
+        name: _userName,
+        email: _userEmail,
+        phone: _userPhone,
+        notificationsEnabled: _notificationsEnabled,
+        biometricsEnabled: _biometricsEnabled,
+        monthlyBudget: _monthlySpendingBudget,
+      );
+    }
     notifyListeners();
   }
 
   void toggleNotifications(bool val) {
     _notificationsEnabled = val;
-    SupabaseService.instance.updateUserProfile(
-      name: _userName,
-      email: _userEmail,
-      phone: _userPhone,
-      notificationsEnabled: val,
-      biometricsEnabled: _biometricsEnabled,
-      monthlyBudget: _monthlySpendingBudget,
-    );
+    if (!_isDemoAccount) {
+      SupabaseService.instance.updateUserProfile(
+        name: _userName,
+        email: _userEmail,
+        phone: _userPhone,
+        notificationsEnabled: val,
+        biometricsEnabled: _biometricsEnabled,
+        monthlyBudget: _monthlySpendingBudget,
+      );
+    }
     notifyListeners();
   }
 
   void toggleBiometrics(bool val) {
     _biometricsEnabled = val;
-    SupabaseService.instance.updateUserProfile(
-      name: _userName,
-      email: _userEmail,
-      phone: _userPhone,
-      notificationsEnabled: _notificationsEnabled,
-      biometricsEnabled: val,
-      monthlyBudget: _monthlySpendingBudget,
-    );
+    if (!_isDemoAccount) {
+      SupabaseService.instance.updateUserProfile(
+        name: _userName,
+        email: _userEmail,
+        phone: _userPhone,
+        notificationsEnabled: _notificationsEnabled,
+        biometricsEnabled: val,
+        monthlyBudget: _monthlySpendingBudget,
+      );
+    }
     notifyListeners();
   }
 
