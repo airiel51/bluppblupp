@@ -461,119 +461,150 @@ class _SignInScreenState extends State<SignInScreen> {
   Widget _buildFormScreen({required Key key}) {
     final isSignUp = _currentView == AuthView.signUp;
     final topPadding = MediaQuery.paddingOf(context).top;
+    final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
+    final isDesktop = screenWidth > 600;
 
     return Stack(
       key: key,
       children: [
-        // Top wave background image
-        Positioned(
-          top: 0,
-          left: 0,
-          right: 0,
-          height: MediaQuery.of(context).size.height * 0.38,
+        // Full fluid background image syncing with welcome design (eliminates solid blue bars)
+        Positioned.fill(
           child: Image.asset(
             'assets/images/auth_bg.jpg',
             fit: BoxFit.cover,
-            alignment: Alignment.topCenter,
+            alignment: Alignment.center,
           ),
         ),
+
+        // Gradient overlay for smooth readability & depth
+        Positioned.fill(
+          child: Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Colors.transparent,
+                  Colors.black.withValues(alpha: isDesktop ? 0.25 : 0.10),
+                  Colors.black.withValues(alpha: isDesktop ? 0.45 : 0.20),
+                ],
+              ),
+            ),
+          ),
+        ),
+
+        // Ambient Drifting Glowing Orbs
+        _buildAmbientOrbs(),
 
         // Upper Header Bar (< Back pill + Blupp Logo)
         Positioned(
-          top: topPadding + 10,
-          left: 20,
-          right: 20,
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              // Back Button
-              ClipRRect(
-                borderRadius: BorderRadius.circular(20),
-                child: BackdropFilter(
-                  filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-                  child: InkWell(
-                    onTap: () {
-                      setState(() {
-                        _currentView = AuthView.welcome;
-                      });
-                    },
-                    borderRadius: BorderRadius.circular(20),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
-                      decoration: BoxDecoration(
-                        color: Colors.black.withValues(alpha: 0.25),
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(
-                          color: Colors.white.withValues(alpha: 0.20),
-                          width: 0.8,
-                        ),
-                      ),
-                      child: const Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 14),
-                          SizedBox(width: 6),
-                          Text(
-                            'Back',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
+          top: topPadding + (isDesktop ? 16 : 10),
+          left: 0,
+          right: 0,
+          child: Center(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(maxWidth: isDesktop ? 500 : double.infinity),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    // Back Button
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(20),
+                      child: BackdropFilter(
+                        filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+                        child: InkWell(
+                          onTap: () {
+                            setState(() {
+                              _currentView = AuthView.welcome;
+                            });
+                          },
+                          borderRadius: BorderRadius.circular(20),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+                            decoration: BoxDecoration(
+                              color: Colors.black.withValues(alpha: 0.25),
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(
+                                color: Colors.white.withValues(alpha: 0.20),
+                                width: 0.8,
+                              ),
+                            ),
+                            child: const Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 14),
+                                SizedBox(width: 6),
+                                Text(
+                                  'Back',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
-                        ],
+                        ),
                       ),
                     ),
-                  ),
+
+                    // Centered subtle Blupp fish icon
+                    const BluppLogo(
+                      size: 32,
+                      iconOnly: true,
+                      isDark: true,
+                    ),
+
+                    // Spacer for alignment
+                    const SizedBox(width: 70),
+                  ],
                 ),
               ),
-
-              // Centered subtle Blupp fish icon
-              const BluppLogo(
-                size: 32,
-                iconOnly: true,
-                isDark: true,
-              ),
-
-              // Spacer for alignment
-              const SizedBox(width: 70),
-            ],
+            ),
           ),
         ),
 
-        // Bottom White Card - Anchored flush to screen bottom (zero gap)
+        // White Auth Card - Responsive: Centered floating card on desktop/laptop, flush bottom-sheet on mobile
         Positioned(
-          top: MediaQuery.of(context).size.height * 0.18,
+          top: isDesktop ? 68 : screenHeight * 0.18,
           left: 0,
           right: 0,
-          bottom: 0,
+          bottom: isDesktop ? 24 : 0,
           child: Align(
-            alignment: Alignment.bottomCenter,
+            alignment: isDesktop ? Alignment.center : Alignment.bottomCenter,
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 460),
               child: Container(
                 width: double.infinity,
                 height: double.infinity,
-                decoration: const BoxDecoration(
+                decoration: BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+                  borderRadius: isDesktop
+                      ? BorderRadius.circular(32)
+                      : const BorderRadius.vertical(top: Radius.circular(32)),
                   boxShadow: [
                     BoxShadow(
-                      color: Color(0x28000000),
-                      blurRadius: 24,
-                      offset: Offset(0, -6),
+                      color: Colors.black.withValues(alpha: isDesktop ? 0.25 : 0.16),
+                      blurRadius: isDesktop ? 36 : 24,
+                      offset: Offset(0, isDesktop ? 12 : -6),
                     ),
                   ],
                 ),
                 child: ClipRRect(
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+                  borderRadius: isDesktop
+                      ? BorderRadius.circular(32)
+                      : const BorderRadius.vertical(top: Radius.circular(32)),
                   child: SingleChildScrollView(
                     physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
                     padding: EdgeInsets.fromLTRB(
                       28,
                       24,
                       28,
-                      28 + MediaQuery.paddingOf(context).bottom,
+                      28 + (isDesktop ? 0 : MediaQuery.paddingOf(context).bottom),
                     ),
                     child: Form(
                       key: _formKey,

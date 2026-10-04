@@ -1,3 +1,5 @@
+import 'dart:convert';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import '../services/universal_image_picker/universal_image_picker.dart';
 import '../services/supabase_service.dart';
@@ -374,6 +376,13 @@ class FinanceState extends ChangeNotifier {
         } else if (user.email != null) {
           _userName = user.email!.split('@').first;
         }
+        final img = user.userMetadata?['profile_image'] ?? user.userMetadata?['avatar_url'];
+        if (img is String && img.isNotEmpty) {
+          _profileImageBase64 = img;
+          try {
+            _cachedProfileBytes = base64Decode(img);
+          } catch (_) {}
+        }
       }
     } else {
       _isAuthenticated = false;
@@ -401,11 +410,22 @@ class FinanceState extends ChangeNotifier {
 
   // Profile Picture (Custom Gallery Upload or Default)
   String? _profileImageBase64;
+  Uint8List? _cachedProfileBytes;
   String? get profileImageBase64 => _profileImageBase64;
+  Uint8List? get profileImageBytes => _cachedProfileBytes;
   bool get hasCustomProfileImage => _profileImageBase64 != null && _profileImageBase64!.isNotEmpty;
 
   void setProfileImage(String? base64Str) {
     _profileImageBase64 = base64Str;
+    if (base64Str != null && base64Str.isNotEmpty) {
+      try {
+        _cachedProfileBytes = base64Decode(base64Str);
+      } catch (_) {
+        _cachedProfileBytes = null;
+      }
+    } else {
+      _cachedProfileBytes = null;
+    }
     notifyListeners();
     SupabaseService.instance.updateUserProfileImage(base64Str);
   }
@@ -1123,6 +1143,7 @@ class FinanceState extends ChangeNotifier {
     _totalFomoSaved = 0.00;
     _monthlySpendingBudget = 0.00;
     _profileImageBase64 = null;
+    _cachedProfileBytes = null;
     notifyListeners();
   }
 
@@ -1745,8 +1766,24 @@ class FinanceState extends ChangeNotifier {
         }
         if (profile['profile_image'] != null && (profile['profile_image'] as String).isNotEmpty) {
           _profileImageBase64 = profile['profile_image'] as String;
+          try {
+            _cachedProfileBytes = base64Decode(_profileImageBase64!);
+          } catch (_) {}
         } else if (profile['avatar_url'] != null && (profile['avatar_url'] as String).isNotEmpty) {
           _profileImageBase64 = profile['avatar_url'] as String;
+          try {
+            _cachedProfileBytes = base64Decode(_profileImageBase64!);
+          } catch (_) {}
+        } else {
+          // Fallback to active Auth userMetadata if profiles table has no row
+          final authImg = SupabaseService.instance.currentUser?.userMetadata?['profile_image'] ??
+              SupabaseService.instance.currentUser?.userMetadata?['avatar_url'];
+          if (authImg is String && authImg.isNotEmpty) {
+            _profileImageBase64 = authImg;
+            try {
+              _cachedProfileBytes = base64Decode(authImg);
+            } catch (_) {}
+          }
         }
         if (profile['notifications_enabled'] != null) {
           _notificationsEnabled = profile['notifications_enabled'] as bool;
@@ -2286,6 +2323,13 @@ class FinanceState extends ChangeNotifier {
             _userName = metaName;
           } else {
             _userName = email.trim().split('@').first;
+          }
+          final metaImg = res.user!.userMetadata?['profile_image'] ?? res.user!.userMetadata?['avatar_url'];
+          if (metaImg is String && metaImg.isNotEmpty) {
+            _profileImageBase64 = metaImg;
+            try {
+              _cachedProfileBytes = base64Decode(metaImg);
+            } catch (_) {}
           }
         }
       } else {

@@ -39,59 +39,35 @@ class HomeScreen extends StatelessWidget {
                 const SizedBox(height: 20),
 
                 // 1. Total Net Worth Hero Card
-                _buildNetWorthHeroCard(context)
-                    .animate()
-                    .fadeIn(duration: 300.ms)
-                    .slideY(begin: 0.08, end: 0, duration: 300.ms, curve: Curves.easeOutCubic),
+                _buildNetWorthHeroCard(context),
                 const SizedBox(height: 16),
 
                 // 2. AI Safe-to-Spend Radar Card
-                AiSafeToSpendCard(state: state)
-                    .animate()
-                    .fadeIn(duration: 300.ms, delay: 40.ms)
-                    .slideY(begin: 0.08, end: 0, duration: 300.ms, curve: Curves.easeOutCubic),
+                AiSafeToSpendCard(state: state),
                 const SizedBox(height: 14),
 
                 // 3. AI Feature Launch Dock (NLP Quick-Log & Vision Receipt/QR Scanner)
-                _buildAiFeatureDock(context)
-                    .animate()
-                    .fadeIn(duration: 300.ms, delay: 60.ms)
-                    .slideY(begin: 0.08, end: 0, duration: 300.ms, curve: Curves.easeOutCubic),
+                _buildAiFeatureDock(context),
                 const SizedBox(height: 16),
 
                 // Quick Action Bar
-                _buildQuickActions(context)
-                    .animate()
-                    .fadeIn(duration: 300.ms, delay: 80.ms)
-                    .slideY(begin: 0.08, end: 0, duration: 300.ms, curve: Curves.easeOutCubic),
+                _buildQuickActions(context),
                 const SizedBox(height: 24),
 
                 // 2. All Banks Section
-                _buildBankAccountsSection(context)
-                    .animate()
-                    .fadeIn(duration: 300.ms, delay: 120.ms)
-                    .slideY(begin: 0.08, end: 0, duration: 300.ms, curve: Curves.easeOutCubic),
+                _buildBankAccountsSection(context),
                 const SizedBox(height: 28),
 
                 // 3. Investments & Savings Section
-                _buildInvestmentsSection(context)
-                    .animate()
-                    .fadeIn(duration: 300.ms, delay: 180.ms)
-                    .slideY(begin: 0.08, end: 0, duration: 300.ms, curve: Curves.easeOutCubic),
+                _buildInvestmentsSection(context),
                 const SizedBox(height: 28),
 
                 // 4. Loans & Liabilities Section
-                _buildLoansSection(context)
-                    .animate()
-                    .fadeIn(duration: 300.ms, delay: 240.ms)
-                    .slideY(begin: 0.08, end: 0, duration: 300.ms, curve: Curves.easeOutCubic),
+                _buildLoansSection(context),
                 const SizedBox(height: 28),
 
                 // Recent Activity Teaser
-                _buildRecentTransactionsSection(context)
-                    .animate()
-                    .fadeIn(duration: 300.ms, delay: 300.ms)
-                    .slideY(begin: 0.08, end: 0, duration: 300.ms, curve: Curves.easeOutCubic),
+                _buildRecentTransactionsSection(context),
                 const SizedBox(height: 30),
               ],
             ),
@@ -1005,9 +981,7 @@ class HomeScreen extends StatelessWidget {
           )
         else
           Column(
-            children: state.investments.asMap().entries.map((entry) {
-              final index = entry.key;
-              final inv = entry.value;
+            children: state.investments.map((inv) {
               return InteractiveCard(
                 onTap: () => _showManageInvestmentSheet(context, inv),
                 margin: const EdgeInsets.only(bottom: 10),
@@ -1134,7 +1108,7 @@ class HomeScreen extends StatelessWidget {
                     ),
                   ],
                 ),
-              ).animate().fadeIn(duration: 300.ms, delay: Duration(milliseconds: 60 * index)).slideY(begin: 0.08, end: 0);
+              );
             }).toList(),
           ),
       ],

@@ -1516,7 +1516,7 @@ class _TrackingScreenState extends State<TrackingScreen>
             ),
           ],
         ),
-      ).animate().fadeIn(duration: 250.ms, delay: Duration(milliseconds: (30 * index).clamp(0, 300))).slideY(begin: 0.05, end: 0),
+      ),
     );
   }
 

@@ -54,17 +54,17 @@ class _BluppAppState extends State<BluppApp> {
 
   @override
   Widget build(BuildContext context) {
-    return ListenableBuilder(
-      listenable: _financeState,
-      builder: (context, child) {
-        return MaterialApp(
-          title: 'Blupp AI Finance',
-          debugShowCheckedModeBanner: false,
-          theme: AppTheme.lightTheme,
-          darkTheme: AppTheme.darkTheme,
-          themeMode: _financeState.themeMode,
-          home: AnimatedSwitcher(
-            duration: const Duration(milliseconds: 300),
+    return MaterialApp(
+      title: 'Blupp AI Finance',
+      debugShowCheckedModeBanner: false,
+      theme: AppTheme.lightTheme,
+      darkTheme: AppTheme.darkTheme,
+      themeMode: ThemeMode.dark,
+      home: ListenableBuilder(
+        listenable: _financeState,
+        builder: (context, child) {
+          return AnimatedSwitcher(
+            duration: const Duration(milliseconds: 250),
             child: _financeState.isAuthenticated
                 ? MainNavigationShell(
                     key: const ValueKey('authenticated_shell'),
@@ -74,9 +74,9 @@ class _BluppAppState extends State<BluppApp> {
                     key: const ValueKey('sign_in_screen'),
                     state: _financeState,
                   ),
-          ),
-        );
-      },
+          );
+        },
+      ),
     );
   }
 }
@@ -92,30 +92,12 @@ class MainNavigationShell extends StatefulWidget {
 
 class _MainNavigationShellState extends State<MainNavigationShell> {
   int _currentTabIndex = 0;
-  late final PageController _pageController;
-
-  @override
-  void initState() {
-    super.initState();
-    _pageController = PageController(initialPage: 0);
-  }
-
-  @override
-  void dispose() {
-    _pageController.dispose();
-    super.dispose();
-  }
 
   void _navigateToTab(int index) {
     if (_currentTabIndex == index) return;
     setState(() {
       _currentTabIndex = index;
     });
-    _pageController.animateToPage(
-      index,
-      duration: const Duration(milliseconds: 280),
-      curve: Curves.easeOutCubic,
-    );
   }
 
   @override
@@ -128,17 +110,11 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
       extendBody: true,
       body: Stack(
         children: [
-          // Swipeable tab content via PageView
+          // High-performance tab content via IndexedStack (maintains state with 0 drag jank)
           Padding(
             padding: EdgeInsets.only(bottom: navbarHeight),
-            child: PageView(
-              controller: _pageController,
-              physics: const BouncingScrollPhysics(),
-              onPageChanged: (index) {
-                setState(() {
-                  _currentTabIndex = index;
-                });
-              },
+            child: IndexedStack(
+              index: _currentTabIndex,
               children: [
                 HomeScreen(
                   state: widget.state,
@@ -179,24 +155,24 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
                     boxShadow: [
                       BoxShadow(
                         color: Colors.black.withValues(
-                          alpha: AppTheme.isDark ? 0.45 : 0.12,
+                          alpha: AppTheme.isDark ? 0.35 : 0.10,
                         ),
-                        blurRadius: 24,
+                        blurRadius: 16,
                         spreadRadius: 0,
-                        offset: const Offset(0, 8),
+                        offset: const Offset(0, 6),
                       ),
                     ],
                   ),
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(28),
                     child: BackdropFilter(
-                      filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
+                      filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
                       child: Container(
                         height: 56,
                         decoration: BoxDecoration(
                           color: AppTheme.isDark
-                              ? const Color(0xBF09090B)
-                              : const Color(0xBFFFFFFF),
+                              ? const Color(0xE609090B)
+                              : const Color(0xE6FFFFFF),
                           borderRadius: BorderRadius.circular(28),
                           border: Border.all(
                             color: AppTheme.isDark

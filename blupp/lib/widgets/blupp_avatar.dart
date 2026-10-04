@@ -29,16 +29,23 @@ class BluppAvatar extends StatelessWidget {
 
     if (state.hasCustomProfileImage) {
       try {
-        final bytes = base64Decode(state.profileImageBase64!);
-        avatarContent = ClipOval(
-          child: Image.memory(
-            bytes,
-            width: size,
-            height: size,
-            fit: BoxFit.cover,
-            errorBuilder: (context, error, stackTrace) => _buildFallback(context),
-          ),
-        );
+        final bytes = state.profileImageBytes ??
+            (state.profileImageBase64 != null ? base64Decode(state.profileImageBase64!) : null);
+        if (bytes != null) {
+          avatarContent = ClipOval(
+            child: Image.memory(
+              bytes,
+              width: size,
+              height: size,
+              fit: BoxFit.cover,
+              cacheWidth: (size * 2.5).toInt(),
+              cacheHeight: (size * 2.5).toInt(),
+              errorBuilder: (context, error, stackTrace) => _buildFallback(context),
+            ),
+          );
+        } else {
+          avatarContent = _buildFallback(context);
+        }
       } catch (_) {
         avatarContent = _buildFallback(context);
       }

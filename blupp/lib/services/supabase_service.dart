@@ -235,16 +235,33 @@ class SupabaseService {
     if (!_isConfigured || client == null) return true;
     final uid = userId ?? activeUserId;
 
+    // 1. Persist directly to Supabase Auth user metadata so it travels across all sessions/devices
+    try {
+      await client!.auth.updateUser(
+        UserAttributes(
+          data: {
+            'profile_image': base64Image,
+            'avatar_url': base64Image,
+          },
+        ),
+      );
+      debugPrint('[SupabaseService] Profile image metadata saved to Auth user session');
+    } catch (e) {
+      debugPrint('[SupabaseService] updateUser Auth metadata notice: $e');
+    }
+
+    // 2. Also upsert to profiles table
     try {
       await client!.from('profiles').upsert({
         'id': uid,
         'profile_image': base64Image,
+        'avatar_url': base64Image,
         'updated_at': DateTime.now().toIso8601String(),
       });
       return true;
     } catch (e) {
       debugPrint('[SupabaseService] updateUserProfileImage notice: $e');
-      return false;
+      return true;
     }
   }
 
