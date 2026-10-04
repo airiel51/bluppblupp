@@ -617,8 +617,29 @@ class HomeScreen extends StatelessWidget {
     return InteractiveCard(
       onTap: () => _showManageBankSheet(context, bank),
       padding: const EdgeInsets.all(14),
+      radius: 16,
+      decoration: BoxDecoration(
+        color: AppTheme.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: bank.color.withValues(alpha: 0.38), width: 1.2),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            bank.color.withValues(alpha: 0.16),
+            AppTheme.surface,
+          ],
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: bank.color.withValues(alpha: 0.08),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
       child: SizedBox(
-        width: 192,
+        width: 200,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -626,12 +647,13 @@ class HomeScreen extends StatelessWidget {
             Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.all(6),
+                  padding: const EdgeInsets.all(7),
                   decoration: BoxDecoration(
-                    color: AppTheme.surfaceLight,
+                    color: bank.color.withValues(alpha: 0.22),
                     shape: BoxShape.circle,
+                    border: Border.all(color: bank.color.withValues(alpha: 0.45)),
                   ),
-                  child: Icon(bank.icon, color: AppTheme.textSecondary, size: 15),
+                  child: Icon(bank.icon, color: bank.color, size: 16),
                 ),
                 const SizedBox(width: 8),
                 Expanded(
@@ -645,6 +667,26 @@ class HomeScreen extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
+                InkWell(
+                  onTap: () => _showBankColorPicker(context, bank),
+                  borderRadius: BorderRadius.circular(6),
+                  child: Tooltip(
+                    message: "Change Bank Color",
+                    child: Container(
+                      padding: const EdgeInsets.all(5),
+                      decoration: BoxDecoration(
+                        color: bank.color.withValues(alpha: 0.18),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        Icons.palette_outlined,
+                        color: bank.color,
+                        size: 14,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 4),
                 InkWell(
                   onTap: () => _confirmDeleteBank(context, bank),
                   borderRadius: BorderRadius.circular(6),
@@ -672,16 +714,39 @@ class HomeScreen extends StatelessWidget {
                     color: AppTheme.textMuted,
                     fontSize: 11,
                     letterSpacing: 0.5,
+                    fontFamily: 'monospace',
                   ),
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  AppTheme.formatCurrency(bank.balance),
-                  style: TextStyle(
-                    color: AppTheme.textPrimary,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                  ),
+                const SizedBox(height: 3),
+                Row(
+                  children: [
+                    Container(
+                      width: 7,
+                      height: 7,
+                      decoration: BoxDecoration(
+                        color: bank.color,
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: bank.color.withValues(alpha: 0.6),
+                            blurRadius: 4,
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        AppTheme.formatCurrency(bank.balance),
+                        style: TextStyle(
+                          color: AppTheme.textPrimary,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -691,10 +756,11 @@ class HomeScreen extends StatelessWidget {
                   onTap: () => _showAddMoneyDialog(context, bank),
                   borderRadius: BorderRadius.circular(8),
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+                    padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
                     decoration: BoxDecoration(
                       color: AppTheme.surfaceLight,
                       borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: AppTheme.surfaceBorder),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
@@ -718,10 +784,11 @@ class HomeScreen extends StatelessWidget {
                   onTap: () => _showMinusBankMoneyDialog(context, bank),
                   borderRadius: BorderRadius.circular(8),
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+                    padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
                     decoration: BoxDecoration(
                       color: AppTheme.surfaceLight,
                       borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: AppTheme.surfaceBorder),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
@@ -751,6 +818,141 @@ class HomeScreen extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+
+  void _showBankColorPicker(BuildContext context, BankAccount bank) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppTheme.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (sheetCtx) {
+        return StatefulBuilder(
+          builder: (ctx, setSheetState) {
+            return Padding(
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 28),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: AppTheme.surfaceBorder,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: bank.color.withValues(alpha: 0.2),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(Icons.palette_rounded, color: bank.color, size: 20),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              "Choose Colour for ${bank.name}",
+                              style: TextStyle(
+                                color: AppTheme.textPrimary,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            Text(
+                              "Pick a brand theme or your preferred accent color",
+                              style: TextStyle(color: AppTheme.textMuted, fontSize: 12),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                  Wrap(
+                    spacing: 12,
+                    runSpacing: 12,
+                    children: BankAccount.colorPresets.map((preset) {
+                      final c = preset['color'] as Color;
+                      final isSelected = bank.color.toARGB32() == c.toARGB32();
+                      return GestureDetector(
+                        onTap: () {
+                          state.updateBankAccountColor(bank.id, c);
+                          setSheetState(() {});
+                          Navigator.pop(sheetCtx);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text("Updated ${bank.name} color to ${preset['name']}"),
+                              duration: const Duration(seconds: 2),
+                              behavior: SnackBarBehavior.floating,
+                            ),
+                          );
+                        },
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              width: 40,
+                              height: 40,
+                              decoration: BoxDecoration(
+                                color: c,
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: isSelected ? Colors.white : Colors.transparent,
+                                  width: 2.5,
+                                ),
+                                boxShadow: isSelected
+                                    ? [
+                                        BoxShadow(
+                                          color: c.withValues(alpha: 0.6),
+                                          blurRadius: 8,
+                                          spreadRadius: 1,
+                                        )
+                                      ]
+                                    : null,
+                              ),
+                              child: isSelected
+                                  ? const Icon(Icons.check, size: 18, color: Colors.white)
+                                  : null,
+                            ),
+                            const SizedBox(height: 4),
+                            SizedBox(
+                              width: 56,
+                              child: Text(
+                                preset['name'].toString().split(' ').first,
+                                style: TextStyle(
+                                  color: isSelected ? AppTheme.textPrimary : AppTheme.textMuted,
+                                  fontSize: 10,
+                                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                                ),
+                                textAlign: TextAlign.center,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
     );
   }
 
@@ -1416,6 +1618,8 @@ class HomeScreen extends StatelessWidget {
     final accController = TextEditingController();
     final balanceController = TextEditingController();
     String accountType = 'Savings';
+    Color selectedColor = const Color(0xFF10B981);
+    bool userManuallyPickedColor = false;
     String? nameError;
     String? balanceError;
 
@@ -1432,10 +1636,10 @@ class HomeScreen extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: AppTheme.surfaceLight,
+                      color: selectedColor.withValues(alpha: 0.18),
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: Icon(Icons.account_balance_rounded, color: AppTheme.primaryTeal, size: 18),
+                    child: Icon(Icons.account_balance_rounded, color: selectedColor, size: 18),
                   ),
                   const SizedBox(width: 10),
                   Text(
@@ -1459,7 +1663,18 @@ class HomeScreen extends StatelessWidget {
                         BluppSegmentItem(value: 'Current', label: 'Current', icon: Icons.credit_card_outlined),
                         BluppSegmentItem(value: 'Wallet', label: 'E-Wallet', icon: Icons.phone_android_outlined),
                       ],
-                      onSelected: (val) => setDialogState(() => accountType = val),
+                      onSelected: (val) {
+                        setDialogState(() {
+                          accountType = val;
+                          if (!userManuallyPickedColor) {
+                            if (val == 'Wallet') {
+                              selectedColor = const Color(0xFF0284C7);
+                            } else {
+                              selectedColor = BankAccount.guessColor(nameController.text.trim());
+                            }
+                          }
+                        });
+                      },
                     ),
                     const SizedBox(height: 14),
 
@@ -1469,15 +1684,20 @@ class HomeScreen extends StatelessWidget {
                       style: TextStyle(color: AppTheme.textPrimary, fontSize: 14),
                       decoration: InputDecoration(
                         labelText: "Bank / Institution Name",
-                        hintText: "e.g. Maybank, CIMB, Hong Leong",
+                        hintText: "e.g. Maybank, CIMB, Bank Islam, RHB",
                         hintStyle: TextStyle(color: AppTheme.textMuted, fontSize: 13),
                         labelStyle: TextStyle(color: AppTheme.textSecondary, fontSize: 12),
                         filled: true,
                         fillColor: AppTheme.surfaceLight,
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
                       ),
-                      onChanged: (_) {
-                        if (nameError != null) setDialogState(() => nameError = null);
+                      onChanged: (val) {
+                        setDialogState(() {
+                          if (nameError != null) nameError = null;
+                          if (!userManuallyPickedColor && val.trim().isNotEmpty) {
+                            selectedColor = BankAccount.guessColor(val);
+                          }
+                        });
                       },
                     ),
                     BluppFieldError(fieldName: "Bank Name", errorMessage: nameError),
@@ -1518,6 +1738,61 @@ class HomeScreen extends StatelessWidget {
                       },
                     ),
                     BluppFieldError(fieldName: "Starting Balance", errorMessage: balanceError),
+                    const SizedBox(height: 14),
+
+                    // Card Colour Palette
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text("Card & Theme Colour", style: TextStyle(color: AppTheme.textSecondary, fontSize: 12, fontWeight: FontWeight.w500)),
+                        Container(
+                          width: 14,
+                          height: 14,
+                          decoration: BoxDecoration(color: selectedColor, shape: BoxShape.circle),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: BankAccount.colorPresets.map((preset) {
+                        final c = preset['color'] as Color;
+                        final isSelected = selectedColor.toARGB32() == c.toARGB32();
+                        return GestureDetector(
+                          onTap: () {
+                            setDialogState(() {
+                              selectedColor = c;
+                              userManuallyPickedColor = true;
+                            });
+                          },
+                          child: Container(
+                            width: 32,
+                            height: 32,
+                            decoration: BoxDecoration(
+                              color: c,
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: isSelected ? Colors.white : Colors.transparent,
+                                width: 2.5,
+                              ),
+                              boxShadow: isSelected
+                                  ? [
+                                      BoxShadow(
+                                        color: c.withValues(alpha: 0.6),
+                                        blurRadius: 8,
+                                        spreadRadius: 1,
+                                      )
+                                    ]
+                                  : null,
+                            ),
+                            child: isSelected
+                                ? const Icon(Icons.check, size: 16, color: Colors.white)
+                                : null,
+                          ),
+                        );
+                      }).toList(),
+                    ),
                   ],
                 ),
               ),
@@ -1528,8 +1803,8 @@ class HomeScreen extends StatelessWidget {
                 ),
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppTheme.textPrimary,
-                    foregroundColor: AppTheme.background,
+                    backgroundColor: selectedColor,
+                    foregroundColor: Colors.white,
                     elevation: 0,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                   ),
@@ -1554,7 +1829,7 @@ class HomeScreen extends StatelessWidget {
                         name,
                         acc.isEmpty ? '•••• 0000' : acc,
                         balance!,
-                        accountType == 'Wallet' ? const Color(0xFF06B6D4) : const Color(0xFF10B981),
+                        selectedColor,
                       );
                       Navigator.pop(context);
                     }
@@ -2423,60 +2698,145 @@ class HomeScreen extends StatelessWidget {
   void _showManageBankSheet(BuildContext context, BankAccount bank) {
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
       backgroundColor: AppTheme.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(26)),
       ),
       builder: (ctx) {
-        return Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(color: AppTheme.surfaceBorder, borderRadius: BorderRadius.circular(2)),
-                ),
-              ),
-              const SizedBox(height: 18),
-              Row(
+        return StatefulBuilder(
+          builder: (sheetCtx, setSheetState) {
+            final currentBank = state.getBankById(bank.id) ?? bank;
+
+            return SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: bank.color.withValues(alpha: 0.2),
-                      shape: BoxShape.circle,
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(color: AppTheme.surfaceBorder, borderRadius: BorderRadius.circular(2)),
                     ),
-                    child: Icon(bank.icon, color: bank.color, size: 22),
                   ),
-                  const SizedBox(width: 14),
-                  Expanded(
+                  const SizedBox(height: 18),
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: currentBank.color.withValues(alpha: 0.2),
+                          shape: BoxShape.circle,
+                          border: Border.all(color: currentBank.color.withValues(alpha: 0.4)),
+                        ),
+                        child: Icon(currentBank.icon, color: currentBank.color, size: 22),
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              currentBank.name,
+                              style: TextStyle(color: AppTheme.textPrimary, fontSize: 16, fontWeight: FontWeight.w600),
+                            ),
+                            Text(
+                              currentBank.accountNumber,
+                              style: TextStyle(color: AppTheme.textMuted, fontSize: 12, fontFamily: 'monospace'),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Text(
+                        AppTheme.formatCurrency(currentBank.balance),
+                        style: TextStyle(color: currentBank.color, fontSize: 16, fontWeight: FontWeight.w700),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+
+                  // Action: Card Colour Theme
+                  Container(
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: AppTheme.surfaceLight,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: currentBank.color.withValues(alpha: 0.35)),
+                    ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          bank.name,
-                          style: TextStyle(color: AppTheme.textPrimary, fontSize: 16, fontWeight: FontWeight.w500),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Row(
+                              children: [
+                                Icon(Icons.palette_outlined, color: currentBank.color, size: 18),
+                                const SizedBox(width: 8),
+                                Text(
+                                  "Card Colour Theme",
+                                  style: TextStyle(color: AppTheme.textPrimary, fontSize: 13, fontWeight: FontWeight.w600),
+                                ),
+                              ],
+                            ),
+                            Container(
+                              width: 14,
+                              height: 14,
+                              decoration: BoxDecoration(
+                                color: currentBank.color,
+                                shape: BoxShape.circle,
+                                border: Border.all(color: Colors.white, width: 1.5),
+                              ),
+                            ),
+                          ],
                         ),
-                        Text(
-                          bank.accountNumber,
-                          style: TextStyle(color: AppTheme.textMuted, fontSize: 12, fontFamily: 'monospace'),
+                        const SizedBox(height: 10),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: BankAccount.colorPresets.map((preset) {
+                            final c = preset['color'] as Color;
+                            final isSelected = currentBank.color.toARGB32() == c.toARGB32();
+                            return GestureDetector(
+                              onTap: () {
+                                state.updateBankAccountColor(currentBank.id, c);
+                                setSheetState(() {});
+                              },
+                              child: Container(
+                                width: 30,
+                                height: 30,
+                                decoration: BoxDecoration(
+                                  color: c,
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: isSelected ? Colors.white : Colors.transparent,
+                                    width: 2.5,
+                                  ),
+                                  boxShadow: isSelected
+                                      ? [
+                                          BoxShadow(
+                                            color: c.withValues(alpha: 0.6),
+                                            blurRadius: 8,
+                                            spreadRadius: 1,
+                                          )
+                                        ]
+                                      : null,
+                                ),
+                                child: isSelected
+                                    ? const Icon(Icons.check, size: 15, color: Colors.white)
+                                    : null,
+                              ),
+                            );
+                          }).toList(),
                         ),
                       ],
                     ),
                   ),
-                  Text(
-                    AppTheme.formatCurrency(bank.balance),
-                    style: TextStyle(color: bank.color, fontSize: 16, fontWeight: FontWeight.w600),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 24),
-              Divider(color: AppTheme.surfaceBorder, height: 1),
-              const SizedBox(height: 18),
+                  const SizedBox(height: 16),
+                  Divider(color: AppTheme.surfaceBorder, height: 1),
+                  const SizedBox(height: 16),
 
               // Action 1: Add Money
               InkWell(
@@ -2644,7 +3004,9 @@ class HomeScreen extends StatelessWidget {
         );
       },
     );
-  }
+  },
+);
+}
 
   // Dialog: Add Loan
   void _showAddLoanDialog(BuildContext context) {

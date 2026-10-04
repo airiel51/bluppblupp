@@ -1370,73 +1370,80 @@ class _TrackingScreenState extends State<TrackingScreen>
         );
       },
       child: InteractiveCard(
-        margin: const EdgeInsets.only(bottom: 10),
-        padding: const EdgeInsets.all(14),
+        margin: const EdgeInsets.only(bottom: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
+        radius: 14,
         child: Row(
           children: [
+            // Category Icon Badge
             Container(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: category.color.withValues(alpha: 0.18),
+                color: category.color.withValues(alpha: 0.16),
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: Icon(category.icon, color: category.color, size: 20),
+              child: Icon(category.icon, color: category.color, size: 18),
             ),
-            const SizedBox(width: 14),
+            const SizedBox(width: 12),
+
+            // Middle Column: Title, Category • Bank Name, Note (Guaranteed no overflow)
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
                     tx.title,
                     style: TextStyle(
                       color: AppTheme.textPrimary,
                       fontSize: 14,
-                      fontWeight: FontWeight.w500,
+                      fontWeight: FontWeight.w600,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: 3),
-                  Row(
-                    children: [
-                      Text(
-                        category.name,
-                        style: TextStyle(
-                          color: AppTheme.textMuted,
-                          fontSize: 11,
-                        ),
-                      ),
-                      if (bank != null) ...[
-                        const SizedBox(width: 6),
-                        Container(
-                          width: 3,
-                          height: 3,
-                          decoration: BoxDecoration(
-                            color: AppTheme.textMuted,
-                            shape: BoxShape.circle,
-                          ),
-                        ),
-                        const SizedBox(width: 6),
-                        Text(
-                          bank.name,
+                  const SizedBox(height: 2),
+                  // Combined single-span line so text never draws outside or overlaps
+                  Text.rich(
+                    TextSpan(
+                      children: [
+                        TextSpan(
+                          text: category.name,
                           style: TextStyle(
-                            color: bank.color,
+                            color: AppTheme.textMuted,
                             fontSize: 11,
-                            fontWeight: FontWeight.w600,
                           ),
                         ),
+                        if (bank != null) ...[
+                          TextSpan(
+                            text: " • ",
+                            style: TextStyle(
+                              color: AppTheme.textMuted.withValues(alpha: 0.5),
+                              fontSize: 11,
+                            ),
+                          ),
+                          TextSpan(
+                            text: bank.name,
+                            style: TextStyle(
+                              color: bank.color,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
                       ],
-                    ],
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  if (tx.note != null && tx.note!.isNotEmpty) ...[
-                    const SizedBox(height: 3),
+                  if (tx.note != null && tx.note!.trim().isNotEmpty) ...[
+                    const SizedBox(height: 2),
                     Text(
-                      tx.note!,
+                      tx.note!.trim(),
                       style: TextStyle(
-                        color: AppTheme.secondaryCyan,
+                        color: const Color(0xFF38BDF8).withValues(alpha: 0.85),
                         fontSize: 10,
-                        fontWeight: FontWeight.w600,
+                        fontStyle: FontStyle.italic,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -1445,60 +1452,67 @@ class _TrackingScreenState extends State<TrackingScreen>
                 ],
               ),
             ),
+            const SizedBox(width: 10),
+
+            // Right Column: Amount & Compact Delete Button
             Builder(
               builder: (context) {
                 final isTransfer = tx.isTransfer || widget.state.isTransferOrTopUp(tx);
                 final isExpense = tx.type == TransactionType.expense;
 
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
+                return Row(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    Text(
-                      isTransfer
-                          ? "⇄ ${AppTheme.formatCurrency(tx.amount)}"
-                          : "${isExpense ? '-' : '+'}${AppTheme.formatCurrency(tx.amount)}",
-                      style: TextStyle(
-                        color: isTransfer
-                            ? const Color(0xFF38BDF8)
-                            : (isExpense ? AppTheme.expenseCoral : AppTheme.incomeMint),
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                      ),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          isTransfer
+                              ? "⇄ ${AppTheme.formatCurrency(tx.amount)}"
+                              : "${isExpense ? '-' : '+'}${AppTheme.formatCurrency(tx.amount)}",
+                          style: TextStyle(
+                            color: isTransfer
+                                ? const Color(0xFF38BDF8)
+                                : (isExpense ? AppTheme.expenseCoral : AppTheme.incomeMint),
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        if (_expenseTimeframe != 'daily') ...[
+                          const SizedBox(height: 2),
+                          Text(
+                            _formatDate(tx.date),
+                            style: TextStyle(
+                              color: AppTheme.textMuted,
+                              fontSize: 10,
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
-                    const SizedBox(height: 2),
-                    Text(
-                      isTransfer ? "Internal Transfer" : _formatDate(tx.date),
-                      style: TextStyle(
-                        color: isTransfer ? const Color(0xFF38BDF8).withValues(alpha: 0.8) : AppTheme.textMuted,
-                        fontSize: 10,
-                        fontWeight: isTransfer ? FontWeight.w500 : FontWeight.normal,
+                    const SizedBox(width: 8),
+                    // Compact Delete Icon
+                    InkWell(
+                      onTap: () => _confirmDeleteTransaction(context, tx),
+                      borderRadius: BorderRadius.circular(6),
+                      child: Container(
+                        padding: const EdgeInsets.all(5),
+                        decoration: BoxDecoration(
+                          color: AppTheme.expenseCoral.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: const Icon(
+                          Icons.delete_outline_rounded,
+                          color: AppTheme.expenseCoral,
+                          size: 14,
+                        ),
                       ),
                     ),
                   ],
                 );
               },
-            ),
-            const SizedBox(width: 10),
-            // Visible Delete Button
-            InkWell(
-              onTap: () => _confirmDeleteTransaction(context, tx),
-              borderRadius: BorderRadius.circular(8),
-              child: Container(
-                padding: const EdgeInsets.all(6),
-                decoration: BoxDecoration(
-                  color: AppTheme.expenseCoral.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
-                    color: AppTheme.expenseCoral.withValues(alpha: 0.3),
-                    width: 1,
-                  ),
-                ),
-                child: Icon(
-                  Icons.delete_outline_rounded,
-                  color: AppTheme.expenseCoral,
-                  size: 16,
-                ),
-              ),
             ),
           ],
         ),

@@ -487,6 +487,21 @@ class SupabaseService {
     }
   }
 
+  Future<bool> updateBankAccountColor(String bankId, Color newColor) async {
+    if (!_isConfigured || client == null) return false;
+
+    try {
+      await client!
+          .from('bank_accounts')
+          .update({'color_hex': '0x${newColor.toARGB32().toRadixString(16).toUpperCase()}'})
+          .eq('id', bankId);
+      return true;
+    } catch (e) {
+      debugPrint('[SupabaseService] updateBankAccountColor error: $e');
+      return false;
+    }
+  }
+
   // ---------------------------------------------------------------------------
   // INVESTMENTS & SAVINGS
   // ---------------------------------------------------------------------------

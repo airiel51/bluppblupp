@@ -27,7 +27,7 @@ class BankAccount {
   final String name;
   final String accountNumber;
   double balance;
-  final Color color;
+  Color color;
   final IconData icon;
 
   BankAccount({
@@ -38,6 +38,62 @@ class BankAccount {
     required this.color,
     required this.icon,
   });
+
+  BankAccount copyWith({
+    String? id,
+    String? name,
+    String? accountNumber,
+    double? balance,
+    Color? color,
+    IconData? icon,
+  }) {
+    return BankAccount(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      accountNumber: accountNumber ?? this.accountNumber,
+      balance: balance ?? this.balance,
+      color: color ?? this.color,
+      icon: icon ?? this.icon,
+    );
+  }
+
+  static const List<Map<String, dynamic>> colorPresets = [
+    {'name': 'Maybank Yellow', 'color': Color(0xFFFFC000)},
+    {'name': 'CIMB Red', 'color': Color(0xFFED1C24)},
+    {'name': 'Bank Islam Ruby', 'color': Color(0xFF991B1B)},
+    {'name': 'RHB Royal Blue', 'color': Color(0xFF0067B1)},
+    {'name': 'GXBank Violet', 'color': Color(0xFF8B5CF6)},
+    {'name': 'Touch \'n Go Cyan', 'color': Color(0xFF0284C7)},
+    {'name': 'Aeon Electric Purple', 'color': Color(0xFF9333EA)},
+    {'name': 'Public Bank Crimson', 'color': Color(0xFFDC2626)},
+    {'name': 'Hong Leong Cherry', 'color': Color(0xFFB91C1C)},
+    {'name': 'AmBank Rose', 'color': Color(0xFFE11D48)},
+    {'name': 'Emerald Green', 'color': Color(0xFF10B981)},
+    {'name': 'Deep Teal', 'color': Color(0xFF0D9488)},
+    {'name': 'Amber Gold', 'color': Color(0xFFF59E0B)},
+    {'name': 'Coral Rose', 'color': Color(0xFFF43F5E)},
+    {'name': 'Electric Indigo', 'color': Color(0xFF6366F1)},
+  ];
+
+  static Color guessColor(String bankName) {
+    final lower = bankName.toLowerCase();
+    if (lower.contains('maybank') || lower.contains('harimau')) return const Color(0xFFFFC000);
+    if (lower.contains('cimb')) return const Color(0xFFED1C24);
+    if (lower.contains('islam') || lower.contains('muamalat')) return const Color(0xFF991B1B);
+    if (lower.contains('rhb')) return const Color(0xFF0067B1);
+    if (lower.contains('gx') || lower.contains('gxbank')) return const Color(0xFF8B5CF6);
+    if (lower.contains('touch') || lower.contains('tng')) return const Color(0xFF0284C7);
+    if (lower.contains('aeon')) return const Color(0xFF9333EA);
+    if (lower.contains('public')) return const Color(0xFFDC2626);
+    if (lower.contains('hong leong') || lower.contains('hlb')) return const Color(0xFFB91C1C);
+    if (lower.contains('ambank')) return const Color(0xFFE11D48);
+    if (lower.contains('grab')) return const Color(0xFF10B981);
+    if (lower.contains('boost')) return const Color(0xFFF43F5E);
+    if (lower.contains('uob')) return const Color(0xFF0284C7);
+    if (lower.contains('ocbc')) return const Color(0xFFDC2626);
+    if (lower.contains('standard') || lower.contains('scb')) return const Color(0xFF0D9488);
+    return const Color(0xFF10B981);
+  }
 }
 
 class InvestmentItem {
@@ -1816,6 +1872,17 @@ class FinanceState extends ChangeNotifier {
     _bankAccounts.removeWhere((b) => b.id == id);
     SupabaseService.instance.deleteBankAccount(id);
     notifyListeners();
+  }
+
+  // Update bank account color
+  void updateBankAccountColor(String id, Color newColor) {
+    final index = _bankAccounts.indexWhere((b) => b.id == id);
+    if (index != -1) {
+      final old = _bankAccounts[index];
+      _bankAccounts[index] = old.copyWith(color: newColor);
+      SupabaseService.instance.updateBankAccountColor(id, newColor);
+      notifyListeners();
+    }
   }
 
   // Inter-bank transfer: Moves money from one bank to another without counting as an expense
