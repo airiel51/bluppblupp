@@ -7,6 +7,8 @@ import '../widgets/blupp_states.dart';
 import '../widgets/blupp_forms.dart';
 import '../widgets/blupp_logo.dart';
 import '../widgets/blupp_avatar.dart';
+import '../widgets/gemini_api_key_dialog.dart';
+import '../services/gemini_service.dart';
 
 class ProfileScreen extends StatelessWidget {
   final FinanceState state;
@@ -4218,7 +4220,85 @@ class ProfileScreen extends StatelessWidget {
                   ),
                 ],
               ),
-              const SizedBox(height: 28),
+              const SizedBox(height: 18),
+
+              // 5b. REAL AI ENGINE (Google Gemini) SETTINGS
+              InteractiveCard(
+                padding: const EdgeInsets.all(16),
+                onTap: () => GeminiApiKeyDialog.show(context),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: GeminiService.instance.hasApiKey
+                            ? const Color(0xFF10B981).withValues(alpha: 0.15)
+                            : AppTheme.fomoPurple.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Icon(
+                        Icons.auto_awesome_rounded,
+                        color: GeminiService.instance.hasApiKey
+                            ? const Color(0xFF10B981)
+                            : AppTheme.fomoPurple,
+                        size: 22,
+                      ),
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Text(
+                                "Google Gemini AI Engine",
+                                style: TextStyle(
+                                  color: AppTheme.textPrimary,
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: GeminiService.instance.hasApiKey
+                                      ? const Color(0xFF10B981).withValues(alpha: 0.2)
+                                      : Colors.amber.withValues(alpha: 0.2),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: Text(
+                                  GeminiService.instance.hasApiKey ? "ACTIVE" : "OFFLINE",
+                                  style: TextStyle(
+                                    color: GeminiService.instance.hasApiKey
+                                        ? const Color(0xFF10B981)
+                                        : Colors.amber,
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            GeminiService.instance.hasApiKey
+                                ? "Connected to ${GeminiService.instance.selectedModel}. Tap to configure."
+                                : "Tap to connect Gemini API key for live AI reasoning.",
+                            style: TextStyle(
+                              color: AppTheme.textSecondary,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Icon(Icons.chevron_right_rounded, color: AppTheme.textMuted),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 24),
 
               // 6. LOG OUT / SWITCH ACCOUNT BUTTON (Clean, luxury fintech aesthetic)
               Container(

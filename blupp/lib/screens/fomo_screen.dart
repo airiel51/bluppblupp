@@ -9,6 +9,8 @@ import '../theme/app_theme.dart';
 import '../widgets/blupp_states.dart';
 import '../widgets/blupp_forms.dart';
 import '../widgets/ai_devils_advocate_sheet.dart';
+import '../widgets/gemini_api_key_dialog.dart';
+import '../services/gemini_service.dart';
 
 class FomoScreen extends StatefulWidget {
   final FinanceState state;
@@ -29,11 +31,25 @@ class _FomoScreenState extends State<FomoScreen> {
   bool _isEvaluating = false;
   String? _inputErrorWhere;
   String? _inputErrorWhy;
+  bool _isRealAiResult = false;
 
   @override
   void initState() {
     super.initState();
     _selectedCurrency = widget.state.baseCurrency;
+    GeminiService.instance.addListener(_onGeminiUpdate);
+  }
+
+  @override
+  void dispose() {
+    GeminiService.instance.removeListener(_onGeminiUpdate);
+    _itemController.dispose();
+    _costController.dispose();
+    super.dispose();
+  }
+
+  void _onGeminiUpdate() {
+    if (mounted) setState(() {});
   }
 
   // Evaluation Result State
@@ -122,158 +138,46 @@ class _FomoScreenState extends State<FomoScreen> {
     final invName = primaryInv != null ? primaryInv.name : 'ASNB Fund';
     final invThreeYearGain = cost * (invRate / 100.0) * 3;
 
-    // True safety cushion accounting for scheduled calendar bills
-    final effectiveCushion = currentBalance - upcomingPlannedTotal;
-
-    String serverAdvice = '';
-    try {
-      final url = Uri.parse('http://10.0.2.2:8000/api/advice/0165f8cb-7deb-4dd3-b9b5-59db5e70c2f1');
-      final res = await http.get(url).timeout(const Duration(milliseconds: 1500));
-      if (res.statusCode == 200) {
-        final data = jsonDecode(res.body);
-        serverAdvice = data['advice'] ?? '';
-      }
-    } catch (_) {
-      // Backend offline or timeout -> fallback to intelligent rules
-    }
-
-    String vType = 'safe';
-    String verdictTitle = 'SAFE TO BUY ✅';
-    String adviceText = '';
-    String whyNot = '';
-
-    final isTravel = _selectedCurrency != widget.state.baseCurrency;
-    final costDisplay = isTravel
-        ? "${CurrencyManager.format(enteredCost, _selectedCurrency)} (≈ ${AppTheme.formatCurrency(cost)})"
-        : AppTheme.formatCurrency(cost);
-
-    if (projectedBalance < 0) {
-      vType = 'danger';
-      verdictTitle = '🛑 CRITICAL OVER-BUDGET ALERT!';
-      adviceText =
-          "$userName, buying '$item' for $costDisplay will completely wipe out your remaining spending balance and plunge you into a negative deficit of ${AppTheme.formatCurrency(projectedBalance.abs())}!";
-      whyNot =
-          "• Cashflow Crisis: You have $remainingDays days left this month with zero remaining spending margin.\n"
-          "• Fixed Obligations: You have ${AppTheme.formatCurrency(totalMonthlyLoans)} committed in monthly installments ($loanSummary). Going negative here puts your essential obligations at risk.\n"
-          "• Compounding Opportunity: If you channel $costDisplay into your $invName ($invRate% p.a.), it grows by +${AppTheme.formatCurrency(invThreeYearGain)} over 3 years without stress.\n"
-          "• Psychological Trigger: You selected: '$_selectedUrgency'. Impulsive purchases from hype or stress carry an 88% regret rate within 2 weeks. Apply the 30-Day Rule!";
-    } else if (cost > effectiveCushion && effectiveCushion > 0) {
-      vType = 'warning';
-      verdictTitle = '⚠️ CALENDAR CONFLICT: TIGHTENS YOUR MONTH!';
-      adviceText =
-          "Caution $userName! While your current spending pool is ${AppTheme.formatCurrency(currentBalance)}, you have ${AppTheme.formatCurrency(upcomingPlannedTotal)} reserved for upcoming calendar commitments (${upcomingPlans.take(2).map((p) => p.title).join(', ')}). Buying '$item' leaves only ${AppTheme.formatCurrency(effectiveCushion - cost)} for unexpected emergencies.";
-      whyNot =
-          "• Scheduled Bills: You have ${upcomingPlans.length} upcoming commitments totaling ${AppTheme.formatCurrency(upcomingPlannedTotal)} this month.\n"
-          "• Daily Squeeze: Your daily allowance will drop sharply from ${AppTheme.formatCurrency(oldDaily)}/day down to ${AppTheme.formatCurrency(newDaily)}/day for $remainingDays days.\n"
-          "• Active Loans: Keep your monthly installments ($loanSummary) protected.\n"
-          "• Cooling Off: Wait 72 hours before completing this order. 70% of urges fade after 3 days.";
-    } else if (cost > currentBalance * 0.35 || newDaily < 25.0) {
-      vType = 'warning';
-      verdictTitle = '⚠️ HEAVY DENT IN DAILY ALLOWANCE';
-      adviceText =
-          "Hey $userName, '$item' takes ${(cost / currentBalance * 100).toStringAsFixed(0)}% of your remaining spending pool. Your daily budget will drop from ${AppTheme.formatCurrency(oldDaily)}/day to ${AppTheme.formatCurrency(newDaily)}/day for the next $remainingDays days.";
-      whyNot =
-          "• Daily Pressure: Surviving on ${AppTheme.formatCurrency(newDaily)}/day for $remainingDays days can cause friction with food and essentials.\n"
-          "• Growth Alternative: Putting $costDisplay into $invName compounds to +${AppTheme.formatCurrency(invThreeYearGain)} in 3 years.\n"
-          "• 48-Hour Pause: Give this urge a 48-hour cooling period. If it's still essential by ${now.add(const Duration(days: 2)).day}/${now.add(const Duration(days: 2)).month}, re-evaluate.";
-    } else {
-      vType = 'safe';
-      verdictTitle = '✅ WITHIN BUDGET: APPROVED';
-      adviceText =
-          "Great financial discipline, $userName! '$item' ($costDisplay) is well within your spending allocation. You will still have ${AppTheme.formatCurrency(projectedBalance)} left (${AppTheme.formatCurrency(newDaily)}/day) for the rest of the month.";
-      whyNot =
-          "• Financial Health: Your upcoming commitments (${AppTheme.formatCurrency(upcomingPlannedTotal)}) and loan obligations (${AppTheme.formatCurrency(totalMonthlyLoans)}) are comfortably buffered.\n"
-          "• Guilt-Free: Since this is planned and affordable, you can purchase it with confidence!";
-    }
-
-    if (serverAdvice.isNotEmpty) {
-      adviceText = "$adviceText\n\nAI Coach Note: $serverAdvice";
-    }
-
-    // --- MULTI-DIMENSIONAL AI PSYCHOMETRICS & METRICS ---
-    int computedRegret = 70;
-    switch (_selectedUrgency) {
-      case 'TikTok / Social Media Hype':
-        computedRegret = 88;
-        break;
-      case 'Flash Sale / Limited Time Discount':
-        computedRegret = 84;
-        break;
-      case 'Saw Friends / Influencer using it':
-        computedRegret = 79;
-        break;
-      case 'Feeling Stressed / Treat Myself':
-        computedRegret = 74;
-        break;
-      case 'Actually Need it for Daily Life':
-        computedRegret = 24;
-        break;
-    }
-    if (projectedBalance < 0) {
-      computedRegret += 10;
-    } else if (cost > currentBalance * 0.4) {
-      computedRegret += 6;
-    }
-    computedRegret = computedRegret.clamp(12, 98);
-
     final monthlyIncome = widget.state.totalIncomeThisMonth > 0 ? widget.state.totalIncomeThisMonth : 4500.0;
     final hourlyWage = (monthlyIncome / 160.0).clamp(15.0, 500.0);
     final workHours = cost / hourlyWage;
-
     final compound10Yr = cost * pow(1.08, 10);
 
-    final List<Map<String, dynamic>> recommendations = [
-      {
-        'title': '72-Hour Anti-FOMO Cooling Chamber',
-        'tag': 'Neuroscience Protocol',
-        'icon': Icons.hourglass_top_rounded,
-        'color': const Color(0xFF38BDF8),
-        'desc': 'Neuroscience shows 74% of retail urges are temporary dopamine spikes that fade after 72 hours. Pause until ${now.add(const Duration(days: 3)).day}/${now.add(const Duration(days: 3)).month}. If you still crave it, review your allowance.',
-      },
-      {
-        'title': 'Smart & Cheaper Alternatives',
-        'tag': 'Value Optimization',
-        'icon': Icons.loyalty_rounded,
-        'color': const Color(0xFF10B981),
-        'desc': 'Check secondhand platforms (Carousell, Mudah) or certified refurbished retailers for "$item". You can often capture 90% of the utility while keeping ${AppTheme.formatCurrency(cost * 0.35)} in your bank account.',
-      },
-      {
-        'title': '"Earn the Right to Buy" Challenge',
-        'tag': 'Discipline Challenge',
-        'icon': Icons.fitness_center_rounded,
-        'color': const Color(0xFFF59E0B),
-        'desc': 'Condition this purchase on funding at least 50% (${AppTheme.formatCurrency(cost * 0.5)}) through extra side hustle earnings or cutting discretionary food delivery for 14 days.',
-      },
-      {
-        'title': 'The 10/10/10 Mindful Filter',
-        'tag': 'Psychological Anchor',
-        'icon': Icons.psychology_alt_rounded,
-        'color': const Color(0xFF8B5CF6),
-        'desc': 'Ask: Will you care about "$item" in 10 minutes? 10 months? 10 years? If not in 10 months, it is fleeting consumption depreciating to zero.',
-      },
-    ];
-
-    await Future.delayed(const Duration(milliseconds: 600));
+    // Call Real Google Gemini AI (or fallback to intelligent local engine)
+    final evalResult = await GeminiService.instance.evaluateFomoPurchase(
+      itemName: item,
+      enteredCost: cost,
+      selectedCurrency: _selectedCurrency,
+      urgencyOption: _selectedUrgency,
+      state: widget.state,
+    );
 
     if (!mounted) return;
 
     setState(() {
       _isEvaluating = false;
       _hasResult = true;
+      _isRealAiResult = evalResult.isRealAi;
       _evaluatedItem = item;
       _evaluatedCost = cost;
-      _verdictType = vType;
-      _verdict = verdictTitle;
-      _aiAdvice = adviceText;
-      _whyNotNeed = whyNot;
+      _verdictType = evalResult.verdictType;
+      _verdict = evalResult.verdictTitle;
+      _aiAdvice = evalResult.adviceText;
+      _whyNotNeed = evalResult.whyNotNeed;
       _oldBalance = currentBalance;
       _newBalance = projectedBalance;
       _oldDailyAllowance = oldDaily;
       _newDailyAllowance = newDaily;
-      _regretScore = computedRegret;
+      _regretScore = evalResult.regretScore;
       _workHoursNeeded = workHours;
       _tenYearCompoundCost = compound10Yr;
-      _aiRecommendations = recommendations;
+      _aiRecommendations = evalResult.recommendations.map((r) => {
+        'title': r['title'] ?? '72-Hour Anti-FOMO Cooling Chamber',
+        'tag': r['tag'] ?? 'Neuroscience Protocol',
+        'icon': Icons.psychology_alt_rounded,
+        'color': const Color(0xFF8B5CF6),
+        'desc': r['desc'] ?? '',
+      }).toList();
     });
   }
 
@@ -285,7 +189,7 @@ class _FomoScreenState extends State<FomoScreen> {
         title: Row(
           children: [
             Icon(Icons.auto_awesome_rounded, color: AppTheme.fomoPurple, size: 24),
-            SizedBox(width: 8),
+            const SizedBox(width: 8),
             Text(
               "FOMO Advisor",
               style: TextStyle(
@@ -297,6 +201,52 @@ class _FomoScreenState extends State<FomoScreen> {
             ),
           ],
         ),
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 16),
+            child: InkWell(
+              onTap: () => GeminiApiKeyDialog.show(context),
+              borderRadius: BorderRadius.circular(16),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(
+                  color: GeminiService.instance.hasApiKey
+                      ? const Color(0xFF10B981).withOpacity(0.15)
+                      : Colors.white.withOpacity(0.08),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: GeminiService.instance.hasApiKey
+                        ? const Color(0xFF10B981).withOpacity(0.4)
+                        : Colors.white12,
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.auto_awesome_rounded,
+                      size: 14,
+                      color: GeminiService.instance.hasApiKey
+                          ? const Color(0xFF10B981)
+                          : Colors.amber,
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      GeminiService.instance.hasApiKey ? "Gemini AI" : "AI Config",
+                      style: TextStyle(
+                        color: GeminiService.instance.hasApiKey
+                            ? const Color(0xFF10B981)
+                            : Colors.white70,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
@@ -620,22 +570,51 @@ class _FomoScreenState extends State<FomoScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              color: borderColor.withValues(alpha: 0.2),
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: borderColor.withValues(alpha: 0.4)),
-            ),
-            child: Text(
-              _verdict,
-              style: TextStyle(
-                color: borderColor,
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                letterSpacing: 0.5,
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: borderColor.withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: borderColor.withValues(alpha: 0.4)),
+                ),
+                child: Text(
+                  _verdict,
+                  style: TextStyle(
+                    color: borderColor,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 0.5,
+                  ),
+                ),
               ),
-            ),
+              const Spacer(),
+              if (_isRealAiResult)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF10B981).withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: const Color(0xFF10B981).withOpacity(0.3)),
+                  ),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.auto_awesome_rounded, color: Color(0xFF10B981), size: 12),
+                      SizedBox(width: 4),
+                      Text(
+                        "Google Gemini AI",
+                        style: TextStyle(
+                          color: Color(0xFF10B981),
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+            ],
           ),
           const SizedBox(height: 14),
 

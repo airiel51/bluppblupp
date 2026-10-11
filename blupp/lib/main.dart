@@ -11,6 +11,7 @@ import 'screens/calendar_screen.dart';
 import 'screens/sign_in_screen.dart';
 import 'screens/profile_screen.dart';
 import 'services/supabase_service.dart';
+import 'services/gemini_service.dart';
 import 'widgets/blupp_avatar.dart';
 
 void main() async {
@@ -24,6 +25,7 @@ void main() async {
     ),
   );
   await SupabaseService.instance.init();
+  await GeminiService.instance.init();
   runApp(const BluppApp());
 }
 

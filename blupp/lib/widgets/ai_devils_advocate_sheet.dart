@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../models/finance_state.dart';
 import '../services/ai_devils_advocate_engine.dart';
+import '../services/gemini_service.dart';
+import 'gemini_api_key_dialog.dart';
 import '../theme/app_theme.dart';
 
 class ChatMessage {
@@ -53,16 +55,33 @@ class _AiDevilsAdvocateSheetState extends State<AiDevilsAdvocateSheet> {
     super.initState();
     _activeItem = widget.initialItem;
     _activePrice = widget.initialPrice;
+    GeminiService.instance.addListener(_onGeminiUpdate);
     _initChat();
+  }
+
+  @override
+  void dispose() {
+    GeminiService.instance.removeListener(_onGeminiUpdate);
+    _inputController.dispose();
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _onGeminiUpdate() {
+    if (mounted) setState(() {});
   }
 
   void _initChat() {
     final name = widget.state.userName;
+    final isRealAi = GeminiService.instance.hasApiKey;
     final spendingLeft = widget.state.spendingBalanceLeft;
     final debt = widget.state.totalLoans;
 
-    String initialGreeting = "Hey $name! I'm your AI Devil's Advocate. My job is to protect your future wealth from today's impulsive dopamine cravings.\n\n"
-        "You currently have ${AppTheme.formatCurrency(spendingLeft)} spending allowance left this month";
+    String initialGreeting = isRealAi
+        ? "Hey $name! I'm your Real AI Devil's Advocate (powered by Google Gemini). My mission is to crush retail impulses and protect your future wealth with sharp, unscripted reasoning.\n\n"
+        : "Hey $name! I'm your AI Devil's Advocate. My job is to protect your future wealth from today's impulsive dopamine cravings.\n\n";
+
+    initialGreeting += "You currently have ${AppTheme.formatCurrency(spendingLeft)} spending allowance left this month";
 
     if (debt > 0) {
       initialGreeting += " and ${AppTheme.formatCurrency(debt)} in liabilities to clear.";
@@ -130,10 +149,8 @@ class _AiDevilsAdvocateSheetState extends State<AiDevilsAdvocateSheet> {
       'isUser': m.isUser,
     }).toList();
 
-    // Simulate intelligent neural reasoning delay
-    await Future.delayed(const Duration(milliseconds: 750));
-
-    final aiResponse = AiDevilsAdvocateEngine.generateResponse(
+    // Invoke Real Gemini AI Devil's Advocate (or graceful offline fallback)
+    final aiResponse = await GeminiService.instance.generateDevilsAdvocateChat(
       userMessage: text,
       state: widget.state,
       currentItem: _activeItem,
@@ -247,6 +264,48 @@ class _AiDevilsAdvocateSheetState extends State<AiDevilsAdvocateSheet> {
                     ],
                   ),
                 ),
+                InkWell(
+                  onTap: () => GeminiApiKeyDialog.show(context),
+                  borderRadius: BorderRadius.circular(12),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: GeminiService.instance.hasApiKey
+                          ? const Color(0xFF10B981).withOpacity(0.15)
+                          : Colors.amber.withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(
+                        color: GeminiService.instance.hasApiKey
+                            ? const Color(0xFF10B981).withOpacity(0.3)
+                            : Colors.amber.withOpacity(0.3),
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.auto_awesome_rounded,
+                          size: 13,
+                          color: GeminiService.instance.hasApiKey
+                              ? const Color(0xFF10B981)
+                              : Colors.amber,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          GeminiService.instance.hasApiKey ? "Gemini AI" : "Connect AI",
+                          style: TextStyle(
+                            color: GeminiService.instance.hasApiKey
+                                ? const Color(0xFF10B981)
+                                : Colors.amber,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 4),
                 IconButton(
                   icon: Icon(Icons.close_rounded, color: AppTheme.textMuted),
                   onPressed: () => Navigator.pop(context),
