@@ -35,7 +35,7 @@ class GeminiService extends ChangeNotifier {
   static const String _prefKeyGemini = 'blupp_gemini_api_key';
   static const String _prefKeyModel = 'blupp_gemini_model';
 
-  String _apiKey = '';
+  String _apiKey = AiConfig.defaultGeminiApiKey;
   String _selectedModel = AiConfig.defaultModel;
   bool _isInitialized = false;
 
