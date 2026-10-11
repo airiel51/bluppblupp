@@ -57,8 +57,13 @@ class GeminiService extends ChangeNotifier {
         _apiKey = AiConfig.defaultGeminiApiKey.trim();
       }
 
-      if (storedModel != null && storedModel.trim().isNotEmpty) {
+      if (storedModel != null &&
+          storedModel.trim().isNotEmpty &&
+          storedModel != 'gemini-1.5-flash' &&
+          storedModel != 'gemini-2.0-flash') {
         _selectedModel = storedModel.trim();
+      } else {
+        _selectedModel = AiConfig.defaultModel;
       }
     } catch (e) {
       debugPrint('[GeminiService] Error reading shared preferences: $e');
