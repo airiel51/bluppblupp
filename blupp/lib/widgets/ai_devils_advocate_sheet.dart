@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../models/finance_state.dart';
-import '../services/ai_devils_advocate_engine.dart';
 import '../services/gemini_service.dart';
 import 'gemini_api_key_dialog.dart';
 import '../theme/app_theme.dart';
+import 'blupp_formatted_text.dart';
 
 class ChatMessage {
   final String text;
@@ -468,13 +468,10 @@ class _AiDevilsAdvocateSheetState extends State<AiDevilsAdvocateSheet> {
                       color: isUser ? Colors.transparent : AppTheme.surfaceBorder,
                     ),
                   ),
-                  child: Text(
-                    msg.text,
-                    style: TextStyle(
-                      color: isUser ? Colors.white : AppTheme.textPrimary,
-                      fontSize: 13.5,
-                      height: 1.45,
-                    ),
+                  child: BluppFormattedText(
+                    text: msg.text,
+                    isUser: isUser,
+                    accentColor: const Color(0xFFA78BFA),
                   ),
                 ),
 

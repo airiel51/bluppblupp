@@ -2093,7 +2093,15 @@ class FinanceState extends ChangeNotifier {
   }
 
   // Add a new loan (e.g. ShopeePay, Transport, Personal)
-  void addLoan(String name, String provider, double totalAmount, double monthlyInstallment, int dueDay) {
+  void addLoan(
+    String name,
+    String provider,
+    double totalAmount,
+    double monthlyInstallment,
+    int dueDay, {
+    IconData? icon,
+    Color? color,
+  }) {
     final newLoan = LoanItem(
       id: 'loan_${DateTime.now().millisecondsSinceEpoch}',
       name: name,
@@ -2102,8 +2110,8 @@ class FinanceState extends ChangeNotifier {
       remainingBalance: totalAmount,
       monthlyInstallment: monthlyInstallment,
       dueDayOfMonth: dueDay,
-      icon: Icons.credit_card_rounded,
-      color: const Color(0xFFFF6584),
+      icon: icon ?? Icons.credit_card_rounded,
+      color: color ?? const Color(0xFFFF6584),
     );
     _loans.add(newLoan);
     SupabaseService.instance.insertLoan(newLoan);

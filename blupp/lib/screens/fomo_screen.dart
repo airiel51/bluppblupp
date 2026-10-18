@@ -1,8 +1,6 @@
-import 'dart:convert';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import 'package:http/http.dart' as http;
 import '../models/finance_state.dart';
 import '../models/currency_model.dart';
 import '../theme/app_theme.dart';
@@ -10,6 +8,7 @@ import '../widgets/blupp_states.dart';
 import '../widgets/blupp_forms.dart';
 import '../widgets/ai_devils_advocate_sheet.dart';
 import '../widgets/gemini_api_key_dialog.dart';
+import '../widgets/blupp_formatted_text.dart';
 import '../services/gemini_service.dart';
 
 class FomoScreen extends StatefulWidget {
@@ -110,7 +109,6 @@ class _FomoScreenState extends State<FomoScreen> {
       toCode: widget.state.baseCurrency,
     );
 
-    final userName = widget.state.userName;
     final currentBalance = widget.state.spendingBalanceLeft;
     final projectedBalance = currentBalance - cost;
 
@@ -120,23 +118,6 @@ class _FomoScreenState extends State<FomoScreen> {
 
     final oldDaily = currentBalance / remainingDays;
     final newDaily = projectedBalance > 0 ? projectedBalance / remainingDays : 0.0;
-
-    // Upcoming calendar planned commitments
-    final upcomingPlans = widget.state.plannedExpenses
-        .where((p) => !p.isPaid && p.date.isAfter(DateTime.now().subtract(const Duration(days: 1))))
-        .toList();
-    final upcomingPlannedTotal = upcomingPlans.fold<double>(0.0, (sum, p) => sum + p.amount);
-
-    // Active loan commitments
-    final monthlyLoans = widget.state.loans;
-    final totalMonthlyLoans = monthlyLoans.fold<double>(0.0, (sum, l) => sum + l.monthlyInstallment);
-    final loanSummary = monthlyLoans.map((l) => "${l.name} (${AppTheme.formatCurrency(l.monthlyInstallment)}/mo)").join(", ");
-
-    // Investments return comparison
-    final primaryInv = widget.state.investments.isNotEmpty ? widget.state.investments.first : null;
-    final invRate = primaryInv != null ? primaryInv.returnRateAnnual : 5.5;
-    final invName = primaryInv != null ? primaryInv.name : 'ASNB Fund';
-    final invThreeYearGain = cost * (invRate / 100.0) * 3;
 
     final monthlyIncome = widget.state.totalIncomeThisMonth > 0 ? widget.state.totalIncomeThisMonth : 4500.0;
     final hourlyWage = (monthlyIncome / 160.0).clamp(15.0, 500.0);
@@ -709,13 +690,14 @@ class _FomoScreenState extends State<FomoScreen> {
                   Icon(Icons.auto_awesome, color: borderColor, size: 16),
                   const SizedBox(width: 8),
                   Expanded(
-                    child: Text(
-                      _aiAdvice,
-                      style: const TextStyle(
+                    child: BluppFormattedText(
+                      text: _aiAdvice,
+                      baseStyle: const TextStyle(
                         color: Color(0xFFF1F5F9),
                         fontSize: 12,
                         height: 1.4,
                       ),
+                      accentColor: borderColor,
                     ),
                   ),
                 ],
@@ -741,13 +723,14 @@ class _FomoScreenState extends State<FomoScreen> {
               borderRadius: BorderRadius.circular(12),
               border: Border.all(color: AppTheme.surfaceBorder),
             ),
-            child: Text(
-              _whyNotNeed,
-              style: const TextStyle(
+            child: BluppFormattedText(
+              text: _whyNotNeed,
+              baseStyle: const TextStyle(
                 color: Color(0xFFE2E8F0),
                 fontSize: 12,
                 height: 1.5,
               ),
+              accentColor: AppTheme.fomoPurple,
             ),
           ),
           const SizedBox(height: 18),

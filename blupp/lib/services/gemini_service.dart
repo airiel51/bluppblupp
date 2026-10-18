@@ -506,7 +506,10 @@ Instructions:
 2. Expose the cognitive bias or marketing trap (e.g., BNPL illusion, artificial urgency countdowns, false productivity justification, retail therapy).
 3. Throw their cold financial numbers back at them (sweat equity / hours of work, daily allowance pinch, opportunity cost).
 4. If the user concedes or agrees to wait/cancel, celebrate their financial discipline and tell them to lock it into the 30-Day Cooling Chamber.
-5. Format your output with Markdown (bolding, bullet points).
+5. Formatting rules:
+   - NEVER use raw markdown heading hashes like '###' or '##'.
+   - Use emojis and bold text for section titles, e.g. **🚨 The Cold, Hard Crime Scene**
+   - Use clean bullet points (•) and bold text (**bold**) for key emphasis.
 6. AT THE VERY END OF YOUR RESPONSE, include a JSON block formatted exactly like:
 <<<CHIPS
 ["Option 1", "Option 2", "Option 3", "Option 4"]
@@ -556,6 +559,9 @@ Where each option is a short (under 35 chars) quick-reply for the user to reply 
             } catch (_) {}
             replyText = replyText.replaceAll(chipsMatch.group(0)!, '').trim();
           }
+
+          // Clean any raw heading hashtags (### / ##) from lines
+          replyText = replyText.replaceAll(RegExp(r'^#{1,6}\s+', multiLine: true), '').trim();
 
           return DevilsAdvocateResponse(
             text: replyText,

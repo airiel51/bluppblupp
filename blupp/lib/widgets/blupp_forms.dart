@@ -30,9 +30,11 @@ class BluppBoxedSegment<T> extends StatelessWidget {
         if (opt is BluppSegmentItem<T>) {
           resolvedItems.add(opt);
         } else if (opt is Map) {
+          final rawVal = opt['value'] ?? opt['label'];
+          final val = (rawVal is T) ? rawVal : (rawVal?.toString() as T? ?? opt as T);
           resolvedItems.add(BluppSegmentItem<T>(
-            value: opt['value'] as T,
-            label: opt['label']?.toString() ?? '',
+            value: val,
+            label: opt['label']?.toString() ?? opt['value']?.toString() ?? '',
             icon: opt['icon'] as IconData?,
             activeColor: (opt['activeColor'] as Color?) ?? activeColor,
           ));

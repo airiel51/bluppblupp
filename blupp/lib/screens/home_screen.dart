@@ -2995,10 +2995,10 @@ class HomeScreen extends StatelessWidget {
     String? errorWhy;
 
     final typeOptions = [
-      {'label': 'Vehicle', 'icon': Icons.directions_car_rounded},
-      {'label': 'Housing', 'icon': Icons.home_rounded},
-      {'label': 'Education', 'icon': Icons.school_rounded},
-      {'label': 'Personal/BNPL', 'icon': Icons.credit_card_rounded},
+      {'value': 'Vehicle', 'label': 'Vehicle', 'icon': Icons.directions_car_rounded},
+      {'value': 'Housing', 'label': 'Housing', 'icon': Icons.home_rounded},
+      {'value': 'Education', 'label': 'Education', 'icon': Icons.school_rounded},
+      {'value': 'Personal/BNPL', 'label': 'Personal/BNPL', 'icon': Icons.credit_card_rounded},
     ];
 
     showDialog(
@@ -3154,7 +3154,29 @@ class HomeScreen extends StatelessWidget {
                       return;
                     }
 
-                    state.addLoan(name, provider.isEmpty ? 'Credit Provider' : provider, total, monthly, 15);
+                    IconData iconForType(String type) {
+                      switch (type) {
+                        case 'Vehicle':
+                          return Icons.directions_car_rounded;
+                        case 'Housing':
+                          return Icons.home_rounded;
+                        case 'Education':
+                          return Icons.school_rounded;
+                        case 'Personal/BNPL':
+                        default:
+                          return Icons.credit_card_rounded;
+                      }
+                    }
+
+                    state.addLoan(
+                      name,
+                      provider.isEmpty ? 'Credit Provider' : provider,
+                      total,
+                      monthly,
+                      15,
+                      icon: iconForType(loanType),
+                      color: AppTheme.expenseCoral,
+                    );
                     Navigator.pop(ctx);
                   },
                   child: const Text("Save Liability", style: TextStyle(fontWeight: FontWeight.w600)),
@@ -3938,10 +3960,10 @@ class HomeScreen extends StatelessWidget {
     String? errorWhy;
 
     final typeOptions = [
-      {'label': 'Fixed/ASNB', 'icon': Icons.account_balance_rounded},
-      {'label': 'Stocks/ETF', 'icon': Icons.trending_up_rounded},
-      {'label': 'Crypto', 'icon': Icons.currency_bitcoin_rounded},
-      {'label': 'High Yield', 'icon': Icons.savings_rounded},
+      {'value': 'Fixed/ASNB', 'label': 'Fixed/ASNB', 'icon': Icons.account_balance_rounded},
+      {'value': 'Stocks/ETF', 'label': 'Stocks/ETF', 'icon': Icons.trending_up_rounded},
+      {'value': 'Crypto', 'label': 'Crypto', 'icon': Icons.currency_bitcoin_rounded},
+      {'value': 'High Yield', 'label': 'High Yield', 'icon': Icons.savings_rounded},
     ];
 
     showDialog(
