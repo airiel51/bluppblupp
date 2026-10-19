@@ -48,6 +48,15 @@ class AppTheme {
         color: borderColor ?? surfaceBorder.withValues(alpha: isDark ? 0.5 : 0.8),
         width: 1.0,
       ),
+      boxShadow: isDark
+          ? null
+          : [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.03),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
     );
   }
 
@@ -92,6 +101,7 @@ class AppTheme {
         backgroundColor: const Color(0xFF09090B),
         foregroundColor: const Color(0xFFFAFAFA),
         elevation: 0,
+        surfaceTintColor: Colors.transparent,
         centerTitle: false,
         systemOverlayStyle: const SystemUiOverlayStyle(
           statusBarColor: Colors.transparent,
@@ -134,6 +144,7 @@ class AppTheme {
         backgroundColor: const Color(0xFFFAFAFA),
         foregroundColor: const Color(0xFF09090B),
         elevation: 0,
+        surfaceTintColor: Colors.transparent,
         centerTitle: false,
         systemOverlayStyle: const SystemUiOverlayStyle(
           statusBarColor: Colors.transparent,

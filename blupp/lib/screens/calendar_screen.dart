@@ -28,6 +28,9 @@ class _CalendarScreenState extends State<CalendarScreen> {
     return Scaffold(
       backgroundColor: AppTheme.background,
       appBar: AppBar(
+        backgroundColor: AppTheme.background,
+        elevation: 0,
+        surfaceTintColor: Colors.transparent,
         title: Row(
           children: [
             Icon(Icons.calendar_month_rounded, color: AppTheme.warningAmber, size: 24),

@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../services/universal_image_picker/universal_image_picker.dart';
 import '../services/supabase_service.dart';
@@ -426,6 +427,8 @@ class FinanceState extends ChangeNotifier {
         notifyListeners();
       }
     });
+
+    _loadSavedThemeMode();
   }
 
   bool get isAuthenticated => _isAuthenticated;
@@ -944,10 +947,25 @@ class FinanceState extends ChangeNotifier {
   String _baseCurrency = 'MYR';
   String get baseCurrency => _baseCurrency;
 
+  Future<void> _loadSavedThemeMode() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final modeStr = prefs.getString('blupp_theme_mode');
+      if (modeStr != null) {
+        _themeMode = modeStr == 'light' ? ThemeMode.light : ThemeMode.dark;
+        AppTheme.isDark = (_themeMode == ThemeMode.dark);
+        notifyListeners();
+      }
+    } catch (_) {}
+  }
+
   void setThemeMode(ThemeMode mode) {
     _themeMode = mode;
     AppTheme.isDark = (mode == ThemeMode.dark);
     notifyListeners();
+    SharedPreferences.getInstance().then((prefs) {
+      prefs.setString('blupp_theme_mode', mode == ThemeMode.light ? 'light' : 'dark');
+    }).catchError((_) {});
   }
 
   /// Automatically converts all stored money values when changing currency in settings

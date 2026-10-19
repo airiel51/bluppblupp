@@ -52,6 +52,9 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
     return Scaffold(
       backgroundColor: AppTheme.background,
       appBar: AppBar(
+        backgroundColor: AppTheme.background,
+        elevation: 0,
+        surfaceTintColor: Colors.transparent,
         title: Text(
           "Analytics",
           style: TextStyle(

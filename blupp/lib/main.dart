@@ -59,16 +59,25 @@ class _BluppAppState extends State<BluppApp> {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Blupp AI Finance',
-      debugShowCheckedModeBanner: false,
-      theme: AppTheme.lightTheme,
-      darkTheme: AppTheme.darkTheme,
-      themeMode: ThemeMode.dark,
-      home: ListenableBuilder(
-        listenable: _financeState,
-        builder: (context, child) {
-          return AnimatedSwitcher(
+    return ListenableBuilder(
+      listenable: _financeState,
+      builder: (context, child) {
+        final isDark = _financeState.themeMode == ThemeMode.dark;
+        SystemChrome.setSystemUIOverlayStyle(
+          SystemUiOverlayStyle(
+            statusBarColor: Colors.transparent,
+            statusBarBrightness: isDark ? Brightness.dark : Brightness.light,
+            statusBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
+          ),
+        );
+
+        return MaterialApp(
+          title: 'Blupp AI Finance',
+          debugShowCheckedModeBanner: false,
+          theme: AppTheme.lightTheme,
+          darkTheme: AppTheme.darkTheme,
+          themeMode: _financeState.themeMode,
+          home: AnimatedSwitcher(
             duration: const Duration(milliseconds: 250),
             child: _financeState.isAuthenticated
                 ? MainNavigationShell(
@@ -79,9 +88,9 @@ class _BluppAppState extends State<BluppApp> {
                     key: const ValueKey('sign_in_screen'),
                     state: _financeState,
                   ),
-          );
-        },
-      ),
+          ),
+        );
+      },
     );
   }
 }
@@ -319,7 +328,9 @@ class _MainNavigationShellState extends State<MainNavigationShell> with WidgetsB
                 child: Icon(
                   isSelected ? activeIcon : icon,
                   size: 24,
-                  color: isSelected ? AppTheme.textPrimary : AppTheme.textMuted,
+                  color: isSelected
+                      ? AppTheme.textPrimary
+                      : (AppTheme.isDark ? AppTheme.textMuted : const Color(0xFF64748B)),
                 ),
               ),
               const SizedBox(height: 3),

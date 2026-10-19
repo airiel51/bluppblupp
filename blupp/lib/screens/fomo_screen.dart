@@ -167,6 +167,9 @@ class _FomoScreenState extends State<FomoScreen> {
     return Scaffold(
       backgroundColor: AppTheme.background,
       appBar: AppBar(
+        backgroundColor: AppTheme.background,
+        elevation: 0,
+        surfaceTintColor: Colors.transparent,
         title: Row(
           children: [
             Icon(Icons.auto_awesome_rounded, color: AppTheme.fomoPurple, size: 24),

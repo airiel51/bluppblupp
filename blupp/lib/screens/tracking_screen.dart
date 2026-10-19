@@ -42,6 +42,9 @@ class _TrackingScreenState extends State<TrackingScreen>
     return Scaffold(
       backgroundColor: AppTheme.background,
       appBar: AppBar(
+        backgroundColor: AppTheme.background,
+        elevation: 0,
+        surfaceTintColor: Colors.transparent,
         title: Text(
           "Expenses",
           style: TextStyle(
@@ -89,7 +92,7 @@ class _TrackingScreenState extends State<TrackingScreen>
             child: Container(
               height: 44,
               decoration: BoxDecoration(
-                color: AppTheme.surface,
+                color: AppTheme.isDark ? AppTheme.surface : const Color(0xFFF1F5F9),
                 borderRadius: BorderRadius.circular(10),
                 border: Border.all(color: AppTheme.surfaceBorder),
               ),
@@ -97,14 +100,27 @@ class _TrackingScreenState extends State<TrackingScreen>
                 controller: _tabController,
                 indicatorSize: TabBarIndicatorSize.tab,
                 indicator: BoxDecoration(
-                  borderRadius: BorderRadius.circular(12),
-                  color: AppTheme.surfaceLight,
-                  border: Border.all(color: AppTheme.surfaceBorder.withValues(alpha: 0.5)),
+                  borderRadius: BorderRadius.circular(10),
+                  color: AppTheme.isDark ? AppTheme.surfaceLight : Colors.white,
+                  boxShadow: AppTheme.isDark
+                      ? null
+                      : [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.06),
+                            blurRadius: 4,
+                            offset: const Offset(0, 1),
+                          ),
+                        ],
+                  border: Border.all(
+                    color: AppTheme.isDark
+                        ? AppTheme.surfaceBorder.withValues(alpha: 0.5)
+                        : Colors.black.withValues(alpha: 0.06),
+                  ),
                 ),
                 dividerColor: Colors.transparent,
                 labelColor: AppTheme.textPrimary,
                 unselectedLabelColor: AppTheme.textMuted,
-                labelStyle: const TextStyle(fontWeight: FontWeight.w500, fontSize: 13),
+                labelStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
                 tabs: const [
                   Tab(
                     child: Row(
