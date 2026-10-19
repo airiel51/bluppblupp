@@ -4,7 +4,6 @@ import 'package:flutter/services.dart';
 import 'models/finance_state.dart';
 import 'theme/app_theme.dart';
 import 'screens/home_screen.dart';
-import 'screens/cards_screen.dart';
 import 'screens/tracking_screen.dart';
 import 'screens/analytics_screen.dart';
 import 'screens/fomo_screen.dart';
@@ -123,9 +122,6 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
                   state: widget.state,
                   onNavigateTab: _navigateToTab,
                 ),
-                CardsScreen(
-                  state: widget.state,
-                ),
                 TrackingScreen(
                   state: widget.state,
                 ),
@@ -198,35 +194,29 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
                             ),
                             _buildNavItem(
                               index: 1,
-                              icon: Icons.credit_card_outlined,
-                              activeIcon: Icons.credit_card_rounded,
-                              label: 'Cards',
-                            ),
-                            _buildNavItem(
-                              index: 2,
                               icon: Icons.receipt_long_outlined,
                               activeIcon: Icons.receipt_long_rounded,
                               label: 'Expenses',
                             ),
                             _buildNavItem(
-                              index: 3,
+                              index: 2,
                               icon: Icons.insights_outlined,
                               activeIcon: Icons.insights_rounded,
                               label: 'Analytics',
                             ),
                             _buildNavItem(
-                              index: 4,
+                              index: 3,
                               icon: Icons.auto_awesome_outlined,
                               activeIcon: Icons.auto_awesome_rounded,
                               label: 'FOMO AI',
                             ),
                             _buildNavItem(
-                              index: 5,
+                              index: 4,
                               icon: Icons.calendar_today_outlined,
                               activeIcon: Icons.calendar_month_rounded,
                               label: 'Calendar',
                             ),
-                            _buildProfileNavItem(index: 6),
+                            _buildProfileNavItem(index: 5),
                           ],
                         ),
                       ),

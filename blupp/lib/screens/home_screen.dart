@@ -4,12 +4,13 @@ import '../models/finance_state.dart';
 import '../theme/app_theme.dart';
 import '../widgets/blupp_states.dart';
 import '../widgets/blupp_forms.dart';
+import '../widgets/blupp_logo.dart';
 import '../widgets/blupp_avatar.dart';
 import '../widgets/ai_safe_to_spend_card.dart';
 import '../widgets/ai_quick_log_sheet.dart';
 import '../widgets/ai_receipt_scanner_sheet.dart';
 
-class HomeScreen extends StatefulWidget {
+class HomeScreen extends StatelessWidget {
   final FinanceState state;
   final Function(int) onNavigateTab;
 
@@ -18,21 +19,6 @@ class HomeScreen extends StatefulWidget {
     required this.state,
     required this.onNavigateTab,
   });
-
-  @override
-  State<HomeScreen> createState() => _HomeScreenState();
-}
-
-class _HomeScreenState extends State<HomeScreen> {
-  bool _showAllAccounts = false;
-  bool _showAiRadar = false;
-  double _dailyLimit = 1000.0;
-  final double _dailySpent = 719.0;
-  double _monthlyLimit = 30000.0;
-  final double _monthlySpent = 12480.0;
-
-  FinanceState get state => widget.state;
-  Function(int) get onNavigateTab => widget.onNavigateTab;
 
   @override
   Widget build(BuildContext context) {
@@ -48,28 +34,40 @@ class _HomeScreenState extends State<HomeScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Top App Bar: Avatar & Notification Bell
+                // Top App Bar / Greeting
                 _buildHeader(context),
-                const SizedBox(height: 18),
+                const SizedBox(height: 20),
 
-                // 1. Available Balance Hero Card (Royal Violet Gradient with 4 circular buttons)
-                _buildAvailableBalanceHeroCard(context),
-                const SizedBox(height: 22),
+                // 1. Total Net Worth Hero Card
+                _buildNetWorthHeroCard(context),
+                const SizedBox(height: 16),
 
-                // 2. Accounts Section (2x2 Grid with USD, JPY, BTC, USDT / Banks, expandable to full accounts list)
-                _buildAccountsGridSection(context),
+                // 2. AI Safe-to-Spend Radar Card
+                AiSafeToSpendCard(state: state),
+                const SizedBox(height: 14),
+
+                // 3. AI Feature Launch Dock (NLP Quick-Log & Vision Receipt/QR Scanner)
+                _buildAiFeatureDock(context),
+                const SizedBox(height: 16),
+
+                // Quick Action Bar
+                _buildQuickActions(context),
                 const SizedBox(height: 24),
 
-                // 3. Limits Section (Daily Limit 75% + Monthly Limit 45%)
-                _buildLimitsSection(context),
-                const SizedBox(height: 24),
+                // 2. All Banks Section
+                _buildBankAccountsSection(context),
+                const SizedBox(height: 28),
 
-                // 4. Recent Transactions (Olivia Spencer +$10.00, Airbnb Homestay -€49.00 / real txs)
+                // 3. Investments & Savings Section
+                _buildInvestmentsSection(context),
+                const SizedBox(height: 28),
+
+                // 4. Loans & Liabilities Section
+                _buildLoansSection(context),
+                const SizedBox(height: 28),
+
+                // Recent Activity Teaser
                 _buildRecentTransactionsSection(context),
-                const SizedBox(height: 24),
-
-                // 5. Blupp AI Assistant Radar & Scanner Dock
-                _buildSmartAiSection(context),
                 const SizedBox(height: 30),
               ],
             ),
@@ -86,155 +84,173 @@ class _HomeScreenState extends State<HomeScreen> {
     return "Good evening";
   }
 
-  // Header matching Dribbble middle screen: Profile Avatar on left, Notification bell with alert dot on right
   Widget _buildHeader(BuildContext context) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Row(
           children: [
-            BluppAvatar(
-              state: state,
-              size: 40,
-              showEditBadge: false,
-              onTap: () => onNavigateTab(6),
+            Container(
+              width: 44,
+              height: 44,
+              padding: const EdgeInsets.all(7),
+              decoration: BoxDecoration(
+                color: AppTheme.isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: AppTheme.isDark
+                      ? Colors.white.withValues(alpha: 0.10)
+                      : Colors.black.withValues(alpha: 0.08),
+                ),
+              ),
+              child: BluppLogo(
+                size: 28,
+                iconOnly: true,
+                isDark: AppTheme.isDark,
+              ),
             ),
             const SizedBox(width: 12),
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  _getGreeting(),
+                  "${_getGreeting()} 👋",
                   style: TextStyle(
                     color: AppTheme.textMuted,
-                    fontSize: 12,
+                    fontSize: 13,
                     fontWeight: FontWeight.w400,
                   ),
                 ),
+                const SizedBox(height: 2),
                 Text(
-                  state.userName.isNotEmpty ? state.userName : "Airiel",
+                  state.userName.isNotEmpty ? state.userName : "man",
                   style: TextStyle(
                     color: AppTheme.textPrimary,
-                    fontSize: 18,
+                    fontSize: 22,
                     fontWeight: FontWeight.w700,
-                    letterSpacing: -0.4,
+                    letterSpacing: -0.6,
                   ),
                 ),
               ],
             ),
           ],
         ),
-        GestureDetector(
-          onTap: () => _showNotificationSheet(context),
-          child: Container(
-            width: 42,
-            height: 42,
-            decoration: BoxDecoration(
-              color: AppTheme.surface,
-              shape: BoxShape.circle,
-              border: Border.all(color: AppTheme.surfaceBorder),
-            ),
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                Icon(
-                  Icons.notifications_none_rounded,
-                  color: AppTheme.textPrimary,
-                  size: 20,
+        Row(
+          children: [
+            InkWell(
+              onTap: () => onNavigateTab(3),
+              borderRadius: BorderRadius.circular(10),
+              child: Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: AppTheme.surfaceLight,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: AppTheme.surfaceBorder.withValues(alpha: 0.5)),
                 ),
-                Positioned(
-                  top: 11,
-                  right: 12,
-                  child: Container(
-                    width: 7,
-                    height: 7,
-                    decoration: const BoxDecoration(
-                      color: AppTheme.accentCoral,
-                      shape: BoxShape.circle,
-                    ),
-                  ),
+                child: Icon(
+                  Icons.auto_awesome_rounded,
+                  color: AppTheme.textSecondary,
+                  size: 18,
                 ),
-              ],
+              ),
             ),
-          ),
+            const SizedBox(width: 8),
+            BluppAvatar(
+              state: state,
+              size: 40,
+              showEditBadge: false,
+              onTap: () => onNavigateTab(5),
+            ),
+          ],
         ),
       ],
     );
   }
 
-  // 1. AVAILABLE BALANCE HERO CARD (Royal Violet Gradient, 4 White Circular Buttons, Withhold Balance)
-  Widget _buildAvailableBalanceHeroCard(BuildContext context) {
-    final availableBalance = state.totalBankBalance > 0
-        ? state.totalBankBalance
-        : 1021.65;
-    final withholdBalance = state.totalLoans > 0
-        ? state.totalLoans
-        : 322.92;
+  // 1. TOTAL NET WORTH HERO CARD
+  Widget _buildNetWorthHeroCard(BuildContext context) {
+    if (state.isRefreshing) {
+      return BluppSkeleton.netWorthHero();
+    }
 
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(22),
-      decoration: BoxDecoration(
-        gradient: AppTheme.heroVioletGradient,
-        borderRadius: BorderRadius.circular(26),
-        border: Border.all(
-          color: Colors.white.withValues(alpha: 0.14),
-          width: 1.0,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF382BF0).withValues(alpha: 0.35),
-            blurRadius: 28,
-            spreadRadius: -4,
-            offset: const Offset(0, 12),
-          ),
-        ],
-      ),
+    final netWorth = state.totalNetWorth;
+    final totalBanks = state.totalBankBalance;
+    final spendingBalance = state.spendingBalanceLeft;
+    final investments = state.totalInvestmentsAndSavings;
+    final totalLoans = state.totalLoans;
+
+    return InteractiveCard(
+      onTap: state.toggleNetWorthVisibility,
+      padding: const EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Available balance title & Currency badge pill
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                "Available balance",
-                style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.85),
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
-                  letterSpacing: -0.2,
-                ),
-              ),
-              InkWell(
-                onTap: () => _showCurrencyPickerSheet(context),
-                borderRadius: BorderRadius.circular(14),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.18),
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.28),
-                      width: 1,
+              Expanded(
+                child: Row(
+                  children: [
+                    Flexible(
+                      child: Text(
+                        "TOTAL NET WORTH",
+                        style: TextStyle(
+                          color: AppTheme.textSecondary,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: 0.5,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: AppTheme.surfaceLight,
+                      borderRadius: BorderRadius.circular(6),
+                      border: Border.all(color: AppTheme.surfaceBorder),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          state.isNetWorthHidden ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                          size: 11,
+                          color: state.isNetWorthHidden ? AppTheme.textMuted : AppTheme.primaryTeal,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          state.isNetWorthHidden ? "Hidden" : "Visible",
+                          style: TextStyle(
+                            color: state.isNetWorthHidden ? AppTheme.textMuted : AppTheme.primaryTeal,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
+                ],
+              ),
+            ),
+            GestureDetector(
+                onTap: () => _showNetWorthFormulaSheet(context),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: AppTheme.surfaceLight,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: AppTheme.surfaceBorder),
+                  ),
                   child: Row(
-                    mainAxisSize: MainAxisSize.min,
                     children: [
+                      Icon(Icons.info_outline, size: 12, color: AppTheme.textMuted),
+                      const SizedBox(width: 4),
                       Text(
-                        state.baseCurrency.toUpperCase(),
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      const SizedBox(width: 3),
-                      const Icon(
-                        Icons.keyboard_arrow_down_rounded,
-                        color: Colors.white,
-                        size: 13,
+                        "Formula",
+                        style: TextStyle(color: AppTheme.textMuted, fontSize: 11, fontWeight: FontWeight.w500),
                       ),
                     ],
                   ),
@@ -244,1150 +260,103 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           const SizedBox(height: 10),
 
-          // Big Bold Balance Amount
+          // Bold Highlight Amount (Hidden by default, prominent when revealed)
           Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Expanded(
                 child: Text(
-                  state.isNetWorthHidden
-                      ? "••••••••••"
-                      : AppTheme.formatCurrency(availableBalance),
+                  state.isNetWorthHidden ? "••••••••••" : AppTheme.formatCurrency(netWorth),
                   style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 34,
+                    color: AppTheme.textPrimary,
+                    fontSize: 32,
                     fontWeight: FontWeight.w800,
                     letterSpacing: state.isNetWorthHidden ? 3.0 : -1.0,
                   ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
                 ),
               ),
               IconButton(
-                onPressed: state.toggleNetWorthVisibility,
                 icon: Icon(
-                  state.isNetWorthHidden
-                      ? Icons.visibility_off_outlined
-                      : Icons.visibility_outlined,
-                  color: Colors.white.withValues(alpha: 0.75),
-                  size: 20,
+                  state.isNetWorthHidden ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                  color: AppTheme.textSecondary,
+                  size: 22,
                 ),
-                tooltip: state.isNetWorthHidden ? "Show balance" : "Hide balance",
+                onPressed: state.toggleNetWorthVisibility,
+                tooltip: state.isNetWorthHidden ? "Show Net Worth" : "Hide Net Worth",
               ),
             ],
           ),
-          const SizedBox(height: 22),
+          const SizedBox(height: 16),
 
-          // 4 Circular Action Buttons (+ Top-up, ↑ Send, ⇄ Exchange, 📊 Analytics)
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              _buildCircleHeroAction(
-                icon: Icons.add_rounded,
-                tooltip: "Top-up / Add Money",
-                onTap: () {
-                  if (state.bankAccounts.isNotEmpty) {
-                    _showAddMoneyDialog(context, state.bankAccounts.first);
-                  } else {
-                    _showAddBankDialog(context);
-                  }
-                },
-              ),
-              _buildCircleHeroAction(
-                icon: Icons.arrow_upward_rounded,
-                tooltip: "Send / Transfer",
-                onTap: () => _showTransferMoneyDialog(context),
-              ),
-              _buildCircleHeroAction(
-                icon: Icons.swap_horiz_rounded,
-                tooltip: "Exchange Currency",
-                onTap: () => _showCurrencyPickerSheet(context),
-              ),
-              _buildCircleHeroAction(
-                icon: Icons.bar_chart_rounded,
-                tooltip: "Analytics & Radar",
-                onTap: () => onNavigateTab(3),
-              ),
-            ],
-          ),
-          const SizedBox(height: 20),
-
-          // Withhold Balance Footer
+          // Asset vs Liability breakdown
           Container(
-            padding: const EdgeInsets.only(top: 14),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
             decoration: BoxDecoration(
-              border: Border(
-                top: BorderSide(
-                  color: Colors.white.withValues(alpha: 0.14),
-                  width: 0.9,
-                ),
-              ),
+              color: AppTheme.surfaceLight,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: AppTheme.surfaceBorder.withValues(alpha: 0.5)),
             ),
-            child: InkWell(
-              onTap: () => _showNetWorthFormulaSheet(context),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.arrow_downward_rounded,
-                        size: 13,
-                        color: Colors.white.withValues(alpha: 0.75),
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        "Withhold balance",
-                        style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.75),
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  ),
-                  Text(
-                    state.isNetWorthHidden
-                        ? "••••"
-                        : AppTheme.formatCurrency(withholdBalance),
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // Circular white action button inside hero card
-  Widget _buildCircleHeroAction({
-    required IconData icon,
-    required String tooltip,
-    required VoidCallback onTap,
-  }) {
-    return Tooltip(
-      message: tooltip,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(26),
-        child: Container(
-          width: 52,
-          height: 52,
-          decoration: BoxDecoration(
-            color: Colors.white,
-            shape: BoxShape.circle,
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.16),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: Icon(
-            icon,
-            color: const Color(0xFF161720),
-            size: 23,
-          ),
-        ),
-      ),
-    );
-  }
-
-  // 2. ACCOUNTS SECTION (2x2 Grid with White active card + Dark cards, or full list)
-  Widget _buildAccountsGridSection(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              "Accounts",
-              style: TextStyle(
-                color: AppTheme.textPrimary,
-                fontSize: 18,
-                fontWeight: FontWeight.w700,
-                letterSpacing: -0.4,
-              ),
-            ),
-            InkWell(
-              onTap: () {
-                setState(() {
-                  _showAllAccounts = !_showAllAccounts;
-                });
-              },
-              borderRadius: BorderRadius.circular(8),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                child: Text(
-                  _showAllAccounts ? "Show grid" : "See all",
-                  style: TextStyle(
-                    color: AppTheme.textMuted,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 14),
-
-        if (!_showAllAccounts) ...[
-          // Row 1: USD (Highlighted White card) & JPY (Dark card)
-          Row(
-            children: [
-              // Card 1: Highlighted Active Card (White crisp style from Dribbble)
-              Expanded(
-                child: InkWell(
-                  onTap: () {
-                    if (state.bankAccounts.isNotEmpty) {
-                      _showManageBankSheet(context, state.bankAccounts.first);
-                    } else {
-                      _showAddBankDialog(context);
-                    }
-                  },
-                  borderRadius: BorderRadius.circular(18),
-                  child: Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(18),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.08),
-                          blurRadius: 12,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: const [
-                            Text("🇺🇸", style: TextStyle(fontSize: 16)),
-                            SizedBox(width: 8),
-                            Text(
-                              "USD",
-                              style: TextStyle(
-                                color: Color(0xFF0F1015),
-                                fontSize: 13,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 14),
-                        Text(
-                          state.isNetWorthHidden
-                              ? "••••"
-                              : (state.bankAccounts.isNotEmpty
-                                  ? AppTheme.formatCurrency(state.bankAccounts.first.balance)
-                                  : "\$1,200.81"),
-                          style: const TextStyle(
-                            color: Color(0xFF0F1015),
-                            fontSize: 17,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: -0.4,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-
-              // Card 2: JPY Dark Card
-              Expanded(
-                child: InkWell(
-                  onTap: () {
-                    if (state.bankAccounts.length > 1) {
-                      _showManageBankSheet(context, state.bankAccounts[1]);
-                    } else {
-                      _showAddBankDialog(context);
-                    }
-                  },
-                  borderRadius: BorderRadius.circular(18),
-                  child: Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: AppTheme.surface,
-                      borderRadius: BorderRadius.circular(18),
-                      border: Border.all(color: AppTheme.surfaceBorder),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            const Text("🇯🇵", style: TextStyle(fontSize: 16)),
-                            const SizedBox(width: 8),
-                            Text(
-                              "JPY",
-                              style: TextStyle(
-                                color: AppTheme.textPrimary,
-                                fontSize: 13,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 14),
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.baseline,
-                          textBaseline: TextBaseline.alphabetic,
-                          children: [
-                            Flexible(
-                              child: Text(
-                                state.isNetWorthHidden
-                                    ? "••••"
-                                    : (state.bankAccounts.length > 1
-                                        ? AppTheme.formatCurrency(state.bankAccounts[1].balance)
-                                        : "¥9,444.71"),
-                                style: TextStyle(
-                                  color: AppTheme.textPrimary,
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              "\$64.2",
-                              style: TextStyle(
-                                color: AppTheme.textMuted,
-                                fontSize: 10,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-
-          // Row 2: BTC (Crypto Card) & USDT (Liabilities / Stablecoin Card)
-          Row(
-            children: [
-              // Card 3: BTC Dark Card
-              Expanded(
-                child: InkWell(
-                  onTap: () => _showAddInvestmentDialog(context),
-                  borderRadius: BorderRadius.circular(18),
-                  child: Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: AppTheme.surface,
-                      borderRadius: BorderRadius.circular(18),
-                      border: Border.all(color: AppTheme.surfaceBorder),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Container(
-                              width: 19,
-                              height: 19,
-                              decoration: const BoxDecoration(
-                                color: Color(0xFFF59E0B),
-                                shape: BoxShape.circle,
-                              ),
-                              alignment: Alignment.center,
-                              child: const Text(
-                                "₿",
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w900,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              "BTC",
-                              style: TextStyle(
-                                color: AppTheme.textPrimary,
-                                fontSize: 13,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 14),
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.baseline,
-                          textBaseline: TextBaseline.alphabetic,
-                          children: [
-                            Flexible(
-                              child: Text(
-                                state.isNetWorthHidden
-                                    ? "••••"
-                                    : (state.investments.isNotEmpty
-                                        ? AppTheme.formatCurrency(state.totalInvestmentsAndSavings)
-                                        : "0.055721"),
-                                style: TextStyle(
-                                  color: AppTheme.textPrimary,
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              "\$72.12",
-                              style: TextStyle(
-                                color: AppTheme.textMuted,
-                                fontSize: 10,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-
-              // Card 4: USDT Dark Card
-              Expanded(
-                child: InkWell(
-                  onTap: () => _showAddLoanDialog(context),
-                  borderRadius: BorderRadius.circular(18),
-                  child: Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: AppTheme.surface,
-                      borderRadius: BorderRadius.circular(18),
-                      border: Border.all(color: AppTheme.surfaceBorder),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Container(
-                              width: 19,
-                              height: 19,
-                              decoration: const BoxDecoration(
-                                color: Color(0xFF10B981),
-                                shape: BoxShape.circle,
-                              ),
-                              alignment: Alignment.center,
-                              child: const Text(
-                                "₮",
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w900,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              "USDT",
-                              style: TextStyle(
-                                color: AppTheme.textPrimary,
-                                fontSize: 13,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 14),
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.baseline,
-                          textBaseline: TextBaseline.alphabetic,
-                          children: [
-                            Flexible(
-                              child: Text(
-                                state.isNetWorthHidden
-                                    ? "••••"
-                                    : (state.loans.isNotEmpty
-                                        ? AppTheme.formatCurrency(state.totalLoans)
-                                        : "0.015"),
-                                style: TextStyle(
-                                  color: AppTheme.textPrimary,
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              "\$0.015",
-                              style: TextStyle(
-                                color: AppTheme.textMuted,
-                                fontSize: 10,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ] else ...[
-          // Expanded full list view for all Banks, Investments, and Liabilities
-          _buildBankAccountsSection(context),
-          const SizedBox(height: 24),
-          _buildInvestmentsSection(context),
-          const SizedBox(height: 24),
-          _buildLoansSection(context),
-        ],
-      ],
-    );
-  }
-
-  // 3. LIMITS SECTION (Daily Limit 75% + Monthly Limit 45%)
-  Widget _buildLimitsSection(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              "Limits",
-              style: TextStyle(
-                color: AppTheme.textPrimary,
-                fontSize: 18,
-                fontWeight: FontWeight.w700,
-                letterSpacing: -0.4,
-              ),
-            ),
-            InkWell(
-              onTap: () => _showEditLimitsSheet(context),
-              borderRadius: BorderRadius.circular(8),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                child: Text(
-                  "Edit",
-                  style: TextStyle(
-                    color: AppTheme.textMuted,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 14),
-
-        Row(
-          children: [
-            // Daily limit card
-            Expanded(
-              child: Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: AppTheme.surface,
-                  borderRadius: BorderRadius.circular(18),
-                  border: Border.all(color: AppTheme.surfaceBorder),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      "Daily limit",
-                      style: TextStyle(
-                        color: AppTheme.textMuted,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    RichText(
-                      text: TextSpan(
-                        children: [
-                          TextSpan(
-                            text: "\$${_dailySpent.toStringAsFixed(0)}",
-                            style: TextStyle(
-                              color: AppTheme.textPrimary,
-                              fontSize: 15,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                          TextSpan(
-                            text: " / \$${_dailyLimit.toStringAsFixed(0)}",
-                            style: TextStyle(
-                              color: AppTheme.textMuted,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 14),
-                    Row(
-                      children: [
-                        Text(
-                          "75%",
-                          style: const TextStyle(
-                            color: AppTheme.accentCoral,
-                            fontSize: 11,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(4),
-                            child: const LinearProgressIndicator(
-                              value: 0.75,
-                              backgroundColor: Color(0xFF222430),
-                              valueColor: AlwaysStoppedAnimation<Color>(AppTheme.accentCoral),
-                              minHeight: 4,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(width: 12),
-
-            // Monthly limit card
-            Expanded(
-              child: Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: AppTheme.surface,
-                  borderRadius: BorderRadius.circular(18),
-                  border: Border.all(color: AppTheme.surfaceBorder),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      "Monthly limit",
-                      style: TextStyle(
-                        color: AppTheme.textMuted,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    RichText(
-                      text: TextSpan(
-                        children: [
-                          TextSpan(
-                            text: "\$${_monthlySpent.toStringAsFixed(0)}",
-                            style: TextStyle(
-                              color: AppTheme.textPrimary,
-                              fontSize: 15,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                          TextSpan(
-                            text: " / \$${_monthlyLimit.toStringAsFixed(0)}",
-                            style: TextStyle(
-                              color: AppTheme.textMuted,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 14),
-                    Row(
-                      children: [
-                        Text(
-                          "45%",
-                          style: const TextStyle(
-                            color: AppTheme.accentAmber,
-                            fontSize: 11,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(4),
-                            child: const LinearProgressIndicator(
-                              value: 0.45,
-                              backgroundColor: Color(0xFF222430),
-                              valueColor: AlwaysStoppedAnimation<Color>(AppTheme.accentAmber),
-                              minHeight: 4,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-
-  // 5. SMART AI RADAR & OCR QUICK SCANNER DOCK
-  Widget _buildSmartAiSection(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: AppTheme.surface,
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: AppTheme.surfaceBorder),
-      ),
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(6),
-                    decoration: BoxDecoration(
-                      color: AppTheme.primaryTeal.withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: const Icon(
-                      Icons.auto_awesome_rounded,
-                      color: AppTheme.primaryTeal,
-                      size: 16,
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Text(
-                    "Blupp AI Copilot & Scanner",
-                    style: TextStyle(
-                      color: AppTheme.textPrimary,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ],
-              ),
-              InkWell(
-                onTap: () {
-                  setState(() {
-                    _showAiRadar = !_showAiRadar;
-                  });
-                },
-                borderRadius: BorderRadius.circular(8),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        _showAiRadar ? "Hide" : "Expand",
-                        style: TextStyle(
-                          color: AppTheme.primaryTeal,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      Icon(
-                        _showAiRadar
-                            ? Icons.keyboard_arrow_up_rounded
-                            : Icons.keyboard_arrow_down_rounded,
-                        color: AppTheme.primaryTeal,
-                        size: 16,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          _buildAiFeatureDock(context),
-          if (_showAiRadar) ...[
-            const SizedBox(height: 14),
-            AiSafeToSpendCard(state: state),
-          ],
-        ],
-      ),
-    );
-  }
-
-  // Notification Sheet matching bell button
-  void _showNotificationSheet(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: AppTheme.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (ctx) => Padding(
-        padding: const EdgeInsets.all(22),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
+            child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  "Notifications",
-                  style: TextStyle(
-                    color: AppTheme.textPrimary,
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
-                  ),
+                _buildAssetStat(
+                  "Banks",
+                  state.isNetWorthHidden ? "••••" : AppTheme.formatCurrency(totalBanks),
+                  AppTheme.textPrimary,
                 ),
-                Text(
-                  "Mark all read",
-                  style: TextStyle(
-                    color: AppTheme.primaryTeal,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
-                  ),
+                Container(height: 20, width: 1, color: AppTheme.surfaceBorder),
+                _buildAssetStat(
+                  "Spending",
+                  state.isNetWorthHidden ? "••••" : AppTheme.formatCurrency(spendingBalance),
+                  AppTheme.textPrimary,
+                ),
+                Container(height: 20, width: 1, color: AppTheme.surfaceBorder),
+                _buildAssetStat(
+                  "Investments",
+                  state.isNetWorthHidden ? "••••" : AppTheme.formatCurrency(investments),
+                  AppTheme.textPrimary,
+                ),
+                Container(height: 20, width: 1, color: AppTheme.surfaceBorder),
+                _buildAssetStat(
+                  "Loans",
+                  state.isNetWorthHidden ? "••••" : "-${AppTheme.formatCurrency(totalLoans)}",
+                  AppTheme.expenseCoral,
                 ),
               ],
             ),
-            const SizedBox(height: 18),
-            _buildNotificationItem(
-              icon: Icons.shield_outlined,
-              iconColor: AppTheme.primaryTeal,
-              title: "Safe-to-Spend Radar Active",
-              description: "Your daily spending buffer is healthy. Enjoy your financial runway.",
-              time: "Just now",
-            ),
-            const SizedBox(height: 12),
-            _buildNotificationItem(
-              icon: Icons.credit_card_rounded,
-              iconColor: const Color(0xFFF472B6),
-              title: "Virtual Card Ready",
-              description: "Your General Card USD is active for contactless and online checkouts.",
-              time: "2h ago",
-            ),
-            const SizedBox(height: 12),
-            _buildNotificationItem(
-              icon: Icons.speed_rounded,
-              iconColor: AppTheme.accentAmber,
-              title: "Monthly Limit Update",
-              description: "45% of your planned monthly budget consumed. On track for surplus.",
-              time: "Yesterday",
-            ),
-            const SizedBox(height: 16),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildNotificationItem({
-    required IconData icon,
-    required Color iconColor,
-    required String title,
-    required String description,
-    required String time,
-  }) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Container(
-          width: 38,
-          height: 38,
-          decoration: BoxDecoration(
-            color: iconColor.withValues(alpha: 0.15),
-            shape: BoxShape.circle,
+  Widget _buildAssetStat(String title, String value, Color color) {
+    return Expanded(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: TextStyle(
+              color: AppTheme.textMuted,
+              fontSize: 10,
+              fontWeight: FontWeight.w600,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
-          child: Icon(icon, color: iconColor, size: 18),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: TextStyle(
-                  color: AppTheme.textPrimary,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                description,
-                style: TextStyle(
-                  color: AppTheme.textMuted,
-                  fontSize: 12,
-                ),
-              ),
-            ],
+          const SizedBox(height: 2),
+          Text(
+            value,
+            style: TextStyle(
+              color: color,
+              fontSize: 11,
+              fontWeight: FontWeight.w500,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
-        ),
-        const SizedBox(width: 8),
-        Text(
-          time,
-          style: TextStyle(
-            color: AppTheme.textMuted,
-            fontSize: 11,
-          ),
-        ),
-      ],
-    );
-  }
-
-  // Currency Picker Sheet
-  void _showCurrencyPickerSheet(BuildContext context) {
-    final currencies = [
-      {'code': 'USD', 'symbol': '\$', 'name': 'United States Dollar', 'flag': '🇺🇸'},
-      {'code': 'MYR', 'symbol': 'RM', 'name': 'Malaysian Ringgit', 'flag': '🇲🇾'},
-      {'code': 'SGD', 'symbol': 'S\$', 'name': 'Singapore Dollar', 'flag': '🇸🇬'},
-      {'code': 'EUR', 'symbol': '€', 'name': 'Euro', 'flag': '🇪🇺'},
-      {'code': 'GBP', 'symbol': '£', 'name': 'British Pound', 'flag': '🇬🇧'},
-      {'code': 'JPY', 'symbol': '¥', 'name': 'Japanese Yen', 'flag': '🇯🇵'},
-      {'code': 'BTC', 'symbol': '₿', 'name': 'Bitcoin', 'flag': '🪙'},
-      {'code': 'USDT', 'symbol': '₮', 'name': 'Tether USD', 'flag': '🟢'},
-    ];
-
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: AppTheme.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (ctx) => Padding(
-        padding: const EdgeInsets.all(22),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              "Select Currency",
-              style: TextStyle(
-                color: AppTheme.textPrimary,
-                fontSize: 18,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              "Convert all stored values and display units automatically.",
-              style: TextStyle(
-                color: AppTheme.textMuted,
-                fontSize: 12,
-              ),
-            ),
-            const SizedBox(height: 16),
-            Flexible(
-              child: ListView.separated(
-                shrinkWrap: true,
-                itemCount: currencies.length,
-                separatorBuilder: (context, index) => const SizedBox(height: 6),
-                itemBuilder: (ctx, index) {
-                  final c = currencies[index];
-                  final isSelected = state.baseCurrency.toUpperCase() == c['code'];
-                  return InkWell(
-                    onTap: () {
-                      state.setBaseCurrency(c['code']!);
-                      Navigator.pop(ctx);
-                    },
-                    borderRadius: BorderRadius.circular(12),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                      decoration: BoxDecoration(
-                        color: isSelected
-                            ? AppTheme.primaryTeal.withValues(alpha: 0.12)
-                            : AppTheme.surfaceLight,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: isSelected ? AppTheme.primaryTeal : AppTheme.surfaceBorder,
-                        ),
-                      ),
-                      child: Row(
-                        children: [
-                          Text(c['flag']!, style: const TextStyle(fontSize: 18)),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  "${c['code']} (${c['symbol']})",
-                                  style: TextStyle(
-                                    color: AppTheme.textPrimary,
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
-                                Text(
-                                  c['name']!,
-                                  style: TextStyle(
-                                    color: AppTheme.textMuted,
-                                    fontSize: 11,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          if (isSelected)
-                            const Icon(Icons.check_circle_rounded, color: AppTheme.primaryTeal, size: 20),
-                        ],
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // Edit Limits Sheet
-  void _showEditLimitsSheet(BuildContext context) {
-    final dailyCtrl = TextEditingController(text: _dailyLimit.toStringAsFixed(0));
-    final monthlyCtrl = TextEditingController(text: _monthlyLimit.toStringAsFixed(0));
-
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: AppTheme.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (ctx) => Padding(
-        padding: EdgeInsets.only(
-          left: 22,
-          right: 22,
-          top: 22,
-          bottom: MediaQuery.of(ctx).viewInsets.bottom + 22,
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              "Adjust Spending Limits",
-              style: TextStyle(
-                color: AppTheme.textPrimary,
-                fontSize: 18,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              "Keep your budget strictly disciplined with dynamic limit tracking.",
-              style: TextStyle(
-                color: AppTheme.textMuted,
-                fontSize: 12,
-              ),
-            ),
-            const SizedBox(height: 18),
-            Text(
-              "Daily Spending Limit",
-              style: TextStyle(
-                color: AppTheme.textSecondary,
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            const SizedBox(height: 8),
-            TextField(
-              controller: dailyCtrl,
-              keyboardType: TextInputType.number,
-              style: TextStyle(color: AppTheme.textPrimary, fontWeight: FontWeight.w600),
-              decoration: InputDecoration(
-                prefixText: "${state.baseCurrency} ",
-                prefixStyle: TextStyle(color: AppTheme.primaryTeal, fontWeight: FontWeight.w700),
-                filled: true,
-                fillColor: AppTheme.surfaceLight,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: AppTheme.surfaceBorder),
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              "Monthly Spending Limit",
-              style: TextStyle(
-                color: AppTheme.textSecondary,
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            const SizedBox(height: 8),
-            TextField(
-              controller: monthlyCtrl,
-              keyboardType: TextInputType.number,
-              style: TextStyle(color: AppTheme.textPrimary, fontWeight: FontWeight.w600),
-              decoration: InputDecoration(
-                prefixText: "${state.baseCurrency} ",
-                prefixStyle: TextStyle(color: AppTheme.primaryTeal, fontWeight: FontWeight.w700),
-                filled: true,
-                fillColor: AppTheme.surfaceLight,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: AppTheme.surfaceBorder),
-                ),
-              ),
-            ),
-            const SizedBox(height: 20),
-            SizedBox(
-              width: double.infinity,
-              height: 48,
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.white,
-                  foregroundColor: const Color(0xFF161720),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                ),
-                onPressed: () {
-                  final d = double.tryParse(dailyCtrl.text) ?? _dailyLimit;
-                  final m = double.tryParse(monthlyCtrl.text) ?? _monthlyLimit;
-                  setState(() {
-                    _dailyLimit = d;
-                    _monthlyLimit = m;
-                  });
-                  state.setMonthlyBudget(m);
-                  Navigator.pop(ctx);
-                },
-                child: const Text(
-                  "Save Limits",
-                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
-                ),
-              ),
-            ),
-          ],
-        ),
+        ],
       ),
     );
   }
@@ -1484,7 +453,73 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  // Quick Action Buttons
+  Widget _buildQuickActions(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: _buildActionBtn(
+            icon: Icons.add_circle_outline_rounded,
+            label: "Track Expense",
+            color: AppTheme.expenseCoral,
+            onTap: () => onNavigateTab(1),
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: _buildActionBtn(
+            icon: Icons.psychology_rounded,
+            label: "FOMO AI",
+            color: AppTheme.fomoPurple,
+            onTap: () => onNavigateTab(3),
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: _buildActionBtn(
+            icon: Icons.calendar_month_rounded,
+            label: "Plan Expenses",
+            color: AppTheme.warningAmber,
+            onTap: () => onNavigateTab(4),
+          ),
+        ),
+      ],
+    );
+  }
 
+  Widget _buildActionBtn({
+    required IconData icon,
+    required String label,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(10),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        decoration: BoxDecoration(
+          color: AppTheme.surfaceLight,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: AppTheme.surfaceBorder.withValues(alpha: 0.5)),
+        ),
+        child: Column(
+          children: [
+            Icon(icon, color: AppTheme.textSecondary, size: 18),
+            const SizedBox(height: 6),
+            Text(
+              label,
+              style: TextStyle(
+                color: AppTheme.textSecondary,
+                fontSize: 11,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
   // 2. ALL BANK ACCOUNTS SECTION
   Widget _buildBankAccountsSection(BuildContext context) {
@@ -2267,7 +1302,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // Recent transactions preview matching Dribbble reference UI
+  // Recent transactions preview
   Widget _buildRecentTransactionsSection(BuildContext context) {
     final recent = state.transactions.take(4).toList();
 
@@ -2278,258 +1313,64 @@ class _HomeScreenState extends State<HomeScreen> {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
-              "Recent transactions",
+              "Recent Activity",
               style: TextStyle(
                 color: AppTheme.textPrimary,
-                fontSize: 18,
-                fontWeight: FontWeight.w700,
-                letterSpacing: -0.4,
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
               ),
             ),
             GestureDetector(
-              onTap: () => onNavigateTab(2),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                child: Text(
-                  "See all",
-                  style: TextStyle(
-                    color: AppTheme.textMuted,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
-                  ),
+              onTap: () => onNavigateTab(1),
+              child: const Text(
+                "View All",
+                style: TextStyle(
+                  color: AppTheme.primaryTeal,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
                 ),
               ),
             ),
           ],
         ),
-        const SizedBox(height: 14),
+        const SizedBox(height: 12),
+        Column(
+          children: recent.map((tx) {
+            final category = state.getCategoryById(tx.categoryId);
+            final isExpense = tx.type == TransactionType.expense;
 
-        if (recent.isNotEmpty)
-          Column(
-            children: recent.map((tx) {
-              final category = state.getCategoryById(tx.categoryId);
-              final isExpense = tx.type == TransactionType.expense;
-              final isTransfer = tx.isTransfer || state.isTransferOrTopUp(tx);
-
-              return Container(
-                margin: const EdgeInsets.only(bottom: 12),
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                decoration: BoxDecoration(
-                  color: AppTheme.surface,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: AppTheme.surfaceBorder.withValues(alpha: 0.6)),
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 44,
-                      height: 44,
-                      decoration: BoxDecoration(
-                        color: category.color.withValues(alpha: 0.15),
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(category.icon, color: category.color, size: 20),
+            return Container(
+              margin: const EdgeInsets.only(bottom: 10),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              decoration: AppTheme.cardDecoration(),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: category.color.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            tx.title,
-                            style: TextStyle(
-                              color: AppTheme.textPrimary,
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            "${category.name} · ${tx.date.day}/${tx.date.month}",
-                            style: TextStyle(
-                              color: AppTheme.textMuted,
-                              fontSize: 12,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
+                    child: Icon(category.icon, color: category.color, size: 18),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          isTransfer
-                              ? "⇄ ${AppTheme.formatCurrency(tx.amount)}"
-                              : "${isExpense ? '-' : '+'}${AppTheme.formatCurrency(tx.amount)}",
-                          style: TextStyle(
-                            color: isTransfer
-                                ? const Color(0xFF38BDF8)
-                                : (isExpense ? AppTheme.textPrimary : const Color(0xFF4ADE80)),
-                            fontSize: 15,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                        if (tx.bankAccountId.isNotEmpty) ...[
-                          const SizedBox(height: 2),
-                          Text(
-                            state.getBankById(tx.bankAccountId)?.name ?? "",
-                            style: TextStyle(
-                              color: AppTheme.textMuted,
-                              fontSize: 11,
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
-                    const SizedBox(width: 6),
-                    IconButton(
-                      icon: const Icon(Icons.delete_outline_rounded, size: 16, color: AppTheme.expenseCoral),
-                      onPressed: () => _confirmDeleteTransaction(context, tx),
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
-                      tooltip: "Delete transaction",
-                    ),
-                  ],
-                ),
-              );
-            }).toList(),
-          )
-        else
-          // High-fidelity reference mock items matching Dribbble screenshot
-          Column(
-            children: [
-              // 1. Olivia Spencer
-              Container(
-                margin: const EdgeInsets.only(bottom: 12),
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                decoration: BoxDecoration(
-                  color: AppTheme.surface,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: AppTheme.surfaceBorder.withValues(alpha: 0.6)),
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 44,
-                      height: 44,
-                      decoration: BoxDecoration(
-                        color: AppTheme.surfaceLight,
-                        shape: BoxShape.circle,
-                        border: Border.all(color: AppTheme.surfaceBorder),
-                      ),
-                      child: const Icon(
-                        Icons.add_rounded,
-                        color: Colors.white,
-                        size: 20,
-                      ),
-                    ),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            "Olivia Spencer",
-                            style: TextStyle(
-                              color: AppTheme.textPrimary,
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            "Recieved · 12:04",
-                            style: TextStyle(
-                              color: AppTheme.textMuted,
-                              fontSize: 12,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const Text(
-                      r"+$10.00",
-                      style: TextStyle(
-                        color: Color(0xFF4ADE80),
-                        fontSize: 15,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              // 2. Airbnb Homestay
-              Container(
-                margin: const EdgeInsets.only(bottom: 12),
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                decoration: BoxDecoration(
-                  color: AppTheme.surface,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: AppTheme.surfaceBorder.withValues(alpha: 0.6)),
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 44,
-                      height: 44,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFFF5A5F),
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: const Color(0xFFFF5A5F).withValues(alpha: 0.35),
-                            blurRadius: 8,
-                            offset: const Offset(0, 3),
-                          ),
-                        ],
-                      ),
-                      child: const Icon(
-                        Icons.apartment_rounded,
-                        color: Colors.white,
-                        size: 20,
-                      ),
-                    ),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            "Airbnb Homestay",
-                            style: TextStyle(
-                              color: AppTheme.textPrimary,
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            "Payment · Yesterday",
-                            style: TextStyle(
-                              color: AppTheme.textMuted,
-                              fontSize: 12,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        Text(
-                          "-€49.00",
+                          tx.title,
                           style: TextStyle(
                             color: AppTheme.textPrimary,
-                            fontSize: 15,
-                            fontWeight: FontWeight.w700,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
                           ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          "\$880.00",
+                          category.name,
                           style: TextStyle(
                             color: AppTheme.textMuted,
                             fontSize: 11,
@@ -2537,11 +1378,50 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                       ],
                     ),
-                  ],
-                ),
+                  ),
+                  Builder(
+                    builder: (context) {
+                      final isTransfer = tx.isTransfer || state.isTransferOrTopUp(tx);
+                      return Text(
+                        isTransfer
+                            ? "⇄ ${AppTheme.formatCurrency(tx.amount)}"
+                            : "${isExpense ? '-' : '+'}${AppTheme.formatCurrency(tx.amount)}",
+                        style: TextStyle(
+                          color: isTransfer
+                              ? const Color(0xFF38BDF8)
+                              : (isExpense ? AppTheme.expenseCoral : AppTheme.incomeMint),
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      );
+                    },
+                  ),
+                  const SizedBox(width: 10),
+                  InkWell(
+                    onTap: () => _confirmDeleteTransaction(context, tx),
+                    borderRadius: BorderRadius.circular(8),
+                    child: Container(
+                      padding: const EdgeInsets.all(5),
+                      decoration: BoxDecoration(
+                        color: AppTheme.expenseCoral.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: AppTheme.expenseCoral.withValues(alpha: 0.3),
+                          width: 1,
+                        ),
+                      ),
+                      child: const Icon(
+                        Icons.delete_outline_rounded,
+                        size: 14,
+                        color: AppTheme.expenseCoral,
+                      ),
+                    ),
+                  ),
+                ],
               ),
-            ],
-          ),
+            );
+          }).toList(),
+        ),
       ],
     );
   }
