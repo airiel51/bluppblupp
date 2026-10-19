@@ -15,6 +15,7 @@ import 'services/gemini_service.dart';
 import 'services/ios_shortcut_service.dart';
 import 'widgets/blupp_avatar.dart';
 import 'widgets/shortcut_transaction_sheet.dart';
+import 'widgets/ai_quick_log_sheet.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -103,7 +104,7 @@ class _MainNavigationShellState extends State<MainNavigationShell> with WidgetsB
     WidgetsBinding.instance.addObserver(this);
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      // 1. Listen for Apple Shortcut deep links (blupp://log?text=...)
+      // 1. Listen for Apple Shortcut deep links (blupp://log?text=... or ?action=add)
       IosShortcutService.instance.init(
         financeState: widget.state,
         onTransactionDetected: (parsed, rawText) {
@@ -114,6 +115,15 @@ class _MainNavigationShellState extends State<MainNavigationShell> with WidgetsB
             rawText: rawText,
             state: widget.state,
             sourceLabel: 'Apple Shortcut Automation',
+          );
+        },
+        onOpenQuickLog: () {
+          if (!mounted) return;
+          showModalBottomSheet(
+            context: context,
+            isScrollControlled: true,
+            backgroundColor: Colors.transparent,
+            builder: (_) => AiQuickLogSheet(state: widget.state),
           );
         },
       );

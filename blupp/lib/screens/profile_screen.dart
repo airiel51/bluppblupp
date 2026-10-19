@@ -4567,6 +4567,8 @@ class ProfileScreen extends StatelessWidget {
   }
 
   void _showIosShortcutsGuideSheet(BuildContext context) {
+    int selectedGuideIndex = 0; // 0 = When Bank App Closes, 1 = Gmail/Mail Sync
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -4575,121 +4577,246 @@ class ProfileScreen extends StatelessWidget {
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (ctx) {
-        return Padding(
-          padding: EdgeInsets.only(
-            left: 20,
-            right: 20,
-            top: 20,
-            bottom: MediaQuery.paddingOf(ctx).bottom + 20,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                child: Container(
-                  width: 38,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: AppTheme.surfaceBorder,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
+        final webOrigin = Uri.base.origin.isNotEmpty && !Uri.base.origin.startsWith('file:')
+            ? Uri.base.origin
+            : 'https://your-blupp-url.com';
+        final webPath = Uri.base.path.isEmpty || Uri.base.path == '/' ? '' : Uri.base.path;
+        final quickLogUrl = '$webOrigin$webPath/?action=add';
+
+        return StatefulBuilder(
+          builder: (context, setSheetState) {
+            return Padding(
+              padding: EdgeInsets.only(
+                left: 20,
+                right: 20,
+                top: 20,
+                bottom: MediaQuery.paddingOf(ctx).bottom + 20,
               ),
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF3B82F6).withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: const Icon(Icons.apple_rounded, color: Color(0xFF3B82F6), size: 22),
-                  ),
-                  const SizedBox(width: 10),
-                  Text(
-                    "iOS Shortcuts Bank Sync",
-                    style: TextStyle(
-                      color: AppTheme.textPrimary,
-                      fontSize: 18,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  const Spacer(),
-                  IconButton(
-                    icon: Icon(Icons.close, color: AppTheme.textMuted, size: 20),
-                    onPressed: () => Navigator.pop(ctx),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              Text(
-                "Because Apple blocks apps from reading notifications directly, an Apple Shortcut automation sends transactions seamlessly into Blupp!",
-                style: TextStyle(color: AppTheme.textSecondary, fontSize: 13, height: 1.4),
-              ),
-              const SizedBox(height: 16),
-              _buildShortcutStepCard(
-                step: "1",
-                title: "Open Shortcuts App & New Automation",
-                desc: "Choose 'Transaction' (Apple Pay) or 'Message' (when SMS contains 'RM' or 'DuitNow').",
-              ),
-              const SizedBox(height: 10),
-              _buildShortcutStepCard(
-                step: "2",
-                title: "Add 'Open URL' Action",
-                desc: "Set URL to: blupp://log?text=[Shortcut Input]",
-                trailingButton: TextButton.icon(
-                  onPressed: () {
-                    Clipboard.setData(const ClipboardData(text: "blupp://log?text="));
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text("✓ Copied 'blupp://log?text=' to clipboard!"),
-                        behavior: SnackBarBehavior.floating,
-                        duration: Duration(seconds: 2),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Center(
+                      child: Container(
+                        width: 38,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: AppTheme.surfaceBorder,
+                          borderRadius: BorderRadius.circular(2),
+                        ),
                       ),
-                    );
-                  },
-                  icon: const Icon(Icons.copy_rounded, size: 14),
-                  label: const Text("Copy Scheme", style: TextStyle(fontSize: 12)),
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF3B82F6).withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: const Icon(Icons.bolt_rounded, color: Color(0xFF3B82F6), size: 22),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            "iOS Bank Automation",
+                            style: TextStyle(
+                              color: AppTheme.textPrimary,
+                              fontSize: 18,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                        IconButton(
+                          icon: Icon(Icons.close, color: AppTheme.textMuted, size: 20),
+                          onPressed: () => Navigator.pop(ctx),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+
+                    // Guide selector pills
+                    Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: BoxDecoration(
+                        color: AppTheme.surfaceLight,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: AppTheme.surfaceBorder),
+                      ),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: GestureDetector(
+                              onTap: () => setSheetState(() => selectedGuideIndex = 0),
+                              child: AnimatedContainer(
+                                duration: const Duration(milliseconds: 180),
+                                padding: const EdgeInsets.symmetric(vertical: 8),
+                                decoration: BoxDecoration(
+                                  color: selectedGuideIndex == 0 ? AppTheme.primaryTeal : Colors.transparent,
+                                  borderRadius: BorderRadius.circular(9),
+                                ),
+                                alignment: Alignment.center,
+                                child: Text(
+                                  "⚡ When Bank Closes",
+                                  style: TextStyle(
+                                    color: selectedGuideIndex == 0 ? Colors.white : AppTheme.textSecondary,
+                                    fontSize: 12,
+                                    fontWeight: selectedGuideIndex == 0 ? FontWeight.w700 : FontWeight.w500,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                          Expanded(
+                            child: GestureDetector(
+                              onTap: () => setSheetState(() => selectedGuideIndex = 1),
+                              child: AnimatedContainer(
+                                duration: const Duration(milliseconds: 180),
+                                padding: const EdgeInsets.symmetric(vertical: 8),
+                                decoration: BoxDecoration(
+                                  color: selectedGuideIndex == 1 ? AppTheme.primaryTeal : Colors.transparent,
+                                  borderRadius: BorderRadius.circular(9),
+                                ),
+                                alignment: Alignment.center,
+                                child: Text(
+                                  "✉️ Gmail / Mail Sync",
+                                  style: TextStyle(
+                                    color: selectedGuideIndex == 1 ? Colors.white : AppTheme.textSecondary,
+                                    fontSize: 12,
+                                    fontWeight: selectedGuideIndex == 1 ? FontWeight.w700 : FontWeight.w500,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+
+                    if (selectedGuideIndex == 0) ...[
+                      Text(
+                        "The instant you finish paying and swipe away your bank app (MAE, CIMB, TNG), iOS automatically opens Blupp with Quick-Log ready!",
+                        style: TextStyle(color: AppTheme.textSecondary, fontSize: 13, height: 1.4),
+                      ),
+                      const SizedBox(height: 14),
+                      _buildShortcutStepCard(
+                        step: "1",
+                        title: "Create App Automation in Shortcuts",
+                        desc: "Shortcuts App ➔ Automation Tab ➔ '+' (New Automation) ➔ Select 'App'.",
+                      ),
+                      const SizedBox(height: 8),
+                      _buildShortcutStepCard(
+                        step: "2",
+                        title: "Choose Bank Apps & 'Is Closed'",
+                        desc: "Select MAE, CIMB, or TNG eWallet. Check 'Is Closed' (uncheck 'Is Opened') and choose 'Run Immediately'.",
+                      ),
+                      const SizedBox(height: 8),
+                      _buildShortcutStepCard(
+                        step: "3",
+                        title: "Add Action: 'Open URLs'",
+                        desc: "Action: Open URLs ➔ paste your Blupp Quick-Log URL below.",
+                        trailingButton: Padding(
+                          padding: const EdgeInsets.only(top: 8),
+                          child: OutlinedButton.icon(
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: AppTheme.primaryTeal,
+                              side: const BorderSide(color: AppTheme.primaryTeal),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                            ),
+                            onPressed: () {
+                              Clipboard.setData(ClipboardData(text: quickLogUrl));
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text("✓ Copied: $quickLogUrl"),
+                                  behavior: SnackBarBehavior.floating,
+                                  duration: const Duration(seconds: 2),
+                                ),
+                              );
+                            },
+                            icon: const Icon(Icons.copy_rounded, size: 14),
+                            label: const Text("Copy Blupp Quick-Log URL", style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+                          ),
+                        ),
+                      ),
+                    ] else ...[
+                      Text(
+                        "Whenever an incoming bank receipt email arrives in your synced Gmail / Apple Mail, iOS reads the text and pushes it to Blupp.",
+                        style: TextStyle(color: AppTheme.textSecondary, fontSize: 13, height: 1.4),
+                      ),
+                      const SizedBox(height: 14),
+                      _buildShortcutStepCard(
+                        step: "1",
+                        title: "New Automation ➔ 'Email'",
+                        desc: "Sender: Your Bank (e.g., donotreply@maybank2u.com.my). Choose 'Run Immediately'.",
+                      ),
+                      const SizedBox(height: 8),
+                      _buildShortcutStepCard(
+                        step: "2",
+                        title: "Add Actions: Encode & Open URL",
+                        desc: "1. 'URL Encode' [Shortcut Input]\n2. 'Open URLs' ➔ $webOrigin/?log=[URL Encoded Text]",
+                        trailingButton: Padding(
+                          padding: const EdgeInsets.only(top: 8),
+                          child: OutlinedButton.icon(
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: AppTheme.primaryTeal,
+                              side: const BorderSide(color: AppTheme.primaryTeal),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                            ),
+                            onPressed: () {
+                              Clipboard.setData(ClipboardData(text: "$webOrigin/?log="));
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text("✓ Copied: $webOrigin/?log="),
+                                  behavior: SnackBarBehavior.floating,
+                                  duration: const Duration(seconds: 2),
+                                ),
+                              );
+                            },
+                            icon: const Icon(Icons.copy_rounded, size: 14),
+                            label: const Text("Copy Email URL Prefix", style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+                          ),
+                        ),
+                      ),
+                    ],
+
+                    const SizedBox(height: 18),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 48,
+                      child: ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppTheme.primaryTeal,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                        onPressed: () {
+                          Navigator.pop(ctx);
+                          const sample = "DuitNow Transfer to STARBUCKS RM 21.50 on 19/10/2026";
+                          final parsed = AiNlpService.parse(sample, state);
+                          if (parsed != null) {
+                            ShortcutTransactionSheet.show(
+                              context: context,
+                              parsed: parsed,
+                              rawText: sample,
+                              state: state,
+                              sourceLabel: 'Simulated Apple Shortcut',
+                            );
+                          }
+                        },
+                        icon: const Icon(Icons.play_arrow_rounded),
+                        label: const Text("Test Shortcut Simulation", style: TextStyle(fontWeight: FontWeight.w700)),
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(height: 10),
-              _buildShortcutStepCard(
-                step: "3",
-                title: "Turn Off 'Ask Before Running'",
-                desc: "Allows iOS to run automatically in the background without prompting you each time.",
-              ),
-              const SizedBox(height: 20),
-              SizedBox(
-                width: double.infinity,
-                height: 48,
-                child: ElevatedButton.icon(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppTheme.primaryTeal,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  ),
-                  onPressed: () {
-                    Navigator.pop(ctx);
-                    const sample = "DuitNow Transfer to STARBUCKS RM 21.50 on 19/10/2026";
-                    final parsed = AiNlpService.parse(sample, state);
-                    if (parsed != null) {
-                      ShortcutTransactionSheet.show(
-                        context: context,
-                        parsed: parsed,
-                        rawText: sample,
-                        state: state,
-                        sourceLabel: 'Simulated Apple Shortcut',
-                      );
-                    }
-                  },
-                  icon: const Icon(Icons.play_arrow_rounded),
-                  label: const Text("Test Shortcut Simulation", style: TextStyle(fontWeight: FontWeight.w700)),
-                ),
-              ),
-            ],
-          ),
+            );
+          },
         );
       },
     );

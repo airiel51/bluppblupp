@@ -12,20 +12,22 @@ class IosShortcutService {
   StreamSubscription<Uri>? _linkSubscription;
   String? _lastCopiedText;
   String? _lastProcessedQuery;
+  String? _lastProcessedAction;
 
   /// Initializes deep link and Web URL parameter listening (for both native app and Web PWA on iPhone)
   void init({
     required Function(ParsedQuickLog parsed, String rawText) onTransactionDetected,
+    VoidCallback? onOpenQuickLog,
     required FinanceState financeState,
   }) {
-    // 1. Web PWA on iPhone: Check current browser URL for `?log=...` or `?text=...`
-    _handleIncomingUri(Uri.base, onTransactionDetected, financeState);
+    // 1. Web PWA on iPhone: Check current browser URL for `?log=...` or `?text=...` or `?action=add`
+    _handleIncomingUri(Uri.base, onTransactionDetected, onOpenQuickLog, financeState);
 
     // 2. Handle incoming links while app is running
     _linkSubscription?.cancel();
     _linkSubscription = _appLinks.uriLinkStream.listen(
       (uri) {
-        _handleIncomingUri(uri, onTransactionDetected, financeState);
+        _handleIncomingUri(uri, onTransactionDetected, onOpenQuickLog, financeState);
       },
       onError: (_) {},
     );
@@ -33,7 +35,7 @@ class IosShortcutService {
     // 3. Handle initial app link
     _appLinks.getInitialLink().then((uri) {
       if (uri != null) {
-        _handleIncomingUri(uri, onTransactionDetected, financeState);
+        _handleIncomingUri(uri, onTransactionDetected, onOpenQuickLog, financeState);
       }
     });
   }
@@ -46,33 +48,53 @@ class IosShortcutService {
   void _handleIncomingUri(
     Uri uri,
     Function(ParsedQuickLog parsed, String rawText) onTransactionDetected,
+    VoidCallback? onOpenQuickLog,
     FinanceState financeState,
   ) {
     String? text;
+    bool shouldOpenQuickLog = false;
 
     if (uri.scheme == 'blupp') {
-      // Native URL scheme: blupp://log?text=...
+      // Native URL scheme: blupp://log?text=... or blupp://add
+      if (uri.host == 'add' || uri.path == '/add' || uri.queryParameters['action'] == 'add' || uri.queryParameters.containsKey('add')) {
+        shouldOpenQuickLog = true;
+      }
       text = uri.queryParameters['text'] ??
           uri.queryParameters['log'] ??
           uri.queryParameters['content'] ??
           uri.queryParameters['msg'] ??
-          uri.path.replaceFirst('/', '');
+          (uri.path != '/add' && uri.host != 'add' ? uri.path.replaceFirst('/', '') : null);
     } else if (uri.scheme == 'http' || uri.scheme == 'https') {
-      // Web PWA URL: https://your-blupp-url.com/?log=... or /?text=...
+      // Web PWA URL: https://your-blupp-url.com/?log=... or /?action=add
+      final action = uri.queryParameters['action'] ?? uri.queryParameters['open'];
+      if (action == 'add' || action == 'quick' || uri.queryParameters.containsKey('add') || uri.queryParameters.containsKey('quick')) {
+        shouldOpenQuickLog = true;
+      }
       text = uri.queryParameters['log'] ??
           uri.queryParameters['text'] ??
           uri.queryParameters['content'] ??
           uri.queryParameters['msg'];
 
-      // Also support Flutter hash routes: /#/?log=...
-      if (text == null && uri.hasFragment) {
+      // Also support Flutter hash routes: /#/?action=add or /#/?log=...
+      if (uri.hasFragment) {
         final frag = uri.fragment;
         final qIndex = frag.indexOf('?');
         if (qIndex != -1) {
           final queryStr = frag.substring(qIndex + 1);
           final params = Uri.splitQueryString(queryStr);
-          text = params['log'] ?? params['text'] ?? params['content'] ?? params['msg'];
+          if (params['action'] == 'add' || params['open'] == 'add' || params.containsKey('add') || params.containsKey('quick')) {
+            shouldOpenQuickLog = true;
+          }
+          text ??= params['log'] ?? params['text'] ?? params['content'] ?? params['msg'];
         }
+      }
+    }
+
+    if (shouldOpenQuickLog) {
+      final actionKey = "${uri.path}_${uri.query}_${uri.fragment}";
+      if (actionKey != _lastProcessedAction) {
+        _lastProcessedAction = actionKey;
+        Future.microtask(() => onOpenQuickLog?.call());
       }
     }
 
