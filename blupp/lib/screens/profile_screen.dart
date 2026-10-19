@@ -7,8 +7,11 @@ import '../widgets/blupp_states.dart';
 import '../widgets/blupp_forms.dart';
 import '../widgets/blupp_logo.dart';
 import '../widgets/blupp_avatar.dart';
+import 'package:flutter/services.dart';
 import '../widgets/gemini_api_key_dialog.dart';
 import '../services/gemini_service.dart';
+import '../services/ai_nlp_service.dart';
+import '../widgets/shortcut_transaction_sheet.dart';
 
 class ProfileScreen extends StatelessWidget {
   final FinanceState state;
@@ -4298,6 +4301,75 @@ class ProfileScreen extends StatelessWidget {
                   ],
                 ),
               ),
+              const SizedBox(height: 18),
+
+              // 5c. iOS SHORTCUTS & BANK AUTOMATION SETTINGS
+              InteractiveCard(
+                padding: const EdgeInsets.all(16),
+                onTap: () => _showIosShortcutsGuideSheet(context),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF3B82F6).withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(
+                        Icons.apple_rounded,
+                        color: Color(0xFF3B82F6),
+                        size: 22,
+                      ),
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Text(
+                                "iOS Bank Notification Sync",
+                                style: TextStyle(
+                                  color: AppTheme.textPrimary,
+                                  fontSize: 14.5,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              const SizedBox(width: 6),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF3B82F6).withValues(alpha: 0.15),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: const Text(
+                                  "SHORTCUTS",
+                                  style: TextStyle(
+                                    color: Color(0xFF3B82F6),
+                                    fontSize: 9,
+                                    fontWeight: FontWeight.w700,
+                                    letterSpacing: 0.5,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 3),
+                          Text(
+                            "Auto-detect bank transactions & SMS receipts via Apple Shortcuts.",
+                            style: TextStyle(
+                              color: AppTheme.textSecondary,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Icon(Icons.chevron_right_rounded, color: AppTheme.textMuted),
+                  ],
+                ),
+              ),
               const SizedBox(height: 24),
 
               // 6. LOG OUT / SWITCH ACCOUNT BUTTON (Clean, luxury fintech aesthetic)
@@ -4488,6 +4560,182 @@ class ProfileScreen extends StatelessWidget {
             inactiveThumbColor: AppTheme.textMuted,
             inactiveTrackColor: AppTheme.surfaceLight,
             onChanged: onChanged,
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showIosShortcutsGuideSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: AppTheme.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) {
+        return Padding(
+          padding: EdgeInsets.only(
+            left: 20,
+            right: 20,
+            top: 20,
+            bottom: MediaQuery.paddingOf(ctx).bottom + 20,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 38,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: AppTheme.surfaceBorder,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF3B82F6).withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(Icons.apple_rounded, color: Color(0xFF3B82F6), size: 22),
+                  ),
+                  const SizedBox(width: 10),
+                  Text(
+                    "iOS Shortcuts Bank Sync",
+                    style: TextStyle(
+                      color: AppTheme.textPrimary,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const Spacer(),
+                  IconButton(
+                    icon: Icon(Icons.close, color: AppTheme.textMuted, size: 20),
+                    onPressed: () => Navigator.pop(ctx),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Text(
+                "Because Apple blocks apps from reading notifications directly, an Apple Shortcut automation sends transactions seamlessly into Blupp!",
+                style: TextStyle(color: AppTheme.textSecondary, fontSize: 13, height: 1.4),
+              ),
+              const SizedBox(height: 16),
+              _buildShortcutStepCard(
+                step: "1",
+                title: "Open Shortcuts App & New Automation",
+                desc: "Choose 'Transaction' (Apple Pay) or 'Message' (when SMS contains 'RM' or 'DuitNow').",
+              ),
+              const SizedBox(height: 10),
+              _buildShortcutStepCard(
+                step: "2",
+                title: "Add 'Open URL' Action",
+                desc: "Set URL to: blupp://log?text=[Shortcut Input]",
+                trailingButton: TextButton.icon(
+                  onPressed: () {
+                    Clipboard.setData(const ClipboardData(text: "blupp://log?text="));
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text("✓ Copied 'blupp://log?text=' to clipboard!"),
+                        behavior: SnackBarBehavior.floating,
+                        duration: Duration(seconds: 2),
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.copy_rounded, size: 14),
+                  label: const Text("Copy Scheme", style: TextStyle(fontSize: 12)),
+                ),
+              ),
+              const SizedBox(height: 10),
+              _buildShortcutStepCard(
+                step: "3",
+                title: "Turn Off 'Ask Before Running'",
+                desc: "Allows iOS to run automatically in the background without prompting you each time.",
+              ),
+              const SizedBox(height: 20),
+              SizedBox(
+                width: double.infinity,
+                height: 48,
+                child: ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppTheme.primaryTeal,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  onPressed: () {
+                    Navigator.pop(ctx);
+                    const sample = "DuitNow Transfer to STARBUCKS RM 21.50 on 19/10/2026";
+                    final parsed = AiNlpService.parse(sample, state);
+                    if (parsed != null) {
+                      ShortcutTransactionSheet.show(
+                        context: context,
+                        parsed: parsed,
+                        rawText: sample,
+                        state: state,
+                        sourceLabel: 'Simulated Apple Shortcut',
+                      );
+                    }
+                  },
+                  icon: const Icon(Icons.play_arrow_rounded),
+                  label: const Text("Test Shortcut Simulation", style: TextStyle(fontWeight: FontWeight.w700)),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  static Widget _buildShortcutStepCard({
+    required String step,
+    required String title,
+    required String desc,
+    Widget? trailingButton,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppTheme.surfaceLight,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppTheme.surfaceBorder),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          CircleAvatar(
+            radius: 12,
+            backgroundColor: AppTheme.primaryTeal.withValues(alpha: 0.15),
+            child: Text(
+              step,
+              style: const TextStyle(color: AppTheme.primaryTeal, fontSize: 11, fontWeight: FontWeight.bold),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(color: AppTheme.textPrimary, fontSize: 13, fontWeight: FontWeight.w600),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  desc,
+                  style: TextStyle(color: AppTheme.textMuted, fontSize: 11.5, height: 1.3),
+                ),
+                if (trailingButton != null) trailingButton,
+              ],
+            ),
           ),
         ],
       ),

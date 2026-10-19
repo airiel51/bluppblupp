@@ -12,7 +12,9 @@ import 'screens/sign_in_screen.dart';
 import 'screens/profile_screen.dart';
 import 'services/supabase_service.dart';
 import 'services/gemini_service.dart';
+import 'services/ios_shortcut_service.dart';
 import 'widgets/blupp_avatar.dart';
+import 'widgets/shortcut_transaction_sheet.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -92,8 +94,61 @@ class MainNavigationShell extends StatefulWidget {
   State<MainNavigationShell> createState() => _MainNavigationShellState();
 }
 
-class _MainNavigationShellState extends State<MainNavigationShell> {
+class _MainNavigationShellState extends State<MainNavigationShell> with WidgetsBindingObserver {
   int _currentTabIndex = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      // 1. Listen for Apple Shortcut deep links (blupp://log?text=...)
+      IosShortcutService.instance.init(
+        financeState: widget.state,
+        onTransactionDetected: (parsed, rawText) {
+          if (!mounted) return;
+          ShortcutTransactionSheet.show(
+            context: context,
+            parsed: parsed,
+            rawText: rawText,
+            state: widget.state,
+            sourceLabel: 'Apple Shortcut Automation',
+          );
+        },
+      );
+
+      // 2. Initial clipboard detection on launch
+      _checkClipboard();
+    });
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    IosShortcutService.instance.dispose();
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState lifecycle) {
+    if (lifecycle == AppLifecycleState.resumed) {
+      _checkClipboard();
+    }
+  }
+
+  void _checkClipboard() async {
+    final parsed = await IosShortcutService.instance.checkClipboardForTransaction(widget.state);
+    if (parsed != null && mounted) {
+      ShortcutTransactionSheet.show(
+        context: context,
+        parsed: parsed,
+        rawText: "Copied: ${parsed.title} (RM ${parsed.amount.toStringAsFixed(2)})",
+        state: widget.state,
+        sourceLabel: 'Copied Bank Receipt / SMS',
+      );
+    }
+  }
 
   void _navigateToTab(int index) {
     if (_currentTabIndex == index) return;
