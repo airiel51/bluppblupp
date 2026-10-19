@@ -9,6 +9,8 @@ import '../widgets/blupp_avatar.dart';
 import '../widgets/ai_safe_to_spend_card.dart';
 import '../widgets/ai_quick_log_sheet.dart';
 import '../widgets/ai_receipt_scanner_sheet.dart';
+import '../services/ios_shortcut_service.dart';
+import '../widgets/shortcut_transaction_sheet.dart';
 
 class HomeScreen extends StatelessWidget {
   final FinanceState state;
@@ -372,7 +374,7 @@ class HomeScreen extends StatelessWidget {
       ),
       child: Row(
         children: [
-          // Natural Language Quick-Logger
+          // 1. Natural Language Quick-Logger
           Expanded(
             child: InkWell(
               onTap: () {
@@ -385,7 +387,7 @@ class HomeScreen extends StatelessWidget {
               },
               borderRadius: BorderRadius.circular(12),
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 11),
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 10),
                 decoration: BoxDecoration(
                   color: const Color(0xFF10B981).withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(12),
@@ -394,14 +396,18 @@ class HomeScreen extends StatelessWidget {
                 child: const Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.bolt_rounded, size: 16, color: Color(0xFF10B981)),
-                    SizedBox(width: 6),
-                    Text(
-                      "AI Quick-Log",
-                      style: TextStyle(
-                        color: Color(0xFF10B981),
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
+                    Icon(Icons.bolt_rounded, size: 15, color: Color(0xFF10B981)),
+                    SizedBox(width: 4),
+                    Flexible(
+                      child: Text(
+                        "Quick-Log",
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: Color(0xFF10B981),
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
                     ),
                   ],
@@ -409,9 +415,65 @@ class HomeScreen extends StatelessWidget {
               ),
             ),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 6),
 
-          // Vision AI Receipt Scanner
+          // 2. 1-Tap Paste Bank SMS / Notification (Web PWA & Mobile)
+          Expanded(
+            child: InkWell(
+              onTap: () async {
+                final parsed = await IosShortcutService.instance.pasteFromClipboard(state);
+                if (parsed != null && context.mounted) {
+                  ShortcutTransactionSheet.show(
+                    context: context,
+                    parsed: parsed,
+                    rawText: "Copied: ${parsed.title} (RM ${parsed.amount.toStringAsFixed(2)})",
+                    state: state,
+                    sourceLabel: 'Pasted Bank Notification',
+                  );
+                } else if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: const Text("📋 Copy a bank SMS, DuitNow alert, or receipt first!"),
+                      backgroundColor: AppTheme.surfaceLight,
+                      behavior: SnackBarBehavior.floating,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                  );
+                }
+              },
+              borderRadius: BorderRadius.circular(12),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 10),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF8B5CF6).withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: const Color(0xFF8B5CF6).withValues(alpha: 0.3)),
+                ),
+                child: const Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.content_paste_rounded, size: 14, color: Color(0xFF8B5CF6)),
+                    SizedBox(width: 4),
+                    Flexible(
+                      child: Text(
+                        "Paste SMS",
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: Color(0xFF8B5CF6),
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 6),
+
+          // 3. Vision AI Receipt Scanner
           Expanded(
             child: InkWell(
               onTap: () {
@@ -424,7 +486,7 @@ class HomeScreen extends StatelessWidget {
               },
               borderRadius: BorderRadius.circular(12),
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 11),
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 10),
                 decoration: BoxDecoration(
                   color: const Color(0xFF00E5FF).withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(12),
@@ -433,14 +495,18 @@ class HomeScreen extends StatelessWidget {
                 child: const Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.document_scanner_rounded, size: 15, color: Color(0xFF00E5FF)),
-                    SizedBox(width: 6),
-                    Text(
-                      "Scan Receipt/QR",
-                      style: TextStyle(
-                        color: Color(0xFF00E5FF),
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
+                    Icon(Icons.document_scanner_rounded, size: 14, color: Color(0xFF00E5FF)),
+                    SizedBox(width: 4),
+                    Flexible(
+                      child: Text(
+                        "Scan Receipt",
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: Color(0xFF00E5FF),
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
                     ),
                   ],
