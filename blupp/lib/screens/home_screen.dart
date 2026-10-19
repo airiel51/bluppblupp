@@ -2998,7 +2998,7 @@ class HomeScreen extends StatelessWidget {
       {'value': 'Vehicle', 'label': 'Vehicle', 'icon': Icons.directions_car_rounded},
       {'value': 'Housing', 'label': 'Housing', 'icon': Icons.home_rounded},
       {'value': 'Education', 'label': 'Education', 'icon': Icons.school_rounded},
-      {'value': 'Personal/BNPL', 'label': 'Personal/BNPL', 'icon': Icons.credit_card_rounded},
+      {'value': 'Personal/BNPL', 'label': 'Personal / BNPL', 'icon': Icons.credit_card_rounded},
     ];
 
     showDialog(

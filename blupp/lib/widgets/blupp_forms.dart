@@ -42,6 +42,98 @@ class BluppBoxedSegment<T> extends StatelessWidget {
       }
     }
 
+    final bool useMultiRow = resolvedItems.length >= 4;
+
+    Widget buildSegmentItem(BluppSegmentItem<T> item) {
+      final isSelected = item.value == selectedValue;
+      final color = isSelected
+          ? (item.activeColor ?? activeColor ?? AppTheme.textPrimary)
+          : AppTheme.textMuted;
+
+      return GestureDetector(
+        onTap: () {
+          onChanged?.call(item.value);
+          onSelected?.call(item.value);
+        },
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 150),
+          curve: Curves.easeOut,
+          padding: const EdgeInsets.symmetric(vertical: 9, horizontal: 8),
+          decoration: BoxDecoration(
+            color: isSelected ? AppTheme.surface : Colors.transparent,
+            borderRadius: BorderRadius.circular(8),
+            border: isSelected
+                ? Border.all(color: AppTheme.surfaceBorder)
+                : null,
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (item.icon != null) ...[
+                Icon(
+                  item.icon,
+                  size: 15,
+                  color: color,
+                ),
+                const SizedBox(width: 6),
+              ],
+              Flexible(
+                child: Text(
+                  item.label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: isSelected ? AppTheme.textPrimary : AppTheme.textMuted,
+                    fontSize: 12.5,
+                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    if (useMultiRow) {
+      final List<Widget> rows = [];
+      for (int i = 0; i < resolvedItems.length; i += 2) {
+        final item1 = resolvedItems[i];
+        final hasItem2 = (i + 1 < resolvedItems.length);
+        final item2 = hasItem2 ? resolvedItems[i + 1] : null;
+
+        rows.add(
+          Row(
+            children: [
+              Expanded(child: buildSegmentItem(item1)),
+              const SizedBox(width: 4),
+              if (item2 != null)
+                Expanded(child: buildSegmentItem(item2))
+              else
+                const Expanded(child: SizedBox.shrink()),
+            ],
+          ),
+        );
+        if (i + 2 < resolvedItems.length) {
+          rows.add(const SizedBox(height: 4));
+        }
+      }
+
+      return Container(
+        padding: const EdgeInsets.all(4),
+        decoration: BoxDecoration(
+          color: AppTheme.surfaceLight,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: AppTheme.surfaceBorder),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: rows,
+        ),
+      );
+    }
+
     return Container(
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
@@ -51,52 +143,7 @@ class BluppBoxedSegment<T> extends StatelessWidget {
       ),
       child: Row(
         children: resolvedItems.map((item) {
-          final isSelected = item.value == selectedValue;
-          final color = isSelected
-              ? (item.activeColor ?? activeColor ?? AppTheme.textPrimary)
-              : AppTheme.textMuted;
-
-          return Expanded(
-            child: GestureDetector(
-              onTap: () {
-                onChanged?.call(item.value);
-                onSelected?.call(item.value);
-              },
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 150),
-                curve: Curves.easeOut,
-                padding: const EdgeInsets.symmetric(vertical: 9),
-                decoration: BoxDecoration(
-                  color: isSelected ? AppTheme.surface : Colors.transparent,
-                  borderRadius: BorderRadius.circular(8),
-                  border: isSelected
-                      ? Border.all(color: AppTheme.surfaceBorder)
-                      : null,
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    if (item.icon != null) ...[
-                      Icon(
-                        item.icon,
-                        size: 15,
-                        color: color,
-                      ),
-                      const SizedBox(width: 6),
-                    ],
-                    Text(
-                      item.label,
-                      style: TextStyle(
-                        color: isSelected ? AppTheme.textPrimary : AppTheme.textMuted,
-                        fontSize: 13,
-                        fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          );
+          return Expanded(child: buildSegmentItem(item));
         }).toList(),
       ),
     );
