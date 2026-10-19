@@ -8,6 +8,7 @@ import '../widgets/blupp_forms.dart';
 import '../widgets/ai_safe_to_spend_card.dart';
 import '../widgets/ai_quick_log_sheet.dart';
 import '../widgets/ai_receipt_scanner_sheet.dart';
+import '../widgets/category_budget_sheet.dart';
 
 class TrackingScreen extends StatefulWidget {
   final FinanceState state;
@@ -82,7 +83,7 @@ class _TrackingScreenState extends State<TrackingScreen>
           IconButton(
             icon: Icon(Icons.tune_rounded, color: AppTheme.textSecondary),
             tooltip: "Budget Settings",
-            onPressed: () => _showBudgetSettingsDialog(context),
+            onPressed: () => CategoryBudgetSheet.show(context, state: widget.state),
           ),
         ],
         bottom: PreferredSize(
@@ -175,6 +176,23 @@ class _TrackingScreenState extends State<TrackingScreen>
     final progress = budget > 0 ? (totalSpent / budget).clamp(0.0, 1.0) : 0.0;
     final spendingBalance = widget.state.spendingBalanceLeft;
 
+    final isCategoryFiltered = _selectedCategoryFilter != 'all';
+    final filteredCategory = isCategoryFiltered ? widget.state.getCategoryById(_selectedCategoryFilter) : null;
+    final catBudget = isCategoryFiltered ? widget.state.getCategoryBudget(_selectedCategoryFilter) : 0.0;
+    final catSpent = isCategoryFiltered ? widget.state.getCategorySpentThisMonth(_selectedCategoryFilter) : 0.0;
+    final catProgress = catBudget > 0 ? (catSpent / catBudget).clamp(0.0, 1.0) : 0.0;
+    final catRemaining = catBudget - catSpent;
+    final isCatOver = catBudget > 0 && catSpent > catBudget;
+
+    final displayedTitle = isCategoryFiltered
+        ? "${filteredCategory?.name.toUpperCase()} BUDGET"
+        : "TOTAL EXPENSE THIS MONTH";
+    final displayedSpent = isCategoryFiltered ? catSpent : totalSpent;
+    final displayedBudget = isCategoryFiltered ? catBudget : budget;
+    final displayedProgress = isCategoryFiltered ? catProgress : progress;
+    final displayedRemaining = isCategoryFiltered ? catRemaining : spendingBalance;
+    final isOverbudget = isCategoryFiltered ? isCatOver : (budget > 0 && totalSpent > budget);
+
     final expenses = widget.state.transactions.where((t) {
       if (t.type != TransactionType.expense) return false;
       if (_selectedCategoryFilter != 'all' && t.categoryId != _selectedCategoryFilter) {
@@ -226,13 +244,26 @@ class _TrackingScreenState extends State<TrackingScreen>
             .slideY(begin: 0.04, end: 0),
         const SizedBox(height: 16),
 
-        // Budget & Spend Summary Card
+        // Budget & Spend Summary Card (Adapts seamlessly per category)
         Container(
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
             color: AppTheme.surface,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: AppTheme.surfaceBorder),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: isOverbudget
+                  ? AppTheme.expenseCoral.withValues(alpha: 0.5)
+                  : AppTheme.surfaceBorder,
+            ),
+            boxShadow: AppTheme.isDark
+                ? null
+                : [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.03),
+                      blurRadius: 10,
+                      offset: const Offset(0, 3),
+                    ),
+                  ],
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -240,38 +271,93 @@ class _TrackingScreenState extends State<TrackingScreen>
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    "TOTAL EXPENSE THIS MONTH",
-                    style: TextStyle(
-                      color: AppTheme.textSecondary,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w500,
-                      letterSpacing: 0.3,
-                    ),
+                  Row(
+                    children: [
+                      if (isCategoryFiltered && filteredCategory != null) ...[
+                        Container(
+                          padding: const EdgeInsets.all(5),
+                          decoration: BoxDecoration(
+                            color: filteredCategory.color.withValues(alpha: 0.18),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Icon(filteredCategory.icon, size: 13, color: filteredCategory.color),
+                        ),
+                        const SizedBox(width: 8),
+                      ],
+                      Text(
+                        displayedTitle,
+                        style: TextStyle(
+                          color: AppTheme.textSecondary,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: 0.3,
+                        ),
+                      ),
+                    ],
                   ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                    decoration: BoxDecoration(
-                      color: AppTheme.expenseCoral.withValues(alpha: 0.15),
+                  if (displayedBudget > 0)
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: isOverbudget
+                            ? AppTheme.expenseCoral.withValues(alpha: 0.15)
+                            : AppTheme.primaryTeal.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        isOverbudget
+                            ? "Over by ${AppTheme.formatCurrency(displayedSpent - displayedBudget)}"
+                            : "${(displayedProgress * 100).toStringAsFixed(0)}% Used",
+                        style: TextStyle(
+                          color: isOverbudget ? AppTheme.expenseCoral : AppTheme.primaryTeal,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    )
+                  else
+                    InkWell(
+                      onTap: () => CategoryBudgetSheet.show(context, state: widget.state),
                       borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      "${(progress * 100).toStringAsFixed(0)}% Budget Used",
-                      style: TextStyle(color: AppTheme.expenseCoral,
-                        fontSize: 10,
-                        fontWeight: FontWeight.w500,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: AppTheme.primaryTeal.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Text(
+                          "+ Set Limit",
+                          style: TextStyle(
+                            color: AppTheme.primaryTeal,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
                       ),
                     ),
-                  ),
                 ],
               ),
               const SizedBox(height: 8),
-              Text(
-                AppTheme.formatCurrency(totalSpent),
-                style: TextStyle(color: AppTheme.textPrimary,
-                  fontSize: 22,
-                  fontWeight: FontWeight.w600,
-                ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Text(
+                    AppTheme.formatCurrency(displayedSpent),
+                    style: TextStyle(
+                      color: AppTheme.textPrimary,
+                      fontSize: 22,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  IconButton(
+                    icon: Icon(Icons.tune_rounded, size: 19, color: AppTheme.textMuted),
+                    tooltip: "Manage Category Budgets",
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                    onPressed: () => CategoryBudgetSheet.show(context, state: widget.state),
+                  ),
+                ],
               ),
               const SizedBox(height: 12),
 
@@ -279,11 +365,15 @@ class _TrackingScreenState extends State<TrackingScreen>
               ClipRRect(
                 borderRadius: BorderRadius.circular(8),
                 child: LinearProgressIndicator(
-                  value: progress,
+                  value: displayedBudget > 0 ? displayedProgress : 0.0,
                   minHeight: 8,
                   backgroundColor: AppTheme.surfaceBorder,
                   valueColor: AlwaysStoppedAnimation<Color>(
-                    progress > 0.85 ? AppTheme.expenseCoral : AppTheme.primaryTeal,
+                    isOverbudget
+                        ? AppTheme.expenseCoral
+                        : (isCategoryFiltered && filteredCategory != null
+                            ? filteredCategory.color
+                            : (displayedProgress > 0.85 ? AppTheme.warningAmber : AppTheme.primaryTeal)),
                   ),
                 ),
               ),
@@ -293,14 +383,21 @@ class _TrackingScreenState extends State<TrackingScreen>
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    "Spending Balance Left: ${AppTheme.formatCurrency(spendingBalance)}",
-                    style: TextStyle(color: AppTheme.primaryTeal,
+                    displayedBudget > 0
+                        ? (isOverbudget
+                            ? "Over budget: ${AppTheme.formatCurrency(displayedSpent - displayedBudget)}"
+                            : "Spending Balance Left: ${AppTheme.formatCurrency(displayedRemaining)}")
+                        : "No spending limit configured",
+                    style: TextStyle(
+                      color: isOverbudget ? AppTheme.expenseCoral : AppTheme.primaryTeal,
                       fontSize: 11,
-                      fontWeight: FontWeight.w500,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                   Text(
-                    "Budget: ${AppTheme.formatCurrency(budget)}",
+                    displayedBudget > 0
+                        ? "Budget: ${AppTheme.formatCurrency(displayedBudget)}"
+                        : "Tap + Set Limit",
                     style: TextStyle(
                       color: AppTheme.textMuted,
                       fontSize: 11,
@@ -311,7 +408,13 @@ class _TrackingScreenState extends State<TrackingScreen>
             ],
           ),
         ),
-        const SizedBox(height: 20),
+        const SizedBox(height: 16),
+
+        // Category Budgets Overview Carousel (when viewing all)
+        if (!isCategoryFiltered) ...[
+          _buildCategoryBudgetsOverview(context),
+          const SizedBox(height: 20),
+        ],
 
         // Timeframe Selector: Daily, Weekly, Monthly
         _buildTimeframeSelector(),
@@ -328,6 +431,215 @@ class _TrackingScreenState extends State<TrackingScreen>
           _buildWeeklyExpensesSection(expenses)
         else
           _buildMonthlyExpensesSection(expenses),
+      ],
+    );
+  }
+
+  // --- CATEGORY BUDGETS OVERVIEW CAROUSEL ---
+  Widget _buildCategoryBudgetsOverview(BuildContext context) {
+    final budgetedCategories = widget.state.categories
+        .where((c) => c.type == TransactionType.expense && widget.state.getCategoryBudget(c.id) > 0)
+        .toList();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.pie_chart_rounded, size: 14, color: AppTheme.primaryTeal),
+                const SizedBox(width: 6),
+                Text(
+                  "CATEGORY BUDGETS",
+                  style: TextStyle(
+                    color: AppTheme.textSecondary,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+              ],
+            ),
+            InkWell(
+              onTap: () => CategoryBudgetSheet.show(context, state: widget.state),
+              borderRadius: BorderRadius.circular(6),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      budgetedCategories.isEmpty ? "Set Limits" : "Manage",
+                      style: const TextStyle(
+                        color: AppTheme.primaryTeal,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(width: 2),
+                    const Icon(Icons.chevron_right_rounded, size: 14, color: AppTheme.primaryTeal),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        if (budgetedCategories.isEmpty)
+          InteractiveCard(
+            onTap: () => CategoryBudgetSheet.show(context, state: widget.state),
+            padding: const EdgeInsets.all(14),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: AppTheme.primaryTeal.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Icon(Icons.add_chart_rounded, color: AppTheme.primaryTeal, size: 18),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        "No category budgets configured yet",
+                        style: TextStyle(color: AppTheme.textPrimary, fontSize: 13, fontWeight: FontWeight.w600),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        "Set targeted monthly limits for Food, Transport, Groceries & more.",
+                        style: TextStyle(color: AppTheme.textMuted, fontSize: 11),
+                      ),
+                    ],
+                  ),
+                ),
+                const Icon(Icons.arrow_forward_ios_rounded, size: 12, color: AppTheme.primaryTeal),
+              ],
+            ),
+          )
+        else
+          SizedBox(
+            height: 96,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              itemCount: budgetedCategories.length,
+              separatorBuilder: (_, _) => const SizedBox(width: 10),
+              itemBuilder: (ctx, index) {
+                final cat = budgetedCategories[index];
+                final budget = widget.state.getCategoryBudget(cat.id);
+                final spent = widget.state.getCategorySpentThisMonth(cat.id);
+                final progress = budget > 0 ? (spent / budget).clamp(0.0, 1.0) : 0.0;
+                final isOverbudget = spent > budget;
+                final isSelected = _selectedCategoryFilter == cat.id;
+
+                return InkWell(
+                  onTap: () {
+                    setState(() {
+                      _selectedCategoryFilter = isSelected ? 'all' : cat.id;
+                    });
+                  },
+                  borderRadius: BorderRadius.circular(14),
+                  child: Container(
+                    width: 160,
+                    padding: const EdgeInsets.all(11),
+                    decoration: BoxDecoration(
+                      color: isSelected
+                          ? AppTheme.primaryTeal.withValues(alpha: AppTheme.isDark ? 0.15 : 0.08)
+                          : AppTheme.surface,
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(
+                        color: isSelected
+                            ? AppTheme.primaryTeal
+                            : (isOverbudget
+                                ? AppTheme.expenseCoral.withValues(alpha: 0.5)
+                                : AppTheme.surfaceBorder),
+                        width: isSelected ? 1.5 : 1.0,
+                      ),
+                      boxShadow: AppTheme.isDark
+                          ? null
+                          : [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.03),
+                                blurRadius: 6,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(5),
+                              decoration: BoxDecoration(
+                                color: cat.color.withValues(alpha: 0.18),
+                                borderRadius: BorderRadius.circular(7),
+                              ),
+                              child: Icon(cat.icon, color: cat.color, size: 14),
+                            ),
+                            const SizedBox(width: 6),
+                            Expanded(
+                              child: Text(
+                                cat.name,
+                                style: TextStyle(
+                                  color: AppTheme.textPrimary,
+                                  fontSize: 11.5,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  AppTheme.formatCurrency(spent),
+                                  style: TextStyle(
+                                    color: isOverbudget ? AppTheme.expenseCoral : AppTheme.textPrimary,
+                                    fontSize: 11.5,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                                Text(
+                                  "/ ${AppTheme.formatCurrency(budget)}",
+                                  style: TextStyle(color: AppTheme.textMuted, fontSize: 10),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 5),
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(4),
+                              child: LinearProgressIndicator(
+                                value: progress,
+                                minHeight: 4.5,
+                                backgroundColor: AppTheme.surfaceBorder,
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  isOverbudget ? AppTheme.expenseCoral : cat.color,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
       ],
     );
   }
@@ -1969,63 +2281,6 @@ class _TrackingScreenState extends State<TrackingScreen>
               ),
             );
           },
-        );
-      },
-    );
-  }
-
-  void _showBudgetSettingsDialog(BuildContext context) {
-    final controller = TextEditingController(
-      text: widget.state.monthlySpendingBudget.toStringAsFixed(0),
-    );
-
-    showDialog(
-      context: context,
-      builder: (ctx) {
-        return AlertDialog(
-          backgroundColor: AppTheme.surface,
-          title: Text(
-            "Monthly Spending Budget",
-            style: TextStyle(color: AppTheme.textPrimary, fontWeight: FontWeight.bold),
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                "Set your overall target spending limit for this month:",
-                style: TextStyle(color: AppTheme.textSecondary, fontSize: 13),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: controller,
-                keyboardType: TextInputType.number,
-                style: TextStyle(color: AppTheme.textPrimary, fontWeight: FontWeight.bold),
-                decoration: InputDecoration(
-                  prefixText: "RM ",
-                  prefixStyle: TextStyle(color: AppTheme.primaryTeal),
-                  labelText: "Budget Amount",
-                  labelStyle: TextStyle(color: AppTheme.textMuted),
-                ),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: Text("Cancel", style: TextStyle(color: AppTheme.textMuted)),
-            ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: AppTheme.primaryTeal),
-              onPressed: () {
-                final val = double.tryParse(controller.text.trim());
-                if (val != null && val > 0) {
-                  widget.state.setMonthlyBudget(val);
-                }
-                Navigator.pop(ctx);
-              },
-              child: const Text("Update Budget", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
-            ),
-          ],
         );
       },
     );

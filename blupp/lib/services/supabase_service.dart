@@ -346,6 +346,23 @@ class SupabaseService {
     }
   }
 
+  Future<bool> updateCategoryBudgets(Map<String, double> categoryBudgets, {String? userId}) async {
+    if (!_isConfigured || client == null) return false;
+    final uid = userId ?? activeUserId;
+
+    try {
+      await client!.from('profiles').upsert({
+        'id': uid,
+        'category_budgets': categoryBudgets,
+        'updated_at': DateTime.now().toIso8601String(),
+      });
+      return true;
+    } catch (e) {
+      debugPrint('[SupabaseService] updateCategoryBudgets error: $e');
+      return false;
+    }
+  }
+
   // ---------------------------------------------------------------------------
   // TRANSACTIONS
   // ---------------------------------------------------------------------------

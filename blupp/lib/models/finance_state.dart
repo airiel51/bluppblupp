@@ -429,6 +429,7 @@ class FinanceState extends ChangeNotifier {
     });
 
     _loadSavedThemeMode();
+    _loadSavedCategoryBudgets();
   }
 
   bool get isAuthenticated => _isAuthenticated;
@@ -1059,6 +1060,9 @@ class FinanceState extends ChangeNotifier {
   // Base Monthly Spending Budget allocated by the user (starts 0 for new users)
   double _monthlySpendingBudget = 0.00;
 
+  // Category-based Monthly Budgets (categoryId -> budget amount)
+  Map<String, double> _categoryBudgets = {};
+
   // Banks list - empty for clean slate upon new user sign in
   final List<BankAccount> _bankAccounts = [];
 
@@ -1202,6 +1206,7 @@ class FinanceState extends ChangeNotifier {
     _fomoWishlist.clear();
     _totalFomoSaved = 0.00;
     _monthlySpendingBudget = 0.00;
+    _categoryBudgets.clear();
     _profileImageBase64 = null;
     _cachedProfileBytes = null;
     notifyListeners();
@@ -1215,6 +1220,16 @@ class FinanceState extends ChangeNotifier {
     _profileImageBase64 = null;
     _cachedProfileBytes = null;
     _monthlySpendingBudget = 3200.00;
+    _categoryBudgets = {
+      'food': 900.00,
+      'transport': 350.00,
+      'groceries': 600.00,
+      'utilities': 450.00,
+      'entertainment': 250.00,
+      'shopping': 400.00,
+      'health': 150.00,
+      'other_exp': 100.00,
+    };
     _bankAccounts.clear();
     _bankAccounts.addAll([
       BankAccount(
@@ -1861,6 +1876,10 @@ class FinanceState extends ChangeNotifier {
         if (profile['monthly_budget'] != null) {
           _monthlySpendingBudget = (profile['monthly_budget'] as num).toDouble();
         }
+        if (profile['category_budgets'] != null && profile['category_budgets'] is Map) {
+          final m = profile['category_budgets'] as Map;
+          _categoryBudgets = m.map((k, v) => MapEntry(k.toString(), (v as num).toDouble()));
+        }
       }
 
       // 2. Fetch Bank Accounts (Empty for new users)
@@ -1907,6 +1926,86 @@ class FinanceState extends ChangeNotifier {
     _monthlySpendingBudget = newBudget;
     SupabaseService.instance.updateMonthlyBudget(newBudget);
     notifyListeners();
+  }
+
+  // --- Category Budgets API ---
+  Map<String, double> get categoryBudgets => Map.unmodifiable(_categoryBudgets);
+
+  double getCategoryBudget(String categoryId) => _categoryBudgets[categoryId] ?? 0.0;
+
+  double get totalCategoryBudgetsSum => _categoryBudgets.values.fold(0.0, (sum, b) => sum + b);
+
+  double getCategorySpentThisMonth(String categoryId) {
+    final now = DateTime.now();
+    return _transactions
+        .where((t) =>
+            t.type == TransactionType.expense &&
+            t.categoryId == categoryId &&
+            !isTransferOrTopUp(t) &&
+            t.date.year == now.year &&
+            t.date.month == now.month)
+        .fold(0.0, (sum, t) => sum + t.amount);
+  }
+
+  double getCategoryBudgetRemaining(String categoryId) {
+    final budget = getCategoryBudget(categoryId);
+    if (budget <= 0) return 0.0;
+    final spent = getCategorySpentThisMonth(categoryId);
+    return budget - spent;
+  }
+
+  double getCategoryBudgetProgress(String categoryId) {
+    final budget = getCategoryBudget(categoryId);
+    if (budget <= 0) return 0.0;
+    final spent = getCategorySpentThisMonth(categoryId);
+    return (spent / budget).clamp(0.0, 2.0);
+  }
+
+  void setCategoryBudget(String categoryId, double amount, {bool syncOverallBudget = false}) {
+    if (amount <= 0) {
+      _categoryBudgets.remove(categoryId);
+    } else {
+      _categoryBudgets[categoryId] = amount;
+    }
+    if (syncOverallBudget && _categoryBudgets.isNotEmpty) {
+      _monthlySpendingBudget = totalCategoryBudgetsSum;
+      SupabaseService.instance.updateMonthlyBudget(_monthlySpendingBudget);
+    }
+    _saveCategoryBudgets();
+    notifyListeners();
+  }
+
+  void setAllCategoryBudgets(Map<String, double> budgets, {bool syncOverallBudget = false}) {
+    _categoryBudgets = Map.from(budgets);
+    _categoryBudgets.removeWhere((key, value) => value <= 0);
+    if (syncOverallBudget && _categoryBudgets.isNotEmpty) {
+      _monthlySpendingBudget = totalCategoryBudgetsSum;
+      SupabaseService.instance.updateMonthlyBudget(_monthlySpendingBudget);
+    }
+    _saveCategoryBudgets();
+    notifyListeners();
+  }
+
+  Future<void> _saveCategoryBudgets() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('blupp_category_budgets', jsonEncode(_categoryBudgets));
+    } catch (_) {}
+    SupabaseService.instance.updateCategoryBudgets(_categoryBudgets);
+  }
+
+  Future<void> _loadSavedCategoryBudgets() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final raw = prefs.getString('blupp_category_budgets');
+      if (raw != null) {
+        final decoded = jsonDecode(raw);
+        if (decoded is Map) {
+          _categoryBudgets = decoded.map((k, v) => MapEntry(k.toString(), (v as num).toDouble()));
+          notifyListeners();
+        }
+      }
+    } catch (_) {}
   }
 
   // Add new transaction (Income or Expense)

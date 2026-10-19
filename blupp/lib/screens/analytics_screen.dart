@@ -2,6 +2,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../models/finance_state.dart';
 import '../theme/app_theme.dart';
+import '../widgets/category_budget_sheet.dart';
 
 class AnalyticsScreen extends StatefulWidget {
   final FinanceState state;
@@ -294,16 +295,32 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
               style: TextStyle(
                 color: AppTheme.textPrimary,
                 fontSize: 16,
-                fontWeight: FontWeight.w500,
+                fontWeight: FontWeight.w600,
               ),
             ),
-            IconButton(
-              icon: Icon(Icons.replay_rounded, size: 18, color: AppTheme.textSecondary),
-              tooltip: "Replay Animation",
-              onPressed: () {
-                _chartAnimController.reset();
-                _chartAnimController.forward();
-              },
+            Row(
+              children: [
+                TextButton.icon(
+                  onPressed: () => CategoryBudgetSheet.show(context, state: widget.state),
+                  icon: const Icon(Icons.tune_rounded, size: 14, color: AppTheme.primaryTeal),
+                  label: const Text(
+                    "Budgets",
+                    style: TextStyle(
+                      color: AppTheme.primaryTeal,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+                IconButton(
+                  icon: Icon(Icons.replay_rounded, size: 18, color: AppTheme.textSecondary),
+                  tooltip: "Replay Animation",
+                  onPressed: () {
+                    _chartAnimController.reset();
+                    _chartAnimController.forward();
+                  },
+                ),
+              ],
             ),
           ],
         ),
@@ -378,6 +395,8 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
             final category = widget.state.getCategoryById(entry.key);
             final amount = entry.value;
             final pct = totalExpense > 0 ? (amount / totalExpense) : 0.0;
+            final catBudget = widget.state.getCategoryBudget(entry.key);
+            final isOverbudget = catBudget > 0 && amount > catBudget;
 
             return AnimatedBuilder(
               animation: _chartProgressAnim,
@@ -411,15 +430,20 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
                                   style: TextStyle(
                                     color: AppTheme.textPrimary,
                                     fontSize: 14,
-                                    fontWeight: FontWeight.w500,
+                                    fontWeight: FontWeight.w600,
                                   ),
                                 ),
                                 const SizedBox(height: 2),
                                 Text(
-                                  "${(pct * 100).toStringAsFixed(1)}% of total expenses",
+                                  catBudget > 0
+                                      ? (isOverbudget
+                                          ? "⚠️ Over budget by ${AppTheme.formatCurrency(amount - catBudget)}"
+                                          : "Budget: ${AppTheme.formatCurrency(catBudget)} (${AppTheme.formatCurrency(catBudget - amount)} left)")
+                                      : "${(pct * 100).toStringAsFixed(1)}% of total expenses",
                                   style: TextStyle(
-                                    color: AppTheme.textMuted,
+                                    color: isOverbudget ? AppTheme.expenseCoral : AppTheme.textMuted,
                                     fontSize: 11,
+                                    fontWeight: isOverbudget ? FontWeight.w600 : FontWeight.w400,
                                   ),
                                 ),
                               ],
@@ -428,9 +452,9 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
                           Text(
                             AppTheme.formatCurrency(amount),
                             style: TextStyle(
-                              color: category.color,
+                              color: isOverbudget ? AppTheme.expenseCoral : category.color,
                               fontSize: 15,
-                              fontWeight: FontWeight.w500,
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
                         ],
