@@ -32,7 +32,7 @@ class _GeminiApiKeyDialogState extends State<GeminiApiKeyDialog> {
     super.initState();
     _keyController.text = GeminiService.instance.apiKey;
     final current = GeminiService.instance.selectedModel;
-    if (current == 'gemini-1.5-flash' || current == 'gemini-2.0-flash' || current.isEmpty) {
+    if (!AiConfig.fallbackModels.contains(current) || current.isEmpty) {
       _selectedModel = AiConfig.defaultModel;
       GeminiService.instance.setModel(_selectedModel);
     } else {
@@ -223,17 +223,17 @@ class _GeminiApiKeyDialogState extends State<GeminiApiKeyDialog> {
                 children: [
                   Expanded(
                     child: _buildModelOption(
-                      title: "Gemini 3.8 Flash",
-                      subtitle: "Recommended (Active)",
-                      modelKey: "gemini-3.8-flash",
+                      title: "Gemini 2.5 Flash",
+                      subtitle: "Fast & smart (Active)",
+                      modelKey: "gemini-2.5-flash",
                     ),
                   ),
                   const SizedBox(width: 8),
                   Expanded(
                     child: _buildModelOption(
-                      title: "Gemini 3.5 Flash",
-                      subtitle: "Ultra fast & balanced",
-                      modelKey: "gemini-3.5-flash",
+                      title: "Gemini Flash-Lite",
+                      subtitle: "Fastest response time",
+                      modelKey: "gemini-2.5-flash-lite",
                     ),
                   ),
                 ],

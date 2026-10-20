@@ -59,8 +59,7 @@ class GeminiService extends ChangeNotifier {
 
       if (storedModel != null &&
           storedModel.trim().isNotEmpty &&
-          storedModel != 'gemini-1.5-flash' &&
-          storedModel != 'gemini-2.0-flash') {
+          AiConfig.fallbackModels.contains(storedModel.trim())) {
         _selectedModel = storedModel.trim();
       } else {
         _selectedModel = AiConfig.defaultModel;
@@ -155,7 +154,7 @@ class GeminiService extends ChangeNotifier {
     required String prompt,
     String? systemInstruction,
     double temperature = 0.7,
-    int maxOutputTokens = 1000,
+    int maxOutputTokens = 1500,
   }) async {
     if (!hasApiKey) return null;
 
@@ -306,7 +305,7 @@ Perform a thorough Anti-FOMO analysis and return the strict JSON output.
           prompt: userPrompt,
           systemInstruction: systemPrompt,
           temperature: 0.6,
-          maxOutputTokens: 1200,
+          maxOutputTokens: 1500,
         );
 
         if (rawResponse != null && rawResponse.isNotEmpty) {
@@ -510,6 +509,7 @@ Instructions:
    - NEVER use raw markdown heading hashes like '###' or '##'.
    - Use emojis and bold text for section titles, e.g. **🚨 The Cold, Hard Crime Scene**
    - Use clean bullet points (•) and bold text (**bold**) for key emphasis.
+   - Keep your advice punchy and complete in 2 to 3 concise paragraphs. Never trail off or truncate sentences.
 6. AT THE VERY END OF YOUR RESPONSE, include a JSON block formatted exactly like:
 <<<CHIPS
 ["Option 1", "Option 2", "Option 3", "Option 4"]
@@ -534,8 +534,8 @@ Where each option is a short (under 35 chars) quick-reply for the user to reply 
         final geminiReply = await _callGemini(
           prompt: buffer.toString(),
           systemInstruction: systemInstruction,
-          temperature: 0.75,
-          maxOutputTokens: 900,
+          temperature: 0.7,
+          maxOutputTokens: 1500,
         );
 
         if (geminiReply != null && geminiReply.isNotEmpty) {

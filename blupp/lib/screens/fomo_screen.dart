@@ -195,12 +195,12 @@ class _FomoScreenState extends State<FomoScreen> {
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                 decoration: BoxDecoration(
                   color: GeminiService.instance.hasApiKey
-                      ? const Color(0xFF10B981).withOpacity(0.15)
-                      : Colors.white.withOpacity(0.08),
+                      ? const Color(0xFF10B981).withValues(alpha: 0.15)
+                      : Colors.white.withValues(alpha: 0.08),
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(
                     color: GeminiService.instance.hasApiKey
-                        ? const Color(0xFF10B981).withOpacity(0.4)
+                        ? const Color(0xFF10B981).withValues(alpha: 0.4)
                         : Colors.white12,
                   ),
                 ),
@@ -253,7 +253,7 @@ class _FomoScreenState extends State<FomoScreen> {
             ],
 
             _buildFomoTrophyAndWishlist(),
-            const SizedBox(height: 30),
+            const SizedBox(height: 110),
           ],
         ),
       ),
@@ -555,32 +555,36 @@ class _FomoScreenState extends State<FomoScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(
-                  color: borderColor.withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: borderColor.withValues(alpha: 0.4)),
-                ),
-                child: Text(
-                  _verdict,
-                  style: TextStyle(
-                    color: borderColor,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    letterSpacing: 0.5,
+              Expanded(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: borderColor.withValues(alpha: 0.18),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: borderColor.withValues(alpha: 0.35)),
+                  ),
+                  child: Text(
+                    _verdict,
+                    style: TextStyle(
+                      color: borderColor,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.3,
+                    ),
+                    softWrap: true,
                   ),
                 ),
               ),
-              const Spacer(),
-              if (_isRealAiResult)
+              if (_isRealAiResult) ...[
+                const SizedBox(width: 8),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF10B981).withOpacity(0.15),
+                    color: const Color(0xFF10B981).withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: const Color(0xFF10B981).withOpacity(0.3)),
+                    border: Border.all(color: const Color(0xFF10B981).withValues(alpha: 0.3)),
                   ),
                   child: const Row(
                     mainAxisSize: MainAxisSize.min,
@@ -588,7 +592,7 @@ class _FomoScreenState extends State<FomoScreen> {
                       Icon(Icons.auto_awesome_rounded, color: Color(0xFF10B981), size: 12),
                       SizedBox(width: 4),
                       Text(
-                        "Google Gemini AI",
+                        "Gemini AI",
                         style: TextStyle(
                           color: Color(0xFF10B981),
                           fontSize: 10,
@@ -598,6 +602,7 @@ class _FomoScreenState extends State<FomoScreen> {
                     ],
                   ),
                 ),
+              ],
             ],
           ),
           const SizedBox(height: 14),
@@ -889,12 +894,15 @@ class _FomoScreenState extends State<FomoScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              rec['title'] as String,
-                              style: TextStyle(color: AppTheme.textPrimary, fontSize: 13, fontWeight: FontWeight.w700),
+                            Expanded(
+                              child: Text(
+                                rec['title'] as String,
+                                style: TextStyle(color: AppTheme.textPrimary, fontSize: 13, fontWeight: FontWeight.w700),
+                              ),
                             ),
+                            const SizedBox(width: 8),
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                               decoration: BoxDecoration(
