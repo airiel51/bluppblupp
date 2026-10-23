@@ -606,55 +606,7 @@ class _SignInScreenState extends State<SignInScreen> {
             ),
           ),
 
-          const SizedBox(height: 22),
-
-          // "Or" Divider
-          Row(
-            children: [
-              Expanded(child: Divider(color: AppTheme.surfaceBorder, thickness: 1)),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 14),
-                child: Text(
-                  "Or",
-                  style: TextStyle(
-                    color: AppTheme.textMuted,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ),
-              Expanded(child: Divider(color: AppTheme.surfaceBorder, thickness: 1)),
-            ],
-          ),
-
-          const SizedBox(height: 20),
-
-          // 3 Circular Social Auth Buttons
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              _buildSocialAuthCircle(
-                icon: Icons.facebook,
-                color: const Color(0xFF1877F2),
-                tooltip: "Facebook",
-                onTap: () => _handleSocialLogin("Facebook"),
-              ),
-              const SizedBox(width: 18),
-              _buildGoogleCircle(
-                tooltip: "Google",
-                onTap: () => _handleSocialLogin("Google"),
-              ),
-              const SizedBox(width: 18),
-              _buildSocialAuthCircle(
-                icon: Icons.apple,
-                color: AppTheme.isDark ? Colors.white : Colors.black,
-                tooltip: "Apple",
-                onTap: () => _handleSocialLogin("Apple"),
-              ),
-            ],
-          ),
-
-          const SizedBox(height: 18),
+          const SizedBox(height: 16),
 
           // Instant Demo Mode Pill (Seamless testing & preview)
           Center(
@@ -775,100 +727,7 @@ class _SignInScreenState extends State<SignInScreen> {
     );
   }
 
-  Widget _buildSocialAuthCircle({
-    required IconData icon,
-    required Color color,
-    required String tooltip,
-    required VoidCallback onTap,
-  }) {
-    return Material(
-      color: Colors.transparent,
-      child: Tooltip(
-        message: tooltip,
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(24),
-          child: Container(
-            width: 48,
-            height: 48,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: AppTheme.isDark ? const Color(0xFF1E202B) : Colors.white,
-              border: Border.all(
-                color: AppTheme.isDark ? Colors.white.withValues(alpha: 0.12) : const Color(0xFFE5E7EB),
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.04),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: Center(
-              child: Icon(icon, color: color, size: 24),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
 
-  Widget _buildGoogleCircle({
-    required String tooltip,
-    required VoidCallback onTap,
-  }) {
-    return Material(
-      color: Colors.transparent,
-      child: Tooltip(
-        message: tooltip,
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(24),
-          child: Container(
-            width: 48,
-            height: 48,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: AppTheme.isDark ? const Color(0xFF1E202B) : Colors.white,
-              border: Border.all(
-                color: AppTheme.isDark ? Colors.white.withValues(alpha: 0.12) : const Color(0xFFE5E7EB),
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.04),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: const Center(
-              child: Text(
-                'G',
-                style: TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xFF4285F4),
-                  fontFamily: 'sans-serif',
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  void _handleSocialLogin(String provider) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text("Connecting with $provider OAuth... You can also use Instant Demo Mode."),
-        backgroundColor: AppTheme.surfaceLight,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      ),
-    );
-  }
 }
 
 // ---------------------------------------------------------------------------
