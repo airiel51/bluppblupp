@@ -605,17 +605,26 @@ class _TrackingScreenState extends State<TrackingScreen>
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                Text(
-                                  AppTheme.formatCurrency(spent),
-                                  style: TextStyle(
-                                    color: isOverbudget ? AppTheme.expenseCoral : AppTheme.textPrimary,
-                                    fontSize: 11.5,
-                                    fontWeight: FontWeight.w700,
+                                Flexible(
+                                  child: Text(
+                                    AppTheme.formatCurrency(spent),
+                                    style: TextStyle(
+                                      color: isOverbudget ? AppTheme.expenseCoral : AppTheme.textPrimary,
+                                      fontSize: 11.5,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
                                   ),
                                 ),
-                                Text(
-                                  "/ ${AppTheme.formatCurrency(budget)}",
-                                  style: TextStyle(color: AppTheme.textMuted, fontSize: 10),
+                                const SizedBox(width: 4),
+                                Flexible(
+                                  child: Text(
+                                    "/ ${AppTheme.formatCurrency(budget)}",
+                                    style: TextStyle(color: AppTheme.textMuted, fontSize: 10),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
                                 ),
                               ],
                             ),

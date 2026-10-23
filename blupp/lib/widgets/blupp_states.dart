@@ -27,28 +27,34 @@ class InteractiveCard extends StatefulWidget {
 
 class _InteractiveCardState extends State<InteractiveCard> {
   bool _isPressed = false;
+  bool _isHovered = false;
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedScale(
-      scale: _isPressed ? 0.98 : 1.0,
-      duration: const Duration(milliseconds: 120),
-      curve: Curves.easeOutCubic,
-      child: Container(
-        margin: widget.margin,
-        decoration: widget.decoration ?? AppTheme.cardDecoration(radius: widget.radius),
-        child: Material(
-          color: Colors.transparent,
-          borderRadius: BorderRadius.circular(widget.radius),
-          child: InkWell(
+    return MouseRegion(
+      cursor: widget.onTap != null ? SystemMouseCursors.click : SystemMouseCursors.basic,
+      onEnter: (_) => setState(() => _isHovered = true),
+      onExit: (_) => setState(() => _isHovered = false),
+      child: AnimatedScale(
+        scale: _isPressed ? 0.98 : (_isHovered && widget.onTap != null ? 1.006 : 1.0),
+        duration: const Duration(milliseconds: 120),
+        curve: Curves.easeOutCubic,
+        child: Container(
+          margin: widget.margin,
+          decoration: widget.decoration ?? AppTheme.cardDecoration(radius: widget.radius),
+          child: Material(
+            color: Colors.transparent,
             borderRadius: BorderRadius.circular(widget.radius),
-            onHighlightChanged: (highlighted) {
-              setState(() => _isPressed = highlighted);
-            },
-            onTap: widget.onTap,
-            child: Padding(
-              padding: widget.padding ?? const EdgeInsets.all(16),
-              child: widget.child,
+            child: InkWell(
+              borderRadius: BorderRadius.circular(widget.radius),
+              onHighlightChanged: (highlighted) {
+                setState(() => _isPressed = highlighted);
+              },
+              onTap: widget.onTap,
+              child: Padding(
+                padding: widget.padding ?? const EdgeInsets.all(16),
+                child: widget.child,
+              ),
             ),
           ),
         ),
@@ -173,6 +179,30 @@ class BluppSkeleton {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  static Widget budgetCardSkeleton() {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: AppTheme.cardDecoration(),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              box(width: 120, height: 16),
+              box(width: 70, height: 16),
+            ],
+          ),
+          const SizedBox(height: 12),
+          box(width: double.infinity, height: 8, radius: 4),
+          const SizedBox(height: 8),
+          box(width: 90, height: 12),
+        ],
       ),
     );
   }

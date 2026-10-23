@@ -12,6 +12,8 @@ import '../widgets/gemini_api_key_dialog.dart';
 import '../services/gemini_service.dart';
 import '../services/ai_nlp_service.dart';
 import '../widgets/shortcut_transaction_sheet.dart';
+import '../widgets/blupp_faq_and_contact.dart';
+import '../widgets/blupp_feedback.dart';
 
 class ProfileScreen extends StatelessWidget {
   final FinanceState state;
@@ -1995,63 +1997,19 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
-  void _showSignOutConfirmDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: AppTheme.surface,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-          side: BorderSide(color: AppTheme.expenseCoral.withValues(alpha: 0.3)),
-        ),
-        title: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: AppTheme.expenseCoral.withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: const Icon(
-                Icons.logout_rounded,
-                color: AppTheme.expenseCoral,
-                size: 20,
-              ),
-            ),
-            const SizedBox(width: 12),
-            const Text(
-              'Log Out / Switch Account',
-              style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 17),
-            ),
-          ],
-        ),
-        content: const Text(
-          'Are you sure you want to log out or switch account? You can log back into Blupp anytime.',
-          style: TextStyle(color: Color(0xFFA1A1AA), fontSize: 14, height: 1.4),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel', style: TextStyle(color: Color(0xFF71717A))),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.expenseCoral,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            ),
-            onPressed: () {
-              Navigator.pop(ctx);
-              state.signOut();
-            },
-            child: const Text(
-              'Log Out',
-              style: TextStyle(fontWeight: FontWeight.w600),
-            ),
-          ),
-        ],
-      ),
+  void _showSignOutConfirmDialog(BuildContext context) async {
+    final confirmed = await BluppConfirmDialog.show(
+      context,
+      title: 'Log Out of Blupp?',
+      message: 'Are you sure you want to log out or switch account? You can log back into Blupp anytime.',
+      confirmLabel: 'Log Out',
+      cancelLabel: 'Stay Logged In',
+      isDestructive: true,
+      icon: Icons.logout_rounded,
     );
+    if (confirmed) {
+      state.signOut();
+    }
   }
 
   void _showAboutDialog(BuildContext context) {
@@ -2113,49 +2071,7 @@ class ProfileScreen extends StatelessWidget {
   }
 
   void _showTermsDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: AppTheme.surface,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-          side: BorderSide(color: AppTheme.surfaceBorder.withValues(alpha: 0.8)),
-        ),
-        title: Text('Terms & Privacy', style: TextStyle(color: AppTheme.textPrimary, fontWeight: FontWeight.w500)),
-        content: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text('Security & Privacy', style: TextStyle(color: AppTheme.primaryTeal, fontWeight: FontWeight.w500)),
-              SizedBox(height: 6),
-              Text(
-                'All financial information is encrypted with bank-grade standards. Your account data is privately synchronized with your Supabase backend instance.',
-                style: TextStyle(color: AppTheme.textSecondary, fontSize: 13, height: 1.4),
-              ),
-              SizedBox(height: 12),
-              Text('Data Ownership', style: TextStyle(color: AppTheme.primaryTeal, fontWeight: FontWeight.w500)),
-              SizedBox(height: 6),
-              Text(
-                'You maintain 100% control and ownership of your financial records. Official inquiries: bluppbluppfinance@gmail.com.',
-                style: TextStyle(color: AppTheme.textSecondary, fontSize: 13, height: 1.4),
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.primaryTeal,
-              foregroundColor: Colors.black,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            ),
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Understood', style: TextStyle(fontWeight: FontWeight.w500)),
-          ),
-        ],
-      ),
-    );
+    BluppLegalDialogs.showPrivacyPolicy(context);
   }
 
   void _showMinusBankMoneyDialog(BuildContext context, BankAccount bank) {
@@ -4372,6 +4288,81 @@ class ProfileScreen extends StatelessWidget {
               ),
               const SizedBox(height: 24),
 
+              // 5d. EXPANDABLE FAQS (requirement: expandable faq)
+              _buildSectionHeader('HELP & KNOWLEDGE BASE'),
+              const SizedBox(height: 10),
+              const BluppExpandableFaq(),
+              const SizedBox(height: 16),
+
+              // 5e. FLOATING CONTACT SUPPORT DOCK (requirements: floating contact, clickable number, clickable email)
+              InteractiveCard(
+                padding: const EdgeInsets.all(16),
+                onTap: () => BluppContactSheet.show(context),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: AppTheme.primaryTeal.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(
+                        Icons.support_agent_rounded,
+                        color: AppTheme.primaryTeal,
+                        size: 22,
+                      ),
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Text(
+                                "Customer Support Hotline",
+                                style: TextStyle(
+                                  color: AppTheme.textPrimary,
+                                  fontSize: 14.5,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              const SizedBox(width: 6),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: AppTheme.primaryTeal.withValues(alpha: 0.15),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: const Text(
+                                  "LIVE",
+                                  style: TextStyle(
+                                    color: AppTheme.primaryTeal,
+                                    fontSize: 9,
+                                    fontWeight: FontWeight.w700,
+                                    letterSpacing: 0.5,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 3),
+                          Text(
+                            "Tap to call hotline or email support directly.",
+                            style: TextStyle(
+                              color: AppTheme.textSecondary,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Icon(Icons.chevron_right_rounded, color: AppTheme.textMuted),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 24),
+
               // 6. LOG OUT / SWITCH ACCOUNT BUTTON (Clean, luxury fintech aesthetic)
               Container(
                 width: double.infinity,
@@ -4414,7 +4405,51 @@ class ProfileScreen extends StatelessWidget {
                   ),
                 ),
               ),
-              const SizedBox(height: 36),
+              const SizedBox(height: 24),
+
+              // 7. FOOTER LINKS & COPYRIGHT (requirements: fix footer links, copyright year, no broken links)
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  TextButton(
+                    onPressed: () => BluppLegalDialogs.showPrivacyPolicy(context),
+                    style: TextButton.styleFrom(
+                      foregroundColor: AppTheme.textMuted,
+                      textStyle: const TextStyle(fontSize: 12),
+                    ),
+                    child: const Text('Privacy Policy'),
+                  ),
+                  Text('•', style: TextStyle(color: AppTheme.surfaceBorder)),
+                  TextButton(
+                    onPressed: () => BluppLegalDialogs.showTermsOfService(context),
+                    style: TextButton.styleFrom(
+                      foregroundColor: AppTheme.textMuted,
+                      textStyle: const TextStyle(fontSize: 12),
+                    ),
+                    child: const Text('Terms'),
+                  ),
+                  Text('•', style: TextStyle(color: AppTheme.surfaceBorder)),
+                  TextButton(
+                    onPressed: () => BluppLegalDialogs.showSecurityWhitepaper(context),
+                    style: TextButton.styleFrom(
+                      foregroundColor: AppTheme.textMuted,
+                      textStyle: const TextStyle(fontSize: 12),
+                    ),
+                    child: const Text('Security'),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 4),
+              Center(
+                child: Text(
+                  '© ${DateTime.now().year} Blupp AI Inc. All rights reserved.',
+                  style: TextStyle(
+                    color: AppTheme.textMuted,
+                    fontSize: 11,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 48),
             ],
           ),
         ),
@@ -4860,7 +4895,7 @@ class ProfileScreen extends StatelessWidget {
                   desc,
                   style: TextStyle(color: AppTheme.textMuted, fontSize: 11.5, height: 1.3),
                 ),
-                if (trailingButton != null) trailingButton,
+                ?trailingButton,
               ],
             ),
           ),

@@ -107,14 +107,14 @@ class _GeminiApiKeyDialogState extends State<GeminiApiKeyDialog> {
           color: const Color(0xFF131722),
           borderRadius: BorderRadius.circular(24),
           border: Border.all(
-            color: hasActiveKey ? AppTheme.primaryTeal.withOpacity(0.3) : Colors.white12,
+            color: hasActiveKey ? AppTheme.primaryTeal.withValues(alpha: 0.3) : Colors.white12,
             width: 1.5,
           ),
           boxShadow: [
             BoxShadow(
               color: hasActiveKey
-                  ? AppTheme.primaryTeal.withOpacity(0.15)
-                  : Colors.black.withOpacity(0.5),
+                  ? AppTheme.primaryTeal.withValues(alpha: 0.15)
+                  : Colors.black.withValues(alpha: 0.5),
               blurRadius: 32,
               spreadRadius: 4,
             ),
@@ -132,9 +132,9 @@ class _GeminiApiKeyDialogState extends State<GeminiApiKeyDialog> {
                   Container(
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                      color: AppTheme.fomoPurple.withOpacity(0.15),
+                      color: AppTheme.fomoPurple.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: AppTheme.fomoPurple.withOpacity(0.3)),
+                      border: Border.all(color: AppTheme.fomoPurple.withValues(alpha: 0.3)),
                     ),
                     child: const Icon(
                       Icons.auto_awesome_rounded,
@@ -168,7 +168,7 @@ class _GeminiApiKeyDialogState extends State<GeminiApiKeyDialog> {
                                 boxShadow: [
                                   BoxShadow(
                                     color: (hasActiveKey ? const Color(0xFF10B981) : Colors.amber)
-                                        .withOpacity(0.6),
+                                        .withValues(alpha: 0.6),
                                     blurRadius: 6,
                                   ),
                                 ],
@@ -201,7 +201,7 @@ class _GeminiApiKeyDialogState extends State<GeminiApiKeyDialog> {
               Text(
                 "Connect your free Google Gemini API key to empower the Anti-FOMO Devil's Advocate and purchase evaluator with unscripted, human-level psychological reasoning.",
                 style: TextStyle(
-                  color: Colors.white.withOpacity(0.7),
+                  color: Colors.white.withValues(alpha: 0.7),
                   fontSize: 13,
                   height: 1.45,
                 ),
@@ -257,9 +257,9 @@ class _GeminiApiKeyDialogState extends State<GeminiApiKeyDialog> {
                   borderRadius: BorderRadius.circular(14),
                   border: Border.all(
                     color: _testSucceeded == true
-                        ? const Color(0xFF10B981).withOpacity(0.6)
+                        ? const Color(0xFF10B981).withValues(alpha: 0.6)
                         : _testSucceeded == false
-                            ? Colors.redAccent.withOpacity(0.6)
+                            ? Colors.redAccent.withValues(alpha: 0.6)
                             : Colors.white12,
                   ),
                 ),
@@ -313,9 +313,9 @@ class _GeminiApiKeyDialogState extends State<GeminiApiKeyDialog> {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.03),
+                  color: Colors.white.withValues(alpha: 0.03),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.white.withOpacity(0.06)),
+                  border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
                 ),
                 child: Row(
                   children: [
@@ -325,7 +325,7 @@ class _GeminiApiKeyDialogState extends State<GeminiApiKeyDialog> {
                       child: Text(
                         "Don't have a key? Grab a 100% free API key from Google AI Studio (${AiConfig.getApiKeyUrl}).",
                         style: TextStyle(
-                          color: Colors.white.withOpacity(0.7),
+                          color: Colors.white.withValues(alpha: 0.7),
                           fontSize: 11,
                         ),
                       ),
@@ -341,13 +341,13 @@ class _GeminiApiKeyDialogState extends State<GeminiApiKeyDialog> {
                   padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                   decoration: BoxDecoration(
                     color: _testSucceeded == true
-                        ? const Color(0xFF10B981).withOpacity(0.12)
-                        : Colors.redAccent.withOpacity(0.12),
+                        ? const Color(0xFF10B981).withValues(alpha: 0.12)
+                        : Colors.redAccent.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
                       color: _testSucceeded == true
-                          ? const Color(0xFF10B981).withOpacity(0.3)
-                          : Colors.redAccent.withOpacity(0.3),
+                          ? const Color(0xFF10B981).withValues(alpha: 0.3)
+                          : Colors.redAccent.withValues(alpha: 0.3),
                     ),
                   ),
                   child: Row(
@@ -458,7 +458,7 @@ class _GeminiApiKeyDialogState extends State<GeminiApiKeyDialog> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         decoration: BoxDecoration(
-          color: isSelected ? AppTheme.fomoPurple.withOpacity(0.15) : const Color(0xFF1B2030),
+          color: isSelected ? AppTheme.fomoPurple.withValues(alpha: 0.15) : const Color(0xFF1B2030),
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
             color: isSelected ? AppTheme.fomoPurple : Colors.white12,
@@ -488,7 +488,7 @@ class _GeminiApiKeyDialogState extends State<GeminiApiKeyDialog> {
             Text(
               subtitle,
               style: TextStyle(
-                color: isSelected ? AppTheme.fomoPurple.withOpacity(0.8) : Colors.white38,
+                color: isSelected ? AppTheme.fomoPurple.withValues(alpha: 0.8) : Colors.white38,
                 fontSize: 10,
               ),
             ),

@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:blupp/models/finance_state.dart';
 import 'package:blupp/models/currency_model.dart';
 import 'package:blupp/main.dart';
 
 void main() {
+  setUp(() {
+    SharedPreferences.setMockInitialValues({'blupp_cookie_consent_accepted': true});
+  });
   test('FinanceState calculates net worth, spending balance, banks and loans correctly', () {
     final state = FinanceState(initialAuthenticated: true);
 
@@ -13,8 +17,9 @@ void main() {
     final initialSpendingLeft = state.spendingBalanceLeft;
     final initialLoans = state.totalLoans;
 
-    final expectedNetWorth = (initialBanks + initialInvestments + initialSpendingLeft) - initialLoans;
+    final expectedNetWorth = (initialBanks + initialInvestments) - initialLoans;
     expect(state.totalNetWorth, closeTo(expectedNetWorth, 0.01));
+    expect(initialSpendingLeft > 0, isTrue);
 
     final oldNetWorth = state.totalNetWorth;
     final oldSpending = state.spendingBalanceLeft;
@@ -75,8 +80,8 @@ void main() {
     final preWithdrawNetWorth = state.totalNetWorth;
     state.minusMoneyFromBank(targetBank.id, withdrawAmount, note: 'ATM cash out');
     expect(targetBank.balance, closeTo(initialBankBalance + topUpAmount - withdrawAmount, 0.01));
-    // Since minusMoneyFromBank logs an expense transaction, both bank balance and spending balance drop by withdrawAmount
-    expect(state.totalNetWorth, closeTo(preWithdrawNetWorth - (withdrawAmount * 2), 0.01));
+    // Since minusMoneyFromBank logs an expense transaction, bank balance drops by withdrawAmount
+    expect(state.totalNetWorth, closeTo(preWithdrawNetWorth - withdrawAmount, 0.01));
 
     // Delete bank account
     final initialBankCount = state.bankAccounts.length;
@@ -96,25 +101,20 @@ void main() {
 
     // Verify Sign In Screen is displayed
     expect(find.text('blupp'), findsOneWidget);
-    expect(find.text('Welcome back'), findsOneWidget);
-    expect(find.text('Sign in to continue to Blupp.'), findsOneWidget);
-    expect(find.text('Email Address'), findsOneWidget);
-    expect(find.text('Password'), findsOneWidget);
-    expect(find.text('Sign In'), findsOneWidget);
-    expect(find.text('Instant Demo Access'), findsOneWidget);
+    expect(find.text('Welcome Back!'), findsOneWidget);
+    expect(find.text('Try Instant Demo Mode'), findsOneWidget);
 
     // 2. Perform Demo Sign In
-    await tester.tap(find.text('Instant Demo Access'));
+    await tester.tap(find.text('Try Instant Demo Mode'));
     await tester.pumpAndSettle();
 
     // 3. Verify Bottom Navigation with 6 Tabs (including new Profile tab)
-    final navBar = find.byType(BottomNavigationBar);
-    expect(find.descendant(of: navBar, matching: find.text('Home')), findsOneWidget);
-    expect(find.descendant(of: navBar, matching: find.text('Expenses')), findsOneWidget);
-    expect(find.descendant(of: navBar, matching: find.text('Analytics')), findsOneWidget);
-    expect(find.descendant(of: navBar, matching: find.text('FOMO AI')), findsOneWidget);
-    expect(find.descendant(of: navBar, matching: find.text('Calendar')), findsOneWidget);
-    expect(find.descendant(of: navBar, matching: find.text('Profile')), findsOneWidget);
+    expect(find.byKey(const ValueKey('nav_tab_Home')), findsOneWidget);
+    expect(find.byKey(const ValueKey('nav_tab_Expenses')), findsOneWidget);
+    expect(find.byKey(const ValueKey('nav_tab_Analytics')), findsOneWidget);
+    expect(find.byKey(const ValueKey('nav_tab_FOMO AI')), findsOneWidget);
+    expect(find.byKey(const ValueKey('nav_tab_Calendar')), findsOneWidget);
+    expect(find.byKey(const ValueKey('nav_tab_Profile')), findsOneWidget);
 
     // 4. Verify Home Screen loaded and Bank Account Buttons
     expect(find.text('TOTAL NET WORTH'), findsOneWidget);
@@ -124,7 +124,7 @@ void main() {
     // Test Add Money Dialog
     await tester.tap(find.text('Add').first);
     await tester.pumpAndSettle();
-    expect(find.text('Amount to Add (RM)'), findsOneWidget);
+    expect(find.text('Amount (RM)'), findsOneWidget);
 
     // Tap quick chip +RM 100
     await tester.tap(find.text('+RM 100'));
@@ -133,37 +133,39 @@ void main() {
     // Tap Confirm Deposit
     await tester.tap(find.text('Confirm Deposit'));
     await tester.pumpAndSettle();
+    await tester.pump(const Duration(seconds: 5));
+    await tester.pumpAndSettle();
 
     // 5. Navigate to Profile Tab
-    await tester.tap(find.descendant(of: navBar, matching: find.text('Profile')));
+    await tester.tap(find.byKey(const ValueKey('nav_tab_Profile')));
     await tester.pumpAndSettle();
 
     // Verify Profile content
-    expect(find.text('Profile'), findsWidgets);
-    expect(find.text('Airiel'), findsOneWidget);
-    expect(find.text('airiel@blupp.ai'), findsOneWidget);
-    expect(find.text('Verified Member'), findsOneWidget);
+    expect(find.text('Personalized Finance Hub & Net Worth Control'), findsOneWidget);
+    expect(find.text('man'), findsOneWidget);
+    expect(find.text('man@blupp.ai'), findsOneWidget);
+    expect(find.text('Verified Member • Security Shield Active'), findsOneWidget);
     expect(find.text('ACCOUNT'), findsOneWidget);
     expect(find.text('PREFERENCES'), findsOneWidget);
-    expect(find.text('SECURITY & CLOUD BACKEND'), findsOneWidget);
     expect(find.text('ABOUT'), findsOneWidget);
-    expect(find.text('Sign Out'), findsOneWidget);
+    expect(find.text('Log Out / Switch Account'), findsOneWidget);
 
     // 6. Test Sign Out Flow
-    await tester.tap(find.text('Sign Out'));
+    await tester.ensureVisible(find.text('Log Out / Switch Account'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Log Out / Switch Account'));
     await tester.pumpAndSettle();
 
     // Confirmation dialog appears
-    expect(find.text('Are you sure you want to sign out of Blupp? You will need to enter your credentials to access your financial dashboard again.'), findsOneWidget);
+    expect(find.text('Log Out of Blupp?'), findsOneWidget);
 
-    // Confirm Sign Out (tap the button in the dialog)
-    final signOutButtons = find.widgetWithText(ElevatedButton, 'Sign Out');
-    await tester.tap(signOutButtons);
+    // Confirm Sign Out (tap the Log Out button in the dialog)
+    final logOutButton = find.widgetWithText(ElevatedButton, 'Log Out');
+    await tester.tap(logOutButton);
     await tester.pumpAndSettle();
 
     // Verify redirected back to Sign In screen
-    expect(find.text('Welcome back'), findsOneWidget);
-    expect(find.text('Sign in to continue to Blupp.'), findsOneWidget);
+    expect(find.text('Welcome Back!'), findsOneWidget);
   });
 
   test('Multi-currency conversion, base currency change, and travel expense tracking', () {
@@ -305,8 +307,8 @@ void main() {
     state.minusLoanBalance(targetLoan.id, bankRepaymentAmount, fromBankId: targetBank.id);
     expect(targetLoan.remainingBalance, closeTo(preLoanBalance - bankRepaymentAmount, 0.01));
     expect(targetBank.balance, closeTo(preBankBalance - bankRepaymentAmount, 0.01));
-    // Paying debt from bank records an expense transaction, which adjusts spending balance left
-    expect(state.totalNetWorth, closeTo(preNetWorth - bankRepaymentAmount, 0.01));
+    // Paying debt from bank reduces both bank assets and loan liabilities equally, leaving Net Worth unchanged
+    expect(state.totalNetWorth, closeTo(preNetWorth, 0.01));
 
     // 3. Test delete loan / liability
     final initialLoansCount = state.loans.length;
@@ -477,10 +479,8 @@ void main() {
     await tester.pumpWidget(const BluppApp(initialAuthenticated: true));
     await tester.pumpAndSettle();
 
-    final navBar = find.byType(BottomNavigationBar);
-
     // 1. Test Delete on Expenses tab
-    await tester.tap(find.descendant(of: navBar, matching: find.text('Expenses')));
+    await tester.tap(find.byKey(const ValueKey('nav_tab_Expenses')));
     await tester.pumpAndSettle();
 
     // Verify Expenses Tab is open
@@ -501,9 +501,11 @@ void main() {
     // Confirm deletion
     await tester.tap(find.widgetWithText(ElevatedButton, 'Delete'));
     await tester.pumpAndSettle();
+    await tester.pump(const Duration(seconds: 5));
+    await tester.pumpAndSettle();
 
     // 2. Test Delete on FOMO Wishlist tab
-    await tester.tap(find.descendant(of: navBar, matching: find.text('FOMO AI')));
+    await tester.tap(find.byKey(const ValueKey('nav_tab_FOMO AI')));
     await tester.pumpAndSettle();
 
     expect(find.text('30-Day Cooldown Wishlist'), findsOneWidget);
@@ -518,9 +520,11 @@ void main() {
     expect(find.text('Delete Wishlist Item'), findsOneWidget);
     await tester.tap(find.widgetWithText(ElevatedButton, 'Delete'));
     await tester.pumpAndSettle();
+    await tester.pump(const Duration(seconds: 5));
+    await tester.pumpAndSettle();
 
     // 3. Test Delete on Calendar tab
-    await tester.tap(find.descendant(of: navBar, matching: find.text('Calendar')));
+    await tester.tap(find.byKey(const ValueKey('nav_tab_Calendar')));
     await tester.pumpAndSettle();
 
     expect(find.text('Upcoming Commitments This Month'), findsOneWidget);

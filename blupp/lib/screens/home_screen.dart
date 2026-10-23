@@ -11,8 +11,12 @@ import '../widgets/ai_quick_log_sheet.dart';
 import '../widgets/ai_receipt_scanner_sheet.dart';
 import '../services/ios_shortcut_service.dart';
 import '../widgets/shortcut_transaction_sheet.dart';
+import '../widgets/blupp_search_dialog.dart';
+import '../widgets/blupp_mobile_menu.dart';
+import '../widgets/blupp_scroll_progress.dart';
+import '../widgets/blupp_bank_wallet.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   final FinanceState state;
   final Function(int) onNavigateTab;
 
@@ -23,67 +27,101 @@ class HomeScreen extends StatelessWidget {
   });
 
   @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  final ScrollController _scrollController = ScrollController();
+
+  FinanceState get state => widget.state;
+  Function(int) get onNavigateTab => widget.onNavigateTab;
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _scrollToTop() {
+    if (_scrollController.hasClients) {
+      _scrollController.animateTo(
+        0,
+        duration: const Duration(milliseconds: 400),
+        curve: Curves.easeOutCubic,
+      );
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppTheme.background,
       body: SafeArea(
-        child: RefreshIndicator(
-          color: AppTheme.primaryTeal,
-          onRefresh: () => state.refreshData(),
-          child: SingleChildScrollView(
-            physics: const AlwaysScrollableScrollPhysics(),
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Top App Bar / Greeting
-                _buildHeader(context),
-                const SizedBox(height: 20),
+        child: Stack(
+          children: [
+            RefreshIndicator(
+              color: AppTheme.primaryTeal,
+              onRefresh: () => state.refreshData(),
+              child: SingleChildScrollView(
+                controller: _scrollController,
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Top App Bar / Greeting
+                    _buildHeader(context),
+                    const SizedBox(height: 20),
 
-                // 1. Total Net Worth Hero Card
-                _buildNetWorthHeroCard(context),
-                const SizedBox(height: 16),
+                    // 1. Total Net Worth Hero Card
+                    _buildNetWorthHeroCard(context),
+                    const SizedBox(height: 16),
 
-                // 2. AI Safe-to-Spend Radar Card
-                AiSafeToSpendCard(state: state),
-                const SizedBox(height: 14),
+                    // 2. AI Safe-to-Spend Radar Card
+                    AiSafeToSpendCard(state: state),
+                    const SizedBox(height: 14),
 
-                // 3. AI Feature Launch Dock (NLP Quick-Log & Vision Receipt/QR Scanner)
-                _buildAiFeatureDock(context),
-                const SizedBox(height: 16),
+                    // 3. AI Feature Launch Dock (NLP Quick-Log & Vision Receipt/QR Scanner)
+                    _buildAiFeatureDock(context),
+                    const SizedBox(height: 16),
 
-                // Quick Action Bar
-                _buildQuickActions(context),
-                const SizedBox(height: 24),
+                    // Quick Action Bar
+                    _buildQuickActions(context),
+                    const SizedBox(height: 24),
 
-                // 2. All Banks Section
-                _buildBankAccountsSection(context),
-                const SizedBox(height: 28),
+                    // 2. All Banks Section
+                    _buildBankAccountsSection(context),
+                    const SizedBox(height: 28),
 
-                // 3. Investments & Savings Section
-                _buildInvestmentsSection(context),
-                const SizedBox(height: 28),
+                    // 3. Investments & Savings Section
+                    _buildInvestmentsSection(context),
+                    const SizedBox(height: 28),
 
-                // 4. Loans & Liabilities Section
-                _buildLoansSection(context),
-                const SizedBox(height: 28),
+                    // 4. Loans & Liabilities Section
+                    _buildLoansSection(context),
+                    const SizedBox(height: 28),
 
-                // Recent Activity Teaser
-                _buildRecentTransactionsSection(context),
-                const SizedBox(height: 30),
-              ],
+                    // Recent Activity Teaser
+                    _buildRecentTransactionsSection(context),
+                    const SizedBox(height: 60),
+                  ],
+                ),
+              ),
             ),
-          ),
+
+            // Scroll Progress Bar at the very top (requirement: scroll progress bars)
+            BluppScrollProgressBar(scrollController: _scrollController),
+
+            // Floating Back-to-Top Button (requirement: top button)
+            Positioned(
+              right: 18,
+              bottom: 88,
+              child: BluppBackToTopButton(scrollController: _scrollController),
+            ),
+          ],
         ),
       ),
     );
-  }
-
-  String _getGreeting() {
-    final hour = DateTime.now().hour;
-    if (hour < 12) return "Good morning";
-    if (hour < 17) return "Good afternoon";
-    return "Good evening";
   }
 
   Widget _buildHeader(BuildContext context) {
@@ -92,23 +130,33 @@ class HomeScreen extends StatelessWidget {
       children: [
         Row(
           children: [
-            Container(
-              width: 44,
-              height: 44,
-              padding: const EdgeInsets.all(7),
-              decoration: BoxDecoration(
-                color: AppTheme.isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: AppTheme.isDark
-                      ? Colors.white.withValues(alpha: 0.10)
-                      : Colors.black.withValues(alpha: 0.08),
+            // Clickable Logo (requirement: clickable logo)
+            MouseRegion(
+              cursor: SystemMouseCursors.click,
+              child: GestureDetector(
+                onTap: () {
+                  _scrollToTop();
+                  state.refreshData();
+                },
+                child: Container(
+                  width: 44,
+                  height: 44,
+                  padding: const EdgeInsets.all(7),
+                  decoration: BoxDecoration(
+                    color: AppTheme.isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: AppTheme.isDark
+                          ? Colors.white.withValues(alpha: 0.10)
+                          : Colors.black.withValues(alpha: 0.08),
+                    ),
+                  ),
+                  child: BluppLogo(
+                    size: 28,
+                    iconOnly: true,
+                    isDark: AppTheme.isDark,
+                  ),
                 ),
-              ),
-              child: BluppLogo(
-                size: 28,
-                iconOnly: true,
-                isDark: AppTheme.isDark,
               ),
             ),
             const SizedBox(width: 12),
@@ -116,21 +164,21 @@ class HomeScreen extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  "${_getGreeting()} 👋",
-                  style: TextStyle(
-                    color: AppTheme.textMuted,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w400,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  state.userName.isNotEmpty ? state.userName : "man",
+                  "Hello ${state.userName.isNotEmpty ? state.userName : 'DailyFlutterUI'}",
                   style: TextStyle(
                     color: AppTheme.textPrimary,
                     fontSize: 22,
                     fontWeight: FontWeight.w700,
                     letterSpacing: -0.6,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  "Let's save your money.",
+                  style: TextStyle(
+                    color: AppTheme.textMuted,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w400,
                   ),
                 ),
               ],
@@ -139,24 +187,121 @@ class HomeScreen extends StatelessWidget {
         ),
         Row(
           children: [
-            InkWell(
-              onTap: () => onNavigateTab(3),
-              borderRadius: BorderRadius.circular(10),
-              child: Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: AppTheme.surfaceLight,
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: AppTheme.surfaceBorder.withValues(alpha: 0.5)),
-                ),
-                child: Icon(
-                  Icons.auto_awesome_rounded,
-                  color: AppTheme.textSecondary,
-                  size: 18,
+            // Site Search button (requirement: site search)
+            MouseRegion(
+              cursor: SystemMouseCursors.click,
+              child: InkWell(
+                onTap: () => BluppSearchDialog.show(context, state: state, onNavigateTab: onNavigateTab),
+                borderRadius: BorderRadius.circular(10),
+                child: Container(
+                  padding: const EdgeInsets.all(9),
+                  decoration: BoxDecoration(
+                    color: AppTheme.surfaceLight,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: AppTheme.surfaceBorder.withValues(alpha: 0.5)),
+                  ),
+                  child: Icon(
+                    Icons.search_rounded,
+                    color: AppTheme.textSecondary,
+                    size: 18,
+                  ),
                 ),
               ),
             ),
             const SizedBox(width: 8),
+
+            // 1-tap Dark Mode Toggle (requirement: dark mode toggle)
+            MouseRegion(
+              cursor: SystemMouseCursors.click,
+              child: InkWell(
+                onTap: state.toggleThemeMode,
+                borderRadius: BorderRadius.circular(10),
+                child: Container(
+                  padding: const EdgeInsets.all(9),
+                  decoration: BoxDecoration(
+                    color: AppTheme.surfaceLight,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: AppTheme.surfaceBorder.withValues(alpha: 0.5)),
+                  ),
+                  child: Icon(
+                    AppTheme.isDark ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
+                    color: AppTheme.isDark ? const Color(0xFFFBBF24) : AppTheme.primaryTeal,
+                    size: 18,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+
+            // Mobile Menu / Quick Drawer trigger (requirement: add mobile menu)
+            MouseRegion(
+              cursor: SystemMouseCursors.click,
+              child: InkWell(
+                onTap: () => BluppMobileMenu.show(context, state: state, currentTabIndex: 0, onNavigateTab: onNavigateTab),
+                borderRadius: BorderRadius.circular(10),
+                child: Container(
+                  padding: const EdgeInsets.all(9),
+                  decoration: BoxDecoration(
+                    color: AppTheme.surfaceLight,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: AppTheme.surfaceBorder.withValues(alpha: 0.5)),
+                  ),
+                  child: Icon(
+                    Icons.menu_rounded,
+                    color: AppTheme.textSecondary,
+                    size: 18,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+
+            // Notification Bell with Red Dot badge matching dailyflutterui reference
+            Stack(
+              clipBehavior: Clip.none,
+              children: [
+                InkWell(
+                  onTap: () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: const Text("All financial alerts and sync notifications are up to date."),
+                        backgroundColor: AppTheme.surfaceLight,
+                        behavior: SnackBarBehavior.floating,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                    );
+                  },
+                  borderRadius: BorderRadius.circular(10),
+                  child: Container(
+                    padding: const EdgeInsets.all(9),
+                    decoration: BoxDecoration(
+                      color: AppTheme.surfaceLight,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: AppTheme.surfaceBorder.withValues(alpha: 0.5)),
+                    ),
+                    child: Icon(
+                      Icons.notifications_none_rounded,
+                      color: AppTheme.textSecondary,
+                      size: 18,
+                    ),
+                  ),
+                ),
+                Positioned(
+                  top: 5,
+                  right: 5,
+                  child: Container(
+                    width: 6,
+                    height: 6,
+                    decoration: const BoxDecoration(
+                      color: Color(0xFFEF4444),
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(width: 8),
+
             BluppAvatar(
               state: state,
               size: 40,
@@ -326,6 +471,50 @@ class HomeScreen extends StatelessWidget {
                 ),
               ],
             ),
+          ),
+          const SizedBox(height: 12),
+
+          // Last Updated / Synced Timestamp Row (requirement: last updated date)
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  Icon(Icons.sync_rounded, size: 12, color: AppTheme.textMuted),
+                  const SizedBox(width: 5),
+                  Text(
+                    "Last updated: ${state.lastSyncedFormatted}",
+                    style: TextStyle(
+                      color: AppTheme.textMuted,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+              InkWell(
+                onTap: () => state.refreshData(),
+                borderRadius: BorderRadius.circular(6),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.refresh_rounded, size: 12, color: AppTheme.primaryTeal),
+                      const SizedBox(width: 3),
+                      Text(
+                        "Sync",
+                        style: TextStyle(
+                          color: AppTheme.primaryTeal,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -637,20 +826,53 @@ class HomeScreen extends StatelessWidget {
             actionLabel: "Add Bank Account",
             onAction: () => _showAddBankDialog(context),
           )
-        else
-          SizedBox(
-            height: 156,
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              physics: const BouncingScrollPhysics(),
-              itemCount: state.bankAccounts.length,
-              separatorBuilder: (_, _) => const SizedBox(width: 14),
-              itemBuilder: (context, index) {
-                final bank = state.bankAccounts[index];
-                return _buildBankCard(bank, context);
-              },
-            ),
+        else ...[
+          BluppBankWallet(
+            state: state,
+            onManageBank: (bank) => _showManageBankSheet(context, bank),
+            onAddMoney: (bank) => _showAddMoneyDialog(context, bank),
+            onMinusMoney: (bank) => _showMinusBankMoneyDialog(context, bank),
+            onAddNewCard: () => _showAddBankDialog(context),
           ),
+          if (state.bankAccounts.length > 1) ...[
+            const SizedBox(height: 14),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  "All Linked Accounts (${state.bankAccounts.length})",
+                  style: TextStyle(
+                    color: AppTheme.textMuted,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 0.3,
+                  ),
+                ),
+                Text(
+                  "Tap card above to switch",
+                  style: TextStyle(
+                    color: AppTheme.textMuted,
+                    fontSize: 11,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            SizedBox(
+              height: 156,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                physics: const BouncingScrollPhysics(),
+                itemCount: state.bankAccounts.length,
+                separatorBuilder: (_, _) => const SizedBox(width: 14),
+                itemBuilder: (context, index) {
+                  final bank = state.bankAccounts[index];
+                  return _buildBankCard(bank, context);
+                },
+              ),
+            ),
+          ],
+        ],
       ],
     );
   }

@@ -396,7 +396,7 @@ class FinanceState extends ChangeNotifier {
       // No active session on this device: default to Sign In page (not demo account)
       _isAuthenticated = false;
       _isDemoAccount = false;
-      clearAllData();
+      clearAllData(preserveProfileImage: true);
     }
 
     // Listen to session changes to dynamically preserve signed-in identity
@@ -417,19 +417,30 @@ class FinanceState extends ChangeNotifier {
           try {
             _cachedProfileBytes = base64Decode(img);
           } catch (_) {}
+          SharedPreferences.getInstance().then((prefs) {
+            prefs.setString('blupp_active_profile_image', img);
+            prefs.setString('blupp_last_profile_image', img);
+            if (_userEmail.isNotEmpty) {
+              prefs.setString('blupp_profile_image_${_userEmail.trim().toLowerCase()}', img);
+            }
+          }).catchError((_) {});
+        } else {
+          _loadSavedProfileImage();
         }
         notifyListeners();
         syncWithSupabase();
       } else if (data.event == AuthChangeEvent.signedOut) {
         _isAuthenticated = false;
         _isDemoAccount = false;
-        clearAllData();
+        clearAllData(preserveProfileImage: true);
         notifyListeners();
       }
     });
 
     _loadSavedThemeMode();
     _loadSavedCategoryBudgets();
+    _initUtmTracking();
+    _loadSavedProfileImage();
   }
 
   bool get isAuthenticated => _isAuthenticated;
@@ -471,8 +482,51 @@ class FinanceState extends ChangeNotifier {
       _cachedProfileBytes = null;
     }
     notifyListeners();
+
+    // Persist locally so it survives web re-entry and subsequent logins
+    SharedPreferences.getInstance().then((prefs) {
+      if (base64Str != null && base64Str.isNotEmpty) {
+        prefs.setString('blupp_active_profile_image', base64Str);
+        prefs.setString('blupp_last_profile_image', base64Str);
+        if (_userEmail.isNotEmpty) {
+          prefs.setString('blupp_profile_image_${_userEmail.trim().toLowerCase()}', base64Str);
+        }
+      } else {
+        prefs.remove('blupp_active_profile_image');
+        if (_userEmail.isNotEmpty) {
+          prefs.remove('blupp_profile_image_${_userEmail.trim().toLowerCase()}');
+        }
+      }
+    }).catchError((e) {
+      debugPrint('[FinanceState] Error persisting profile image: $e');
+    });
+
     if (!_isDemoAccount) {
       SupabaseService.instance.updateUserProfileImage(base64Str);
+    }
+  }
+
+  Future<void> _loadSavedProfileImage() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      String? saved;
+      if (_userEmail.isNotEmpty) {
+        saved = prefs.getString('blupp_profile_image_${_userEmail.trim().toLowerCase()}');
+      }
+      saved ??= prefs.getString('blupp_active_profile_image');
+      saved ??= prefs.getString('blupp_last_profile_image');
+
+      if (saved != null && saved.isNotEmpty) {
+        _profileImageBase64 = saved;
+        try {
+          _cachedProfileBytes = base64Decode(saved);
+        } catch (_) {
+          _cachedProfileBytes = null;
+        }
+        notifyListeners();
+      }
+    } catch (e) {
+      debugPrint('[FinanceState] Error loading saved profile image: $e');
     }
   }
 
@@ -932,10 +986,50 @@ class FinanceState extends ChangeNotifier {
   bool _isRefreshing = false;
   bool get isRefreshing => _isRefreshing;
 
+  // Last Synced Date/Time Tracking
+  DateTime _lastSyncedAt = DateTime.now();
+  DateTime get lastSyncedAt => _lastSyncedAt;
+  String get lastSyncedFormatted {
+    final diff = DateTime.now().difference(_lastSyncedAt);
+    if (diff.inSeconds < 45) return 'Just now';
+    if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
+    if (diff.inHours < 24) return '${diff.inHours}h ago';
+    return '${_lastSyncedAt.day}/${_lastSyncedAt.month}/${_lastSyncedAt.year}';
+  }
+
+  // UTM Attribution Tracking
+  Map<String, String> _utmParams = {};
+  Map<String, String> get utmParams => _utmParams;
+
+  Future<void> _initUtmTracking() async {
+    try {
+      final uri = Uri.base;
+      final params = uri.queryParameters;
+      final utmKeys = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content'];
+      final captured = <String, String>{};
+      for (final key in utmKeys) {
+        if (params.containsKey(key) && params[key]!.isNotEmpty) {
+          captured[key] = params[key]!;
+        }
+      }
+      final prefs = await SharedPreferences.getInstance();
+      if (captured.isNotEmpty) {
+        _utmParams = captured;
+        await prefs.setString('blupp_utm_params', jsonEncode(captured));
+      } else {
+        final saved = prefs.getString('blupp_utm_params');
+        if (saved != null) {
+          _utmParams = Map<String, String>.from(jsonDecode(saved));
+        }
+      }
+    } catch (_) {}
+  }
+
   Future<void> refreshData() async {
     _isRefreshing = true;
     notifyListeners();
     await Future.delayed(const Duration(milliseconds: 750));
+    _lastSyncedAt = DateTime.now();
     _isRefreshing = false;
     notifyListeners();
   }
@@ -967,6 +1061,10 @@ class FinanceState extends ChangeNotifier {
     SharedPreferences.getInstance().then((prefs) {
       prefs.setString('blupp_theme_mode', mode == ThemeMode.light ? 'light' : 'dark');
     }).catchError((_) {});
+  }
+
+  void toggleThemeMode() {
+    setThemeMode(_themeMode == ThemeMode.dark ? ThemeMode.light : ThemeMode.dark);
   }
 
   /// Automatically converts all stored money values when changing currency in settings
@@ -1197,7 +1295,7 @@ class FinanceState extends ChangeNotifier {
   double _totalFomoSaved = 0.00;
 
   /// Completely clears all user data for fresh user accounts or sign outs
-  void clearAllData() {
+  void clearAllData({bool preserveProfileImage = true}) {
     _bankAccounts.clear();
     _investments.clear();
     _loans.clear();
@@ -1207,8 +1305,10 @@ class FinanceState extends ChangeNotifier {
     _totalFomoSaved = 0.00;
     _monthlySpendingBudget = 0.00;
     _categoryBudgets.clear();
-    _profileImageBase64 = null;
-    _cachedProfileBytes = null;
+    if (!preserveProfileImage) {
+      _profileImageBase64 = null;
+      _cachedProfileBytes = null;
+    }
     notifyListeners();
   }
 
@@ -1217,8 +1317,9 @@ class FinanceState extends ChangeNotifier {
     _userName = 'man';
     _userEmail = 'man@blupp.ai';
     _userPhone = '+60 12-000 0000';
-    _profileImageBase64 = null;
-    _cachedProfileBytes = null;
+    if (_profileImageBase64 == null) {
+      _loadSavedProfileImage();
+    }
     _monthlySpendingBudget = 3200.00;
     _categoryBudgets = {
       'food': 900.00,
@@ -1851,13 +1952,27 @@ class FinanceState extends ChangeNotifier {
           try {
             _cachedProfileBytes = base64Decode(_profileImageBase64!);
           } catch (_) {}
+          SharedPreferences.getInstance().then((prefs) {
+            prefs.setString('blupp_active_profile_image', _profileImageBase64!);
+            prefs.setString('blupp_last_profile_image', _profileImageBase64!);
+            if (_userEmail.isNotEmpty) {
+              prefs.setString('blupp_profile_image_${_userEmail.trim().toLowerCase()}', _profileImageBase64!);
+            }
+          }).catchError((_) {});
         } else if (profile['avatar_url'] != null && (profile['avatar_url'] as String).isNotEmpty) {
           _profileImageBase64 = profile['avatar_url'] as String;
           try {
             _cachedProfileBytes = base64Decode(_profileImageBase64!);
           } catch (_) {}
+          SharedPreferences.getInstance().then((prefs) {
+            prefs.setString('blupp_active_profile_image', _profileImageBase64!);
+            prefs.setString('blupp_last_profile_image', _profileImageBase64!);
+            if (_userEmail.isNotEmpty) {
+              prefs.setString('blupp_profile_image_${_userEmail.trim().toLowerCase()}', _profileImageBase64!);
+            }
+          }).catchError((_) {});
         } else {
-          // Fallback to active Auth userMetadata if profiles table has no row
+          // Fallback to active Auth userMetadata or locally cached profile image
           final authImg = SupabaseService.instance.currentUser?.userMetadata?['profile_image'] ??
               SupabaseService.instance.currentUser?.userMetadata?['avatar_url'];
           if (authImg is String && authImg.isNotEmpty) {
@@ -1865,6 +1980,11 @@ class FinanceState extends ChangeNotifier {
             try {
               _cachedProfileBytes = base64Decode(authImg);
             } catch (_) {}
+          } else if (_profileImageBase64 != null && _profileImageBase64!.isNotEmpty) {
+            // Local exists, push to Supabase
+            SupabaseService.instance.updateUserProfileImage(_profileImageBase64);
+          } else {
+            _loadSavedProfileImage();
           }
         }
         if (profile['notifications_enabled'] != null) {
@@ -2504,6 +2624,18 @@ class FinanceState extends ChangeNotifier {
             try {
               _cachedProfileBytes = base64Decode(metaImg);
             } catch (_) {}
+            SharedPreferences.getInstance().then((prefs) {
+              prefs.setString('blupp_active_profile_image', metaImg);
+              prefs.setString('blupp_last_profile_image', metaImg);
+              if (_userEmail.isNotEmpty) {
+                prefs.setString('blupp_profile_image_${_userEmail.trim().toLowerCase()}', metaImg);
+              }
+            }).catchError((_) {});
+          } else {
+            await _loadSavedProfileImage();
+            if (_profileImageBase64 != null && _profileImageBase64!.isNotEmpty) {
+              SupabaseService.instance.updateUserProfileImage(_profileImageBase64);
+            }
           }
         }
       } else {
@@ -2721,16 +2853,15 @@ class FinanceState extends ChangeNotifier {
   }
 
   void signInDemo() {
-    clearAllData();
+    clearAllData(preserveProfileImage: true);
     _isAuthenticated = true;
     _isDemoAccount = true;
     _userName = 'man';
     _userEmail = 'man@blupp.ai';
     _userPhone = '+60 12-000 0000';
-    _profileImageBase64 = null;
-    _cachedProfileBytes = null;
     _authError = null;
     loadDemoData();
+    _loadSavedProfileImage();
     notifyListeners();
   }
 

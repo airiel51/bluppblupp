@@ -1,11 +1,11 @@
 {
-    "name": "Blupp Finance",
+    "name": "Blupp AI Finance",
     "short_name": "Blupp",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#09090B",
     "theme_color": "#09090B",
-    "description": "Blupp AI Finance - Smart personal finance tracker",
+    "description": "Blupp AI Finance — Smart Personal Wealth & Expense Tracking",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

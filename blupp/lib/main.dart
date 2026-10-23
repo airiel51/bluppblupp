@@ -16,6 +16,9 @@ import 'services/ios_shortcut_service.dart';
 import 'widgets/blupp_avatar.dart';
 import 'widgets/shortcut_transaction_sheet.dart';
 import 'widgets/ai_quick_log_sheet.dart';
+import 'widgets/blupp_search_dialog.dart';
+import 'widgets/blupp_cookie_banner.dart';
+import 'screens/not_found_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -72,11 +75,14 @@ class _BluppAppState extends State<BluppApp> {
         );
 
         return MaterialApp(
-          title: 'Blupp AI Finance',
+          title: 'Blupp AI Finance — Smart Personal Wealth & Expense Tracking',
           debugShowCheckedModeBanner: false,
           theme: AppTheme.lightTheme,
           darkTheme: AppTheme.darkTheme,
           themeMode: _financeState.themeMode,
+          onUnknownRoute: (settings) => MaterialPageRoute(
+            builder: (_) => const BluppNotFoundScreen(),
+          ),
           home: AnimatedSwitcher(
             duration: const Duration(milliseconds: 250),
             child: _financeState.isAuthenticated
@@ -182,10 +188,27 @@ class _MainNavigationShellState extends State<MainNavigationShell> with WidgetsB
     // Height of the floating navbar: 56px content + top padding + bottom safe area
     final navbarHeight = 56.0 + bottomPadding.clamp(8.0, 40.0);
 
-    return Scaffold(
-      extendBody: true,
-      body: Stack(
-        children: [
+    return Focus(
+      autofocus: true,
+      onKeyEvent: (node, event) {
+        if (event is KeyDownEvent) {
+          final isCtrlOrCmd = HardwareKeyboard.instance.isControlPressed ||
+              HardwareKeyboard.instance.isMetaPressed;
+          if (isCtrlOrCmd && event.logicalKey == LogicalKeyboardKey.keyK) {
+            BluppSearchDialog.show(
+              context,
+              state: widget.state,
+              onNavigateTab: _navigateToTab,
+            );
+            return KeyEventResult.handled;
+          }
+        }
+        return KeyEventResult.ignored;
+      },
+      child: Scaffold(
+        extendBody: true,
+        body: Stack(
+          children: [
           // High-performance tab content via IndexedStack (maintains state with 0 drag jank)
           Padding(
             padding: EdgeInsets.only(bottom: navbarHeight),
@@ -300,8 +323,11 @@ class _MainNavigationShellState extends State<MainNavigationShell> with WidgetsB
               ),
             ),
           ),
+          // Floating privacy cookie banner
+          const BluppCookieBanner(),
         ],
       ),
+    ),
     );
   }
 
@@ -313,40 +339,47 @@ class _MainNavigationShellState extends State<MainNavigationShell> with WidgetsB
   }) {
     final isSelected = _currentTabIndex == index;
     return Expanded(
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTap: () => _navigateToTab(index),
-        child: SizedBox(
-          height: 48,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              AnimatedScale(
-                scale: isSelected ? 1.12 : 1.0,
-                duration: const Duration(milliseconds: 150),
-                child: Icon(
-                  isSelected ? activeIcon : icon,
-                  size: 24,
-                  color: isSelected
-                      ? AppTheme.textPrimary
-                      : (AppTheme.isDark ? AppTheme.textMuted : const Color(0xFF64748B)),
-                ),
-              ),
-              const SizedBox(height: 3),
-              AnimatedOpacity(
-                opacity: isSelected ? 1.0 : 0.0,
-                duration: const Duration(milliseconds: 150),
-                child: Container(
-                  width: 4,
-                  height: 4,
-                  decoration: const BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: AppTheme.primaryTeal,
+      child: Tooltip(
+        message: label,
+        child: MouseRegion(
+          cursor: SystemMouseCursors.click,
+          child: GestureDetector(
+            key: ValueKey('nav_tab_$label'),
+            behavior: HitTestBehavior.opaque,
+            onTap: () => _navigateToTab(index),
+            child: SizedBox(
+              height: 48,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  AnimatedScale(
+                    scale: isSelected ? 1.12 : 1.0,
+                    duration: const Duration(milliseconds: 150),
+                    child: Icon(
+                      isSelected ? activeIcon : icon,
+                      size: 24,
+                      color: isSelected
+                          ? AppTheme.textPrimary
+                          : (AppTheme.isDark ? AppTheme.textMuted : const Color(0xFF64748B)),
+                    ),
                   ),
-                ),
+                  const SizedBox(height: 3),
+                  AnimatedOpacity(
+                    opacity: isSelected ? 1.0 : 0.0,
+                    duration: const Duration(milliseconds: 150),
+                    child: Container(
+                      width: 4,
+                      height: 4,
+                      decoration: const BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: AppTheme.primaryTeal,
+                      ),
+                    ),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
         ),
       ),
@@ -356,48 +389,55 @@ class _MainNavigationShellState extends State<MainNavigationShell> with WidgetsB
   Widget _buildProfileNavItem({required int index}) {
     final isSelected = _currentTabIndex == index;
     return Expanded(
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTap: () => _navigateToTab(index),
-        child: SizedBox(
-          height: 48,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              AnimatedScale(
-                scale: isSelected ? 1.08 : 1.0,
-                duration: const Duration(milliseconds: 150),
-                child: Container(
-                  padding: const EdgeInsets.all(1.5),
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: isSelected ? AppTheme.textPrimary : Colors.transparent,
-                      width: 1.5,
+      child: Tooltip(
+        message: 'Profile',
+        child: MouseRegion(
+          cursor: SystemMouseCursors.click,
+          child: GestureDetector(
+            key: const ValueKey('nav_tab_Profile'),
+            behavior: HitTestBehavior.opaque,
+            onTap: () => _navigateToTab(index),
+            child: SizedBox(
+              height: 48,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  AnimatedScale(
+                    scale: isSelected ? 1.08 : 1.0,
+                    duration: const Duration(milliseconds: 150),
+                    child: Container(
+                      padding: const EdgeInsets.all(1.5),
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: isSelected ? AppTheme.textPrimary : Colors.transparent,
+                          width: 1.5,
+                        ),
+                      ),
+                      child: BluppAvatar(
+                        state: widget.state,
+                        size: 24,
+                        showEditBadge: false,
+                      ),
                     ),
                   ),
-                  child: BluppAvatar(
-                    state: widget.state,
-                    size: 24,
-                    showEditBadge: false,
+                  const SizedBox(height: 3),
+                  AnimatedOpacity(
+                    opacity: isSelected ? 1.0 : 0.0,
+                    duration: const Duration(milliseconds: 150),
+                    child: Container(
+                      width: 4,
+                      height: 4,
+                      decoration: const BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: AppTheme.primaryTeal,
+                      ),
+                    ),
                   ),
-                ),
+                ],
               ),
-              const SizedBox(height: 3),
-              AnimatedOpacity(
-                opacity: isSelected ? 1.0 : 0.0,
-                duration: const Duration(milliseconds: 150),
-                child: Container(
-                  width: 4,
-                  height: 4,
-                  decoration: const BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: AppTheme.primaryTeal,
-                  ),
-                ),
-              ),
-            ],
+            ),
           ),
         ),
       ),

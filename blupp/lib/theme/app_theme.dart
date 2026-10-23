@@ -21,13 +21,20 @@ class AppTheme {
   static const Color primaryTeal = Color(0xFF10B981);
   static const Color primaryTealGlow = Color(0x1A10B981);
 
-  // ─── Functional Colors (muted, used sparingly) ────────────────────
+  // ─── Functional & Semantic Colors (used consistently) ─────────────
   static const Color secondaryCyan = Color(0xFF06B6D4);
   static const Color expenseCoral = Color(0xFFEF4444);
   static const Color incomeMint = Color(0xFF22C55E);
   static const Color warningAmber = Color(0xFFF59E0B);
+  static const Color infoBlue = Color(0xFF3B82F6);
   static const Color fomoPurple = Color(0xFF8B5CF6);
   static const Color fomoPurpleGlow = Color(0x1A8B5CF6);
+
+  // Semantic color getters for unified design system
+  static Color get success => incomeMint;
+  static Color get danger => expenseCoral;
+  static Color get warning => warningAmber;
+  static Color get info => infoBlue;
 
   // ─── Text: Clean hierarchy ────────────────────────────────────────
   static Color get textPrimary => isDark ? const Color(0xFFFAFAFA) : const Color(0xFF09090B);
@@ -60,7 +67,7 @@ class AppTheme {
     );
   }
 
-  // ─── Glow Card: Now just a slightly elevated flat card ────────────
+  // ─── Glow Card: Elevated flat card ───────────────────────────────
   static BoxDecoration glowCard({
     required Color glowColor,
     double radius = 12.0,
@@ -75,12 +82,74 @@ class AppTheme {
     );
   }
 
-  // ─── Inter Font Text Theme ────────────────────────────────────────
+  // ─── Professional Typography (Google Fonts Inter with refined tracking) ───
   static TextTheme _buildTextTheme(Brightness brightness) {
-    final baseTheme = brightness == Brightness.dark
-        ? ThemeData.dark().textTheme
-        : ThemeData.light().textTheme;
-    return GoogleFonts.interTextTheme(baseTheme);
+    final baseColor = brightness == Brightness.dark ? const Color(0xFFFAFAFA) : const Color(0xFF09090B);
+    final secondaryColor = brightness == Brightness.dark ? const Color(0xFFA1A1AA) : const Color(0xFF71717A);
+    final mutedColor = brightness == Brightness.dark ? const Color(0xFF71717A) : const Color(0xFFA1A1AA);
+
+    return TextTheme(
+      displayLarge: GoogleFonts.inter(
+        fontSize: 30,
+        fontWeight: FontWeight.w800,
+        letterSpacing: -1.0,
+        color: baseColor,
+      ),
+      displayMedium: GoogleFonts.inter(
+        fontSize: 24,
+        fontWeight: FontWeight.w700,
+        letterSpacing: -0.7,
+        color: baseColor,
+      ),
+      titleLarge: GoogleFonts.inter(
+        fontSize: 20,
+        fontWeight: FontWeight.w700,
+        letterSpacing: -0.5,
+        color: baseColor,
+      ),
+      titleMedium: GoogleFonts.inter(
+        fontSize: 16,
+        fontWeight: FontWeight.w600,
+        letterSpacing: -0.3,
+        color: baseColor,
+      ),
+      titleSmall: GoogleFonts.inter(
+        fontSize: 14,
+        fontWeight: FontWeight.w600,
+        letterSpacing: -0.2,
+        color: baseColor,
+      ),
+      bodyLarge: GoogleFonts.inter(
+        fontSize: 15,
+        fontWeight: FontWeight.w400,
+        letterSpacing: -0.1,
+        color: baseColor,
+      ),
+      bodyMedium: GoogleFonts.inter(
+        fontSize: 13.5,
+        fontWeight: FontWeight.w400,
+        letterSpacing: 0.0,
+        color: secondaryColor,
+      ),
+      bodySmall: GoogleFonts.inter(
+        fontSize: 12,
+        fontWeight: FontWeight.w400,
+        letterSpacing: 0.1,
+        color: mutedColor,
+      ),
+      labelLarge: GoogleFonts.inter(
+        fontSize: 13.5,
+        fontWeight: FontWeight.w600,
+        letterSpacing: 0.1,
+        color: baseColor,
+      ),
+      labelSmall: GoogleFonts.inter(
+        fontSize: 11,
+        fontWeight: FontWeight.w600,
+        letterSpacing: 0.5,
+        color: secondaryColor,
+      ),
+    );
   }
 
   // ─── Dark Theme ───────────────────────────────────────────────────
