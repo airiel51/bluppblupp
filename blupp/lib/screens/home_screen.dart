@@ -54,6 +54,12 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isWide = screenWidth >= 1080 && state.isFullScreenLayout;
+    final horizontalPadding = state.isFullScreenLayout
+        ? (screenWidth > 1440 ? 44.0 : (screenWidth > 1100 ? 32.0 : 20.0))
+        : 20.0;
+
     return Scaffold(
       backgroundColor: AppTheme.background,
       body: SafeArea(
@@ -65,54 +71,88 @@ class _HomeScreenState extends State<HomeScreen> {
               child: SingleChildScrollView(
                 controller: _scrollController,
                 physics: const AlwaysScrollableScrollPhysics(),
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                padding: EdgeInsets.symmetric(horizontal: horizontalPadding, vertical: 16),
                 child: Center(
                   child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 1040),
+                    constraints: BoxConstraints(
+                      maxWidth: state.isFullScreenLayout ? double.infinity : 1080,
+                    ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                    // Top App Bar / Greeting
-                    _buildHeader(context),
-                    const SizedBox(height: 20),
+                        // Top App Bar / Greeting
+                        _buildHeader(context),
+                        const SizedBox(height: 20),
 
-                    // 1. Total Net Worth Hero Card
-                    _buildNetWorthHeroCard(context),
-                    const SizedBox(height: 16),
-
-                    // 2. AI Safe-to-Spend Radar Card
-                    AiSafeToSpendCard(state: state),
-                    const SizedBox(height: 14),
-
-                    // 3. AI Feature Launch Dock (NLP Quick-Log & Vision Receipt/QR Scanner)
-                    _buildAiFeatureDock(context),
-                    const SizedBox(height: 16),
-
-                    // Quick Action Bar
-                    _buildQuickActions(context),
-                    const SizedBox(height: 24),
-
-                    // 2. All Banks Section
-                    _buildBankAccountsSection(context),
-                    const SizedBox(height: 28),
-
-                    // 3. Investments & Savings Section
-                    _buildInvestmentsSection(context),
-                    const SizedBox(height: 28),
-
-                    // 4. Loans & Liabilities Section
-                    _buildLoansSection(context),
-                    const SizedBox(height: 28),
-
-                    // Recent Activity Teaser
-                    _buildRecentTransactionsSection(context),
-                    const SizedBox(height: 60),
-                  ],
+                        if (isWide)
+                          // Wide Screen 2-Column Responsive Dashboard for Web
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // Left Column: Net Worth, Radar, AI Dock, Quick Actions
+                              Expanded(
+                                flex: 6,
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    _buildNetWorthHeroCard(context),
+                                    const SizedBox(height: 16),
+                                    AiSafeToSpendCard(state: state),
+                                    const SizedBox(height: 16),
+                                    _buildAiFeatureDock(context),
+                                    const SizedBox(height: 16),
+                                    _buildQuickActions(context),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(width: 28),
+                              // Right Column: Bank Accounts Wallet, Investments, Loans, Activity
+                              Expanded(
+                                flex: 6,
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    _buildBankAccountsSection(context),
+                                    const SizedBox(height: 24),
+                                    _buildInvestmentsSection(context),
+                                    const SizedBox(height: 24),
+                                    _buildLoansSection(context),
+                                    const SizedBox(height: 24),
+                                    _buildRecentTransactionsSection(context),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          )
+                        else
+                          // Mobile & Standard Single-Column Stack
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              _buildNetWorthHeroCard(context),
+                              const SizedBox(height: 16),
+                              AiSafeToSpendCard(state: state),
+                              const SizedBox(height: 14),
+                              _buildAiFeatureDock(context),
+                              const SizedBox(height: 16),
+                              _buildQuickActions(context),
+                              const SizedBox(height: 24),
+                              _buildBankAccountsSection(context),
+                              const SizedBox(height: 28),
+                              _buildInvestmentsSection(context),
+                              const SizedBox(height: 28),
+                              _buildLoansSection(context),
+                              const SizedBox(height: 28),
+                              _buildRecentTransactionsSection(context),
+                            ],
+                          ),
+                        const SizedBox(height: 60),
+                      ],
+                    ),
+                  ),
                 ),
               ),
             ),
-          ),
-        ),
 
             // Scroll Progress Bar at the very top (requirement: scroll progress bars)
             BluppScrollProgressBar(scrollController: _scrollController),
@@ -232,6 +272,38 @@ class _HomeScreenState extends State<HomeScreen> {
                     AppTheme.isDark ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
                     color: AppTheme.isDark ? const Color(0xFFFBBF24) : AppTheme.primaryTeal,
                     size: 18,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+
+            // Screen Width / Layout Customization Toggle (Full Screen on Web vs Standard)
+            MouseRegion(
+              cursor: SystemMouseCursors.click,
+              child: Tooltip(
+                message: state.isFullScreenLayout ? "Switch to Standard View" : "Switch to Full Screen View",
+                child: InkWell(
+                  onTap: () => setState(() => state.toggleFullScreenLayout()),
+                  borderRadius: BorderRadius.circular(10),
+                  child: Container(
+                    padding: const EdgeInsets.all(9),
+                    decoration: BoxDecoration(
+                      color: state.isFullScreenLayout
+                          ? AppTheme.primaryTeal.withValues(alpha: 0.15)
+                          : AppTheme.surfaceLight,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(
+                        color: state.isFullScreenLayout
+                            ? AppTheme.primaryTeal.withValues(alpha: 0.5)
+                            : AppTheme.surfaceBorder.withValues(alpha: 0.5),
+                      ),
+                    ),
+                    child: Icon(
+                      state.isFullScreenLayout ? Icons.fullscreen_rounded : Icons.crop_free_rounded,
+                      color: state.isFullScreenLayout ? AppTheme.primaryTeal : AppTheme.textSecondary,
+                      size: 18,
+                    ),
                   ),
                 ),
               ),

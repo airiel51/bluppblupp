@@ -441,6 +441,7 @@ class FinanceState extends ChangeNotifier {
     _loadSavedCategoryBudgets();
     _initUtmTracking();
     _loadSavedProfileImage();
+    _loadSavedLayoutPreference();
   }
 
   bool get isAuthenticated => _isAuthenticated;
@@ -453,6 +454,38 @@ class FinanceState extends ChangeNotifier {
   bool get biometricsEnabled => _biometricsEnabled;
   bool get isAuthLoading => _isAuthLoading;
   String? get authError => _authError;
+
+  // Responsive Screen Layout Preference (Full Screen on Web by default, customizable for both)
+  bool _isFullScreenLayout = true;
+  bool get isFullScreenLayout => _isFullScreenLayout;
+
+  void toggleFullScreenLayout() {
+    _isFullScreenLayout = !_isFullScreenLayout;
+    notifyListeners();
+    SharedPreferences.getInstance().then((prefs) {
+      prefs.setBool('blupp_full_screen_layout', _isFullScreenLayout);
+    }).catchError((_) {});
+  }
+
+  void setFullScreenLayout(bool value) {
+    if (_isFullScreenLayout != value) {
+      _isFullScreenLayout = value;
+      notifyListeners();
+      SharedPreferences.getInstance().then((prefs) {
+        prefs.setBool('blupp_full_screen_layout', _isFullScreenLayout);
+      }).catchError((_) {});
+    }
+  }
+
+  Future<void> _loadSavedLayoutPreference() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      if (prefs.containsKey('blupp_full_screen_layout')) {
+        _isFullScreenLayout = prefs.getBool('blupp_full_screen_layout') ?? true;
+        notifyListeners();
+      }
+    } catch (_) {}
+  }
 
   // Privacy & Presentation State (Hidden by default as requested)
   bool _isNetWorthHidden = true;

@@ -220,90 +220,133 @@ class _SignInScreenState extends State<SignInScreen> {
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
     final isDesktop = screenWidth >= 600;
+    final isFull = widget.state.isFullScreenLayout || !isDesktop;
     final isSignUp = _currentView == AuthView.signUp;
     final topPadding = MediaQuery.paddingOf(context).top;
     final bottomPadding = MediaQuery.paddingOf(context).bottom;
 
-    return Scaffold(
-      backgroundColor: AppTheme.isDark ? const Color(0xFF08090D) : const Color(0xFFF3F4F6),
-      body: Container(
-        width: double.infinity,
-        height: double.infinity,
-        decoration: BoxDecoration(
-          color: AppTheme.isDark ? const Color(0xFF08090D) : const Color(0xFFF1F5F9),
-          gradient: RadialGradient(
-            center: const Alignment(0.0, -0.3),
-            radius: 1.2,
-            colors: [
-              AppTheme.primaryTeal.withValues(alpha: AppTheme.isDark ? 0.07 : 0.04),
-              const Color(0xFF5856D6).withValues(alpha: AppTheme.isDark ? 0.05 : 0.02),
-              Colors.transparent,
-            ],
+    if (isFull) {
+      // 1. FULL SCREEN LAYOUT (Default for Web & Mobile)
+      // The organic wave flows edge-to-edge across the entire browser viewport width
+      return Scaffold(
+        backgroundColor: AppTheme.isDark ? const Color(0xFF08090D) : const Color(0xFFF3F4F6),
+        body: Container(
+          width: double.infinity,
+          height: double.infinity,
+          decoration: BoxDecoration(
+            color: AppTheme.isDark ? const Color(0xFF08090D) : const Color(0xFFF1F5F9),
+            gradient: RadialGradient(
+              center: const Alignment(0.0, -0.4),
+              radius: 1.4,
+              colors: [
+                AppTheme.primaryTeal.withValues(alpha: AppTheme.isDark ? 0.06 : 0.03),
+                const Color(0xFF5856D6).withValues(alpha: AppTheme.isDark ? 0.04 : 0.02),
+                Colors.transparent,
+              ],
+            ),
           ),
-        ),
-        child: Center(
           child: SingleChildScrollView(
             physics: const BouncingScrollPhysics(),
-            padding: EdgeInsets.symmetric(
-              horizontal: isDesktop ? 20 : 0,
-              vertical: isDesktop ? 36 : 0,
-            ),
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 460),
-              child: Container(
-                decoration: BoxDecoration(
-                  color: AppTheme.isDark ? const Color(0xFF0D0E15) : Colors.white,
-                  borderRadius: isDesktop ? BorderRadius.circular(28) : BorderRadius.zero,
-                  border: isDesktop
-                      ? Border.all(
-                          color: AppTheme.isDark
-                              ? Colors.white.withValues(alpha: 0.09)
-                              : Colors.black.withValues(alpha: 0.08),
-                          width: 1.2,
-                        )
-                      : null,
-                  boxShadow: isDesktop
-                      ? [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: AppTheme.isDark ? 0.55 : 0.12),
-                            blurRadius: 40,
-                            offset: const Offset(0, 18),
-                          ),
-                          if (AppTheme.isDark)
-                            BoxShadow(
-                              color: AppTheme.primaryTeal.withValues(alpha: AppTheme.isDark ? 0.04 : 0.01),
-                              blurRadius: 32,
-                              spreadRadius: -4,
-                            ),
-                        ]
-                      : null,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Top Organic Wave Header spans FULL 100% SCREEN WIDTH
+                _buildTopSwoopBanner(
+                  topPadding: isDesktop ? 20 : topPadding,
+                  isSignUp: isSignUp,
                 ),
-                clipBehavior: Clip.antiAlias,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    _buildTopSwoopBanner(
-                      topPadding: isDesktop ? 16 : topPadding,
-                      isSignUp: isSignUp,
-                    ),
-                    Padding(
+
+                // Form Content gracefully proportioned to fit both web screen & phone screen
+                Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 480),
+                    child: Padding(
                       padding: EdgeInsets.fromLTRB(
-                        isDesktop ? 32 : 28,
-                        14,
-                        isDesktop ? 32 : 28,
-                        isDesktop ? 28 : (bottomPadding + 20),
+                        28,
+                        16,
+                        28,
+                        isDesktop ? 48 : (bottomPadding + 24),
                       ),
                       child: _buildFormBody(isSignUp),
                     ),
-                  ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    } else {
+      // 2. FOCUSED CARD VIEW (Customizable option for desktop web)
+      return Scaffold(
+        backgroundColor: AppTheme.isDark ? const Color(0xFF08090D) : const Color(0xFFF3F4F6),
+        body: Container(
+          width: double.infinity,
+          height: double.infinity,
+          decoration: BoxDecoration(
+            color: AppTheme.isDark ? const Color(0xFF08090D) : const Color(0xFFF1F5F9),
+            gradient: RadialGradient(
+              center: const Alignment(0.0, -0.3),
+              radius: 1.2,
+              colors: [
+                AppTheme.primaryTeal.withValues(alpha: AppTheme.isDark ? 0.07 : 0.04),
+                const Color(0xFF5856D6).withValues(alpha: AppTheme.isDark ? 0.05 : 0.02),
+                Colors.transparent,
+              ],
+            ),
+          ),
+          child: Center(
+            child: SingleChildScrollView(
+              physics: const BouncingScrollPhysics(),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 36),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 460),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: AppTheme.isDark ? const Color(0xFF0D0E15) : Colors.white,
+                    borderRadius: BorderRadius.circular(28),
+                    border: Border.all(
+                      color: AppTheme.isDark
+                          ? Colors.white.withValues(alpha: 0.09)
+                          : Colors.black.withValues(alpha: 0.08),
+                      width: 1.2,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: AppTheme.isDark ? 0.55 : 0.12),
+                        blurRadius: 40,
+                        offset: const Offset(0, 18),
+                      ),
+                      if (AppTheme.isDark)
+                        BoxShadow(
+                          color: AppTheme.primaryTeal.withValues(alpha: AppTheme.isDark ? 0.04 : 0.01),
+                          blurRadius: 32,
+                          spreadRadius: -4,
+                        ),
+                    ],
+                  ),
+                  clipBehavior: Clip.antiAlias,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      _buildTopSwoopBanner(
+                        topPadding: 16,
+                        isSignUp: isSignUp,
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(32, 14, 32, 28),
+                        child: _buildFormBody(isSignUp),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
           ),
         ),
-      ),
-    );
+      );
+    }
   }
 
   /// Curved Organic Black Swoop Banner (Shared seamlessly across Desktop & Mobile)
@@ -322,34 +365,40 @@ class _SignInScreenState extends State<SignInScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Wordmark Row: Fish Logo Icon + BLUPP Spaced Bold Text
+            // Wordmark Row: Fish Logo Icon + BLUPP Spaced Bold Text + Customizable Layout Mode Switch
             Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Container(
-                  width: 36,
-                  height: 36,
-                  padding: const EdgeInsets.all(7),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.12),
-                    shape: BoxShape.circle,
-                    border: Border.all(color: Colors.white.withValues(alpha: 0.22)),
-                  ),
-                  child: const BluppLogo(
-                    size: 22,
-                    iconOnly: true,
-                    isDark: true,
-                  ),
+                Row(
+                  children: [
+                    Container(
+                      width: 36,
+                      height: 36,
+                      padding: const EdgeInsets.all(7),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.12),
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.white.withValues(alpha: 0.22)),
+                      ),
+                      child: const BluppLogo(
+                        size: 22,
+                        iconOnly: true,
+                        isDark: true,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    const Text(
+                      'blupp',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 22,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 4.0,
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(width: 12),
-                const Text(
-                  'blupp',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 22,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 4.0,
-                  ),
-                ),
+                _buildLayoutModeToggle(),
               ],
             ),
             const SizedBox(height: 16),
@@ -372,6 +421,51 @@ class _SignInScreenState extends State<SignInScreen> {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLayoutModeToggle() {
+    final isFull = widget.state.isFullScreenLayout;
+    return Material(
+      color: Colors.transparent,
+      child: Tooltip(
+        message: isFull ? "Switch to Focused Card View" : "Switch to Full Screen View",
+        child: InkWell(
+          onTap: () => setState(() => widget.state.toggleFullScreenLayout()),
+          borderRadius: BorderRadius.circular(20),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: Colors.white.withValues(alpha: 0.16),
+                width: 1,
+              ),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  isFull ? Icons.fullscreen_rounded : Icons.crop_free_rounded,
+                  size: 15,
+                  color: AppTheme.primaryTeal,
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  isFull ? "Full Screen" : "Card View",
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 0.2,
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );
