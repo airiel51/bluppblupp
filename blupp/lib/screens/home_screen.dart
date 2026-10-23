@@ -818,15 +818,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
         if (state.isRefreshing)
           BluppSkeleton.bankCardsList()
-        else if (state.bankAccounts.isEmpty)
-          BluppEmptyState(
-            icon: Icons.account_balance_outlined,
-            title: "No bank accounts linked",
-            description: "Add your primary banks to monitor real-time net worth and automated liquidity balances.",
-            actionLabel: "Add Bank Account",
-            onAction: () => _showAddBankDialog(context),
-          )
-        else ...[
+        else
           BluppBankWallet(
             state: state,
             onManageBank: (bank) => _showManageBankSheet(context, bank),
@@ -834,45 +826,6 @@ class _HomeScreenState extends State<HomeScreen> {
             onMinusMoney: (bank) => _showMinusBankMoneyDialog(context, bank),
             onAddNewCard: () => _showAddBankDialog(context),
           ),
-          if (state.bankAccounts.length > 1) ...[
-            const SizedBox(height: 14),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  "All Linked Accounts (${state.bankAccounts.length})",
-                  style: TextStyle(
-                    color: AppTheme.textMuted,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    letterSpacing: 0.3,
-                  ),
-                ),
-                Text(
-                  "Tap card above to switch",
-                  style: TextStyle(
-                    color: AppTheme.textMuted,
-                    fontSize: 11,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            SizedBox(
-              height: 156,
-              child: ListView.separated(
-                scrollDirection: Axis.horizontal,
-                physics: const BouncingScrollPhysics(),
-                itemCount: state.bankAccounts.length,
-                separatorBuilder: (_, _) => const SizedBox(width: 14),
-                itemBuilder: (context, index) {
-                  final bank = state.bankAccounts[index];
-                  return _buildBankCard(bank, context);
-                },
-              ),
-            ),
-          ],
-        ],
       ],
     );
   }

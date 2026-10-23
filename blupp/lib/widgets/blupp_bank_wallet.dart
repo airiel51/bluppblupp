@@ -98,19 +98,19 @@ class _BluppBankWalletState extends State<BluppBankWallet> {
   @override
   Widget build(BuildContext context) {
     final accounts = widget.state.bankAccounts;
+    final bool hasRealAccounts = accounts.isNotEmpty;
+    final activeIndex = hasRealAccounts ? (_frontIndex % accounts.length) : 0;
+    final activeBank = hasRealAccounts
+        ? accounts[activeIndex]
+        : BankAccount(
+            id: 'default_card',
+            name: widget.state.userName.isNotEmpty ? widget.state.userName : 'dailyflutterui',
+            accountNumber: '•••• 7845',
+            balance: 56782.80,
+            color: const Color(0xFF5856D6),
+            icon: Icons.credit_card,
+          );
 
-    if (accounts.isEmpty) {
-      return _buildEmptyDeck();
-    }
-
-    // Clamp front index
-    final activeIndex = _frontIndex % accounts.length;
-    final activeBank = accounts[activeIndex];
-
-    // Build the 3 visible layers
-    // Layer 0: Backmost (Green theme)
-    // Layer 1: Middle (Caramel/Bronze theme)
-    // Layer 2: Front (Purple/Indigo theme)
     final backBank = accounts.length > 2
         ? accounts[(activeIndex + 2) % accounts.length]
         : (accounts.length > 1 ? accounts[(activeIndex + 1) % accounts.length] : null);
