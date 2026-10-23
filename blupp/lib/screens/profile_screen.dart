@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import '../models/finance_state.dart';
 import '../models/currency_model.dart';
 import '../theme/app_theme.dart';
@@ -3639,7 +3638,7 @@ class ProfileScreen extends StatelessWidget {
                     ),
                   ),
                 ],
-              ).animate().fadeIn(duration: 300.ms).slideY(begin: -0.06, end: 0),
+              ),
               const SizedBox(height: 18),
 
               // 1. REVOLUT-INSPIRED USER PROFILE HERO CARD
@@ -3848,11 +3847,11 @@ class ProfileScreen extends StatelessWidget {
                     ),
                   ],
                 ),
-              ).animate().fadeIn(duration: 350.ms, delay: 60.ms).slideY(begin: 0.06, end: 0),
+              ),
               const SizedBox(height: 20),
 
               // 2. FINANCIAL INTELLIGENCE & PERFORMANCE STATISTICS
-              _buildFinancialStatisticsSection(context).animate().fadeIn(duration: 350.ms, delay: 100.ms).slideY(begin: 0.06, end: 0),
+              _buildFinancialStatisticsSection(context),
               const SizedBox(height: 20),
 
               // 3. AVATAR & IDENTITY STUDIO CARD
@@ -3920,7 +3919,7 @@ class ProfileScreen extends StatelessWidget {
                     ),
                   ],
                 ),
-              ).animate().fadeIn(duration: 350.ms, delay: 120.ms).slideY(begin: 0.06, end: 0),
+              ),
               const SizedBox(height: 20),
 
               // PRIVACY & QUICK ACTIONS
@@ -4024,7 +4023,7 @@ class ProfileScreen extends StatelessWidget {
                     ),
                   ),
                 ],
-              ).animate().fadeIn(duration: 350.ms, delay: 180.ms).slideY(begin: 0.06, end: 0),
+              ),
               const SizedBox(height: 28),
 
               // 2. ACCOUNT SECTION

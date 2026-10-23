@@ -112,10 +112,12 @@ class MainNavigationShell extends StatefulWidget {
 
 class _MainNavigationShellState extends State<MainNavigationShell> with WidgetsBindingObserver {
   int _currentTabIndex = 0;
+  final Set<int> _loadedTabs = {0};
 
   @override
   void initState() {
     super.initState();
+    _loadedTabs.add(_currentTabIndex);
     WidgetsBinding.instance.addObserver(this);
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -176,9 +178,10 @@ class _MainNavigationShellState extends State<MainNavigationShell> with WidgetsB
   }
 
   void _navigateToTab(int index) {
-    if (_currentTabIndex == index) return;
+    if (_currentTabIndex == index && _loadedTabs.contains(index)) return;
     setState(() {
       _currentTabIndex = index;
+      _loadedTabs.add(index);
     });
   }
 
@@ -209,7 +212,7 @@ class _MainNavigationShellState extends State<MainNavigationShell> with WidgetsB
         extendBody: true,
         body: Stack(
           children: [
-          // High-performance tab content via IndexedStack (maintains state with 0 drag jank)
+          // High-performance lazy-loaded tab content via IndexedStack
           Padding(
             padding: EdgeInsets.only(bottom: navbarHeight),
             child: IndexedStack(
@@ -219,21 +222,21 @@ class _MainNavigationShellState extends State<MainNavigationShell> with WidgetsB
                   state: widget.state,
                   onNavigateTab: _navigateToTab,
                 ),
-                TrackingScreen(
-                  state: widget.state,
-                ),
-                AnalyticsScreen(
-                  state: widget.state,
-                ),
-                FomoScreen(
-                  state: widget.state,
-                ),
-                CalendarScreen(
-                  state: widget.state,
-                ),
-                ProfileScreen(
-                  state: widget.state,
-                ),
+                _loadedTabs.contains(1)
+                    ? TrackingScreen(state: widget.state)
+                    : const SizedBox.shrink(),
+                _loadedTabs.contains(2)
+                    ? AnalyticsScreen(state: widget.state)
+                    : const SizedBox.shrink(),
+                _loadedTabs.contains(3)
+                    ? FomoScreen(state: widget.state)
+                    : const SizedBox.shrink(),
+                _loadedTabs.contains(4)
+                    ? CalendarScreen(state: widget.state)
+                    : const SizedBox.shrink(),
+                _loadedTabs.contains(5)
+                    ? ProfileScreen(state: widget.state)
+                    : const SizedBox.shrink(),
               ],
             ),
           ),

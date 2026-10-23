@@ -1,5 +1,7 @@
 import 'dart:math' as math;
+import 'dart:ui' show lerpDouble;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../models/finance_state.dart';
 import '../theme/app_theme.dart';
 
@@ -12,10 +14,10 @@ class BankCardCutoutClipper extends CustomClipper<Path> {
   final double notchRadius;
 
   const BankCardCutoutClipper({
-    this.cutoutWidth = 144,
-    this.cutoutHeight = 52,
-    this.cornerRadius = 24,
-    this.notchRadius = 16,
+    this.cutoutWidth = 136,
+    this.cutoutHeight = 48,
+    this.cornerRadius = 22,
+    this.notchRadius = 14,
   });
 
   @override
@@ -28,37 +30,30 @@ class BankCardCutoutClipper extends CustomClipper<Path> {
     final cutoutLeft = w - cutoutWidth;
 
     final path = Path();
-    // Start at top-left after corner
     path.moveTo(r, 0);
 
     // Top edge
     path.lineTo(w - r, 0);
-    // Top-right corner
     path.quadraticBezierTo(w, 0, w, r);
 
     // Right edge down to before cutout notch
     path.lineTo(w, cutoutTop - nr);
-    // Concave inward curve to cutout shelf
     path.quadraticBezierTo(w, cutoutTop, w - nr, cutoutTop);
 
     // Cutout shelf towards left
     path.lineTo(cutoutLeft + nr, cutoutTop);
-    // Downward curve to cutout left edge
     path.quadraticBezierTo(cutoutLeft, cutoutTop, cutoutLeft, cutoutTop + nr);
 
     // Down to bottom edge
     path.lineTo(cutoutLeft, h - r);
-    // Curve to bottom line
     path.quadraticBezierTo(cutoutLeft, h, cutoutLeft - r, h);
 
     // Bottom edge towards left
     path.lineTo(r, h);
-    // Bottom-left corner
     path.quadraticBezierTo(0, h, 0, h - r);
 
     // Left edge
     path.lineTo(0, r);
-    // Top-left corner
     path.quadraticBezierTo(0, 0, r, 0);
 
     path.close();
@@ -72,8 +67,329 @@ class BankCardCutoutClipper extends CustomClipper<Path> {
       oldClipper.cornerRadius != cornerRadius;
 }
 
-/// Tiered stacked bank cards wallet matching the user-requested reference image
-/// with smooth physics-inspired "bring card to front" animation.
+enum _WatermarkType { stripes, mesh, islamic, waves, cyber, standard }
+
+/// Custom painter rendering bank-specific card watermarks and textures
+class _CardWatermarkPainter extends CustomPainter {
+  final _WatermarkType type;
+  final Color color;
+
+  const _CardWatermarkPainter({required this.type, required this.color});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.4;
+
+    switch (type) {
+      case _WatermarkType.stripes:
+        // Iconic Maybank dual-tone diagonal bands
+        final fillPaint = Paint()
+          ..color = color
+          ..style = PaintingStyle.fill;
+        final path = Path()
+          ..moveTo(size.width * 0.42, 0)
+          ..lineTo(size.width * 0.62, 0)
+          ..lineTo(size.width * 0.32, size.height)
+          ..lineTo(size.width * 0.12, size.height)
+          ..close();
+        canvas.drawPath(path, fillPaint);
+        final path2 = Path()
+          ..moveTo(size.width * 0.68, 0)
+          ..lineTo(size.width * 0.76, 0)
+          ..lineTo(size.width * 0.46, size.height)
+          ..lineTo(size.width * 0.38, size.height)
+          ..close();
+        canvas.drawPath(path2, fillPaint);
+        break;
+
+      case _WatermarkType.mesh:
+        // CIMB carbon diagonal micro-mesh
+        for (double x = -size.height; x < size.width + size.height; x += 16) {
+          canvas.drawLine(
+            Offset(x, 0),
+            Offset(x + size.height * 0.6, size.height),
+            paint..strokeWidth = 0.9,
+          );
+        }
+        break;
+
+      case _WatermarkType.islamic:
+        // Bank Islam concentric geometric arch arcs
+        final center = Offset(size.width * 0.82, size.height * 0.35);
+        for (double r = 24; r < 150; r += 22) {
+          canvas.drawCircle(center, r, paint..strokeWidth = 1.0);
+        }
+        break;
+
+      case _WatermarkType.waves:
+        // RHB and Touch 'n Go fluid gradient waves
+        final path = Path();
+        path.moveTo(0, size.height * 0.6);
+        path.cubicTo(
+          size.width * 0.35,
+          size.height * 0.3,
+          size.width * 0.65,
+          size.height * 0.9,
+          size.width,
+          size.height * 0.5,
+        );
+        canvas.drawPath(path, paint..strokeWidth = 2.0);
+        final path2 = Path();
+        path2.moveTo(0, size.height * 0.8);
+        path2.cubicTo(
+          size.width * 0.4,
+          size.height * 0.5,
+          size.width * 0.7,
+          size.height * 1.0,
+          size.width,
+          size.height * 0.7,
+        );
+        canvas.drawPath(path2, paint);
+        break;
+
+      case _WatermarkType.cyber:
+        // GXBank neon cyber circuit nodes
+        final p = Path()
+          ..moveTo(size.width * 0.25, 0)
+          ..lineTo(size.width * 0.25, size.height * 0.45)
+          ..lineTo(size.width * 0.65, size.height * 0.75)
+          ..lineTo(size.width, size.height * 0.75);
+        canvas.drawPath(p, paint..strokeWidth = 1.6);
+        canvas.drawCircle(
+          Offset(size.width * 0.65, size.height * 0.75),
+          4,
+          Paint()
+            ..color = color
+            ..style = PaintingStyle.fill,
+        );
+        break;
+
+      case _WatermarkType.standard:
+        canvas.drawCircle(
+          Offset(size.width * 0.85, size.height * 0.25),
+          75,
+          Paint()
+            ..color = color
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = 1.2,
+        );
+        break;
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _CardWatermarkPainter oldDelegate) =>
+      oldDelegate.type != type || oldDelegate.color != color;
+}
+
+/// Helper to resolve designated bank styling, brand logos, and network indicators
+class _BankCardProfile {
+  final String brandName;
+  final String cardNetwork; // 'VISA', 'MASTERCARD'
+  final String expiry;
+  final LinearGradient gradient;
+  final Color accentColor;
+  final bool isLight;
+  final bool isGoldChip;
+  final _WatermarkType watermark;
+  final String cardTier;
+  final IconData brandIcon;
+
+  const _BankCardProfile({
+    required this.brandName,
+    required this.cardNetwork,
+    required this.expiry,
+    required this.gradient,
+    required this.accentColor,
+    required this.isLight,
+    required this.isGoldChip,
+    required this.watermark,
+    required this.cardTier,
+    required this.brandIcon,
+  });
+
+  static _BankCardProfile forBank(BankAccount bank) {
+    final nameLower = bank.name.toLowerCase();
+    final baseColor = bank.color;
+
+    // 1. Maybank - Signature Yellow Card
+    if (nameLower.contains('maybank') || nameLower.contains('harimau')) {
+      return _BankCardProfile(
+        brandName: bank.name,
+        cardNetwork: 'VISA',
+        expiry: '08/28',
+        accentColor: const Color(0xFFFFC000),
+        isLight: true,
+        isGoldChip: true,
+        watermark: _WatermarkType.stripes,
+        cardTier: 'VISA PLATINUM',
+        brandIcon: Icons.account_balance_rounded,
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Color(0xFFFFD54F),
+            Color(0xFFFFB300),
+            Color(0xFFF57F17),
+          ],
+        ),
+      );
+    }
+
+    // 2. CIMB Bank - Signature Crimson & Carbon Card
+    if (nameLower.contains('cimb')) {
+      return _BankCardProfile(
+        brandName: bank.name,
+        cardNetwork: 'MASTERCARD',
+        expiry: '04/27',
+        accentColor: const Color(0xFFED1C24),
+        isLight: false,
+        isGoldChip: false,
+        watermark: _WatermarkType.mesh,
+        cardTier: 'MASTERCARD WORLD',
+        brandIcon: Icons.account_balance_rounded,
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Color(0xFFE53935),
+            Color(0xFFB71C1C),
+            Color(0xFF1E1E24),
+          ],
+        ),
+      );
+    }
+
+    // 3. Bank Islam - Signature Emerald Green Card
+    if (nameLower.contains('islam') || nameLower.contains('muamalat')) {
+      return _BankCardProfile(
+        brandName: bank.name,
+        cardNetwork: 'VISA',
+        expiry: '11/29',
+        accentColor: const Color(0xFF00897B),
+        isLight: false,
+        isGoldChip: true,
+        watermark: _WatermarkType.islamic,
+        cardTier: 'VISA DEBIT-i',
+        brandIcon: Icons.account_balance_rounded,
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Color(0xFF00897B),
+            Color(0xFF004D40),
+            Color(0xFF0A2E28),
+          ],
+        ),
+      );
+    }
+
+    // 4. RHB Bank - Signature Royal Blue Card
+    if (nameLower.contains('rhb')) {
+      return _BankCardProfile(
+        brandName: bank.name,
+        cardNetwork: 'VISA',
+        expiry: '06/28',
+        accentColor: const Color(0xFF0067B1),
+        isLight: false,
+        isGoldChip: false,
+        watermark: _WatermarkType.waves,
+        cardTier: 'VISA SIGNATURE',
+        brandIcon: Icons.account_balance_rounded,
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Color(0xFF0284C7),
+            Color(0xFF0067B1),
+            Color(0xFF0F172A),
+          ],
+        ),
+      );
+    }
+
+    // 5. GXBank - Cyber Neon Violet Card
+    if (nameLower.contains('gx') || nameLower.contains('gxbank')) {
+      return _BankCardProfile(
+        brandName: bank.name,
+        cardNetwork: 'MASTERCARD',
+        expiry: '01/30',
+        accentColor: const Color(0xFF8B5CF6),
+        isLight: false,
+        isGoldChip: false,
+        watermark: _WatermarkType.cyber,
+        cardTier: 'DIGITAL DEBIT',
+        brandIcon: Icons.bolt_rounded,
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Color(0xFF8B5CF6),
+            Color(0xFF6D28D9),
+            Color(0xFF1E1B4B),
+          ],
+        ),
+      );
+    }
+
+    // 6. Touch 'n Go - Electric Cyan Card
+    if (nameLower.contains('touch') || nameLower.contains('tng')) {
+      return _BankCardProfile(
+        brandName: bank.name,
+        cardNetwork: 'VISA',
+        expiry: '09/27',
+        accentColor: const Color(0xFF0284C7),
+        isLight: false,
+        isGoldChip: false,
+        watermark: _WatermarkType.waves,
+        cardTier: 'VISA PREPAID',
+        brandIcon: Icons.contactless_rounded,
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Color(0xFF0284C7),
+            Color(0xFF0369A1),
+            Color(0xFF082F49),
+          ],
+        ),
+      );
+    }
+
+    // Dynamic tailored profile based on bank color
+    final isLuminanceLight = baseColor.computeLuminance() > 0.42;
+    final darkenedColor = HSLColor.fromColor(baseColor)
+        .withLightness((HSLColor.fromColor(baseColor).lightness * 0.65).clamp(0.12, 0.5))
+        .toColor();
+
+    return _BankCardProfile(
+      brandName: bank.name,
+      cardNetwork: (bank.name.length % 2 == 0) ? 'VISA' : 'MASTERCARD',
+      expiry: '12/28',
+      accentColor: baseColor,
+      isLight: isLuminanceLight,
+      isGoldChip: isLuminanceLight,
+      watermark: _WatermarkType.standard,
+      cardTier: 'DEBIT CARD',
+      brandIcon: bank.icon,
+      gradient: LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [
+          baseColor,
+          darkenedColor,
+          const Color(0xFF111827),
+        ],
+      ),
+    );
+  }
+}
+
+/// Tiered stacked bank cards wallet with true physics-inspired "bring designated card to front"
+/// and zero-overflow phone responsive layout.
 class BluppBankWallet extends StatefulWidget {
   final FinanceState state;
   final Function(BankAccount) onManageBank;
@@ -96,8 +412,11 @@ class BluppBankWallet extends StatefulWidget {
 
 class _BluppBankWalletState extends State<BluppBankWallet>
     with SingleTickerProviderStateMixin {
-  int _frontIndex = 0;
-  int? _animatingTargetIndex;
+  int _activeIndex = 0;
+  int? _fromIndex;
+  int? _toIndex;
+  Offset _dragOffset = Offset.zero;
+
   late final AnimationController _animController;
   late final Animation<double> _curvedAnim;
 
@@ -106,51 +425,98 @@ class _BluppBankWalletState extends State<BluppBankWallet>
     super.initState();
     _animController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 360),
+      duration: const Duration(milliseconds: 380),
     );
     _curvedAnim = CurvedAnimation(
       parent: _animController,
       curve: Curves.easeOutCubic,
     );
+
+    widget.state.addListener(_onStateChanged);
+
+    // Sync initial selectedBankId if set in state
+    final selectedId = widget.state.selectedBankId;
+    if (selectedId != null) {
+      final idx = widget.state.bankAccounts.indexWhere((b) => b.id == selectedId);
+      if (idx != -1) _activeIndex = idx;
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant BluppBankWallet oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.state != widget.state) {
+      oldWidget.state.removeListener(_onStateChanged);
+      widget.state.addListener(_onStateChanged);
+    }
+    _checkExternalSelection();
   }
 
   @override
   void dispose() {
+    widget.state.removeListener(_onStateChanged);
     _animController.dispose();
     super.dispose();
   }
 
+  void _onStateChanged() {
+    _checkExternalSelection();
+  }
+
+  void _checkExternalSelection() {
+    final accounts = widget.state.bankAccounts;
+    if (accounts.isEmpty) return;
+
+    final selectedId = widget.state.selectedBankId;
+    if (selectedId != null) {
+      final idx = accounts.indexWhere((b) => b.id == selectedId);
+      if (idx != -1 && idx != _activeIndex && !_animController.isAnimating) {
+        _bringToFront(idx);
+      }
+    } else if (_activeIndex >= accounts.length) {
+      setState(() => _activeIndex = 0);
+    }
+  }
+
+  /// Brings the designated card physically from its slot in the back to the front
   void _bringToFront(int targetIndex) {
     final accounts = widget.state.bankAccounts;
-    if (accounts.isEmpty && targetIndex == _frontIndex) return;
-    if (accounts.isNotEmpty && (targetIndex % accounts.length) == _frontIndex) return;
+    if (accounts.isEmpty) return;
+    final normalized = targetIndex % accounts.length;
+    if (normalized == _activeIndex && _toIndex == null) return;
     if (_animController.isAnimating) return;
 
+    HapticFeedback.selectionClick();
+
     setState(() {
-      _animatingTargetIndex = targetIndex;
+      _dragOffset = Offset.zero;
+      _fromIndex = _activeIndex;
+      _toIndex = normalized;
     });
 
     _animController.forward(from: 0.0).then((_) {
       if (mounted) {
         setState(() {
-          _frontIndex = targetIndex;
-          _animatingTargetIndex = null;
+          _activeIndex = normalized;
+          _fromIndex = null;
+          _toIndex = null;
         });
         _animController.reset();
+        widget.state.setSelectedBankId(accounts[_activeIndex].id);
       }
     });
   }
 
   void _nextCard() {
     final accounts = widget.state.bankAccounts;
-    final total = accounts.isNotEmpty ? accounts.length : 3;
-    _bringToFront((_frontIndex + 1) % total);
+    if (accounts.isEmpty) return;
+    _bringToFront((_activeIndex + 1) % accounts.length);
   }
 
   void _prevCard() {
     final accounts = widget.state.bankAccounts;
-    final total = accounts.isNotEmpty ? accounts.length : 3;
-    _bringToFront((_frontIndex - 1 + total) % total);
+    if (accounts.isEmpty) return;
+    _bringToFront((_activeIndex - 1 + accounts.length) % accounts.length);
   }
 
   String _cleanLast4(String raw, String fallback) {
@@ -161,604 +527,801 @@ class _BluppBankWalletState extends State<BluppBankWallet>
     return fallback;
   }
 
+  double _getSlotTop(int slot) {
+    if (slot == 0) return 56.0;
+    if (slot == 1) return 28.0;
+    return 0.0;
+  }
+
+  double _getSlotScale(int slot) {
+    if (slot == 0) return 1.0;
+    if (slot == 1) return 0.96;
+    return 0.92;
+  }
+
+  int _calculateSlot(int cardIndex, int frontIndex, int total) {
+    return (cardIndex - frontIndex + total) % total;
+  }
+
   @override
   Widget build(BuildContext context) {
     final accounts = widget.state.bankAccounts;
     final bool hasRealAccounts = accounts.isNotEmpty;
+    final totalAccounts = hasRealAccounts ? accounts.length : 1;
 
-    final activeIndex = hasRealAccounts ? (_frontIndex % accounts.length) : 0;
-    final activeBank = hasRealAccounts
-        ? accounts[activeIndex]
-        : BankAccount(
-            id: 'default_card',
-            name: widget.state.userName.isNotEmpty ? widget.state.userName : 'dailyflutterui',
-            accountNumber: '•••• 7845',
-            balance: 56782.80,
-            color: const Color(0xFF5856D6),
-            icon: Icons.credit_card,
-          );
+    // Fallback card if empty
+    final defaultBank = BankAccount(
+      id: 'mb_1',
+      name: 'Maybank',
+      accountNumber: '•••• 8921',
+      balance: 4250.00,
+      color: const Color(0xFFFFB800),
+      icon: Icons.account_balance,
+    );
 
-    final backBank = accounts.length > 2
-        ? accounts[(activeIndex + 2) % accounts.length]
-        : (accounts.length > 1 ? accounts[(activeIndex + 1) % accounts.length] : null);
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final availableWidth = constraints.maxWidth;
+        final cardWidth = availableWidth.isFinite
+            ? availableWidth.clamp(280.0, 520.0)
+            : 440.0;
+        final cardHeight = (cardWidth * 0.56).clamp(168.0, 215.0);
+        final cutoutWidth = (cardWidth * 0.35).clamp(115.0, 140.0);
+        const cutoutHeight = 46.0;
+        final deckHeight = cardHeight + 64.0;
 
-    final middleBank = accounts.length > 1
-        ? accounts[(activeIndex + 1) % accounts.length]
-        : null;
-
-    const deckHeight = 280.0;
-    const cardHeight = 200.0;
-    const cutoutWidth = 144.0;
-    const cutoutHeight = 52.0;
-
-    return Center(
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 520),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // Gesture-enabled stacked card deck
-            GestureDetector(
-              onHorizontalDragEnd: (details) {
-                if (details.primaryVelocity != null) {
-                  if (details.primaryVelocity! < -180) {
-                    _nextCard();
-                  } else if (details.primaryVelocity! > 180) {
-                    _prevCard();
-                  }
-                }
-              },
-              child: SizedBox(
-                height: deckHeight,
-                child: AnimatedBuilder(
-                  animation: _curvedAnim,
-                  builder: (context, _) {
-                    final t = _curvedAnim.value;
-                    final isSwitching = _animatingTargetIndex != null;
-
-                    // Compute dynamic positions during card-switch animation
-                    double backTop = 0;
-                    double middleTop = 36;
-                    double frontTop = 72;
-
-                    double backScale = 0.95;
-                    double middleScale = 0.98;
-                    double frontScale = 1.0;
-
-                    // If a switch is in progress, smoothly interpolate positions
-                    if (isSwitching) {
-                      // Front card glides back
-                      frontTop = 72 - (36 * t);
-                      frontScale = 1.0 - (0.02 * t);
-
-                      // Middle card arcs up into the air and drops into the front slot
-                      final arcLift = math.sin(t * math.pi) * 28.0;
-                      middleTop = 36 + (36 * t) - arcLift;
-                      middleScale = 0.98 + (0.02 * t);
+        return Center(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(maxWidth: cardWidth),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Gesture-enabled interactive swipe & stacked card deck (Dannndi-style pan drag)
+                GestureDetector(
+                  onPanStart: (details) {
+                    if (_animController.isAnimating) return;
+                    setState(() {
+                      _dragOffset = Offset.zero;
+                    });
+                  },
+                  onPanUpdate: (details) {
+                    if (_animController.isAnimating) return;
+                    setState(() {
+                      _dragOffset += details.delta;
+                    });
+                  },
+                  onPanEnd: (details) {
+                    if (_animController.isAnimating) return;
+                    final dx = _dragOffset.dx;
+                    final vx = details.velocity.pixelsPerSecond.dx;
+                    if (dx < -65 || vx < -260) {
+                      _nextCard();
+                    } else if (dx > 65 || vx > 260) {
+                      _prevCard();
                     }
+                    setState(() {
+                      _dragOffset = Offset.zero;
+                    });
+                  },
+                  child: SizedBox(
+                    height: deckHeight,
+                    child: AnimatedBuilder(
+                      animation: _curvedAnim,
+                      builder: (context, _) {
+                        final t = _curvedAnim.value;
+                        final isAnimating = _toIndex != null && _fromIndex != null;
 
-                    return Stack(
-                      clipBehavior: Clip.none,
-                      children: [
-                        // 1. BACK CARD (Green VISA)
-                        Positioned(
-                          top: backTop,
-                          left: 0,
-                          right: 0,
-                          height: cardHeight,
-                          child: Transform.scale(
-                            scale: backScale,
-                            child: _buildBackCard(
-                              bank: backBank,
-                              color: const Color(0xFF0D5C46), // Deep Emerald
-                              brand: "VISA",
-                              last4: backBank != null
-                                  ? _cleanLast4(backBank.accountNumber, "9312")
-                                  : "9312",
-                              onTap: () {
-                                if (hasRealAccounts && backBank != null) {
-                                  _bringToFront(accounts.indexOf(backBank));
-                                } else {
-                                  _nextCard();
-                                }
-                              },
+                        // Build list of stack children with correct physical Z-ordering
+                        final List<Widget> stackChildren = [];
+
+                        if (!hasRealAccounts) {
+                          // Single default card
+                          stackChildren.add(
+                            Positioned(
+                              top: 56.0,
+                              left: 0,
+                              right: 0,
+                              height: cardHeight,
+                              child: _buildCardFace(
+                                context: context,
+                                bank: defaultBank,
+                                cardIndex: 0,
+                                isFront: true,
+                                cardWidth: cardWidth,
+                                cardHeight: cardHeight,
+                                cutoutWidth: cutoutWidth,
+                                cutoutHeight: cutoutHeight,
+                              ),
+                            ),
+                          );
+                        } else if (!isAnimating) {
+                          // Rest state: Order from back (slot >= 2) -> middle (slot 1) -> front (slot 0)
+                          final cardIndices = List.generate(totalAccounts, (i) => i);
+                          cardIndices.sort((a, b) {
+                            final slotA = _calculateSlot(a, _activeIndex, totalAccounts);
+                            final slotB = _calculateSlot(b, _activeIndex, totalAccounts);
+                            return slotB.compareTo(slotA); // Higher slot (back) rendered first
+                          });
+
+                          final isDragging = _dragOffset != Offset.zero;
+                          final dragProgress = (_dragOffset.dx.abs() / 160.0).clamp(0.0, 1.0);
+
+                          for (final idx in cardIndices) {
+                            final slot = _calculateSlot(idx, _activeIndex, totalAccounts);
+                            if (slot > 2) continue; // Only peek up to 3 cards in the deck
+
+                            double top = _getSlotTop(slot);
+                            double scale = _getSlotScale(slot);
+                            final isFront = slot == 0;
+
+                            // Dynamic lift of card beneath while user drags the front card
+                            if (slot == 1 && isDragging) {
+                              top = lerpDouble(top, 46.0, dragProgress * 0.7)!;
+                              scale = lerpDouble(scale, 1.0, dragProgress * 0.6)!;
+                            }
+
+                            Widget cardWidget = _buildCardFace(
+                              context: context,
+                              bank: accounts[idx],
+                              cardIndex: idx,
+                              isFront: isFront,
+                              cardWidth: cardWidth,
+                              cardHeight: cardHeight,
+                              cutoutWidth: cutoutWidth,
+                              cutoutHeight: cutoutHeight,
+                            );
+
+                            // Interactive live tilt and translation on the front card while dragging
+                            if (isFront && isDragging) {
+                              final dragAngle = (_dragOffset.dx / 550.0).clamp(-0.16, 0.16);
+                              cardWidget = Transform(
+                                alignment: Alignment.center,
+                                transform: Matrix4.translationValues(
+                                  _dragOffset.dx * 0.85,
+                                  _dragOffset.dy * 0.25,
+                                  0.0,
+                                )..rotateZ(dragAngle),
+                                child: cardWidget,
+                              );
+                            }
+
+                            stackChildren.add(
+                              Positioned(
+                                top: top,
+                                left: 0,
+                                right: 0,
+                                height: cardHeight,
+                                child: Transform.scale(
+                                  scale: scale,
+                                  alignment: Alignment.topCenter,
+                                  child: cardWidget,
+                                ),
+                              ),
+                            );
+                          }
+                        } else {
+                      // Transition state: Incoming card physically lifts and flies on top!
+                      final incomingIdx = _toIndex!;
+                      final outgoingIdx = _fromIndex!;
+
+                      // 1. Static/background cards (rendered first at bottom of stack)
+                      for (int idx = 0; idx < totalAccounts; idx++) {
+                        if (idx == incomingIdx || idx == outgoingIdx) continue;
+
+                        final startSlot = _calculateSlot(idx, outgoingIdx, totalAccounts);
+                        final endSlot = _calculateSlot(idx, incomingIdx, totalAccounts);
+                        if (startSlot > 2 && endSlot > 2) continue;
+
+                        final top = lerpDouble(_getSlotTop(startSlot), _getSlotTop(endSlot), t)!;
+                        final scale = lerpDouble(_getSlotScale(startSlot), _getSlotScale(endSlot), t)!;
+
+                        stackChildren.add(
+                          Positioned(
+                            top: top,
+                            left: 0,
+                            right: 0,
+                            height: cardHeight,
+                            child: Transform.scale(
+                              scale: scale,
+                              alignment: Alignment.topCenter,
+                              child: _buildCardFace(
+                                context: context,
+                                bank: accounts[idx],
+                                cardIndex: idx,
+                                isFront: false,
+                                cardWidth: cardWidth,
+                                cardHeight: cardHeight,
+                                cutoutWidth: cutoutWidth,
+                                cutoutHeight: cutoutHeight,
+                              ),
                             ),
                           ),
-                        ),
+                        );
+                      }
 
-                        // 2. MIDDLE CARD (Amber / Bronze Mastercard)
+                      // 2. Outgoing card (glides back into the stack)
+                      final outStartSlot = 0;
+                      final outEndSlot = _calculateSlot(outgoingIdx, incomingIdx, totalAccounts);
+                      final outTop = lerpDouble(_getSlotTop(outStartSlot), _getSlotTop(outEndSlot), t)!;
+                      final outScale = lerpDouble(_getSlotScale(outStartSlot), _getSlotScale(outEndSlot), t)!;
+
+                      stackChildren.add(
                         Positioned(
-                          top: middleTop,
+                          top: outTop,
                           left: 0,
                           right: 0,
                           height: cardHeight,
                           child: Transform.scale(
-                            scale: middleScale,
-                            child: _buildMiddleCard(
-                              bank: middleBank,
-                              color: const Color(0xFFB45309), // Warm Amber Bronze
-                              brand: "MASTERCARD",
-                              last4: middleBank != null
-                                  ? _cleanLast4(middleBank.accountNumber, "2585")
-                                  : "2585",
-                              onTap: () {
-                                if (hasRealAccounts && middleBank != null) {
-                                  _bringToFront(accounts.indexOf(middleBank));
-                                } else {
-                                  _nextCard();
-                                }
-                              },
-                            ),
-                          ),
-                        ),
-
-                        // 3. FRONT ACTIVE CARD (Vibrant Purple / Indigo)
-                        Positioned(
-                          top: frontTop,
-                          left: 0,
-                          right: 0,
-                          height: cardHeight,
-                          child: Transform.scale(
-                            scale: frontScale,
-                            child: _buildFrontCard(
-                              bank: activeBank,
-                              color: const Color(0xFF5856D6), // Vibrant Purple/Indigo
-                              brand: "VISA",
-                              last4: _cleanLast4(activeBank.accountNumber, "7845"),
+                            scale: outScale,
+                            alignment: Alignment.topCenter,
+                            child: _buildCardFace(
+                              context: context,
+                              bank: accounts[outgoingIdx],
+                              cardIndex: outgoingIdx,
+                              isFront: t < 0.45,
+                              cardWidth: cardWidth,
+                              cardHeight: cardHeight,
                               cutoutWidth: cutoutWidth,
                               cutoutHeight: cutoutHeight,
                             ),
                           ),
                         ),
+                      );
 
-                        // 4. DOCKED "+ Add Card" PILL BUTTON (Nestled in the notch)
+                      // 3. Incoming card (physically arcs up in 3D and swoops to front, on TOP of all cards!)
+                      final inStartSlot = _calculateSlot(incomingIdx, outgoingIdx, totalAccounts);
+                      final inStartTop = _getSlotTop(inStartSlot);
+                      final inStartScale = _getSlotScale(inStartSlot);
+
+                      // High arc-lift so the card visibly peels out of the deck and glides over
+                      final arcLift = math.sin(t * math.pi) * 36.0;
+                      final inTop = lerpDouble(inStartTop, 56.0, t)! - arcLift;
+                      final inScale = lerpDouble(inStartScale, 1.0, t)! + (math.sin(t * math.pi) * 0.05);
+
+                      stackChildren.add(
                         Positioned(
-                          top: 72 + (cardHeight - cutoutHeight) + 4,
-                          right: 4,
-                          width: cutoutWidth - 8,
-                          height: cutoutHeight - 8,
-                          child: Material(
-                            color: Colors.black,
-                            borderRadius: BorderRadius.circular(24),
-                            elevation: 4,
-                            shadowColor: Colors.black.withValues(alpha: 0.4),
-                            child: InkWell(
-                              onTap: widget.onAddNewCard,
-                              borderRadius: BorderRadius.circular(24),
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 10),
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(24),
-                                  border: Border.all(color: Colors.white.withValues(alpha: 0.18)),
+                          top: inTop,
+                          left: 0,
+                          right: 0,
+                          height: cardHeight,
+                          child: Transform.scale(
+                            scale: inScale,
+                            alignment: Alignment.topCenter,
+                            child: _buildCardFace(
+                              context: context,
+                              bank: accounts[incomingIdx],
+                              cardIndex: incomingIdx,
+                              isFront: t > 0.40,
+                              cardWidth: cardWidth,
+                              cardHeight: cardHeight,
+                              cutoutWidth: cutoutWidth,
+                              cutoutHeight: cutoutHeight,
+                            ),
+                          ),
+                        ),
+                      );
+                    }
+
+                    // 4. DOCKED "+ Add Card" PILL BUTTON (Nestled in the front card's notch)
+                    stackChildren.add(
+                      Positioned(
+                        top: 56.0 + (cardHeight - cutoutHeight) + 3,
+                        right: 3,
+                        width: cutoutWidth - 6,
+                        height: cutoutHeight - 6,
+                        child: Material(
+                          color: Colors.black,
+                          borderRadius: BorderRadius.circular(22),
+                          elevation: 6,
+                          shadowColor: Colors.black.withValues(alpha: 0.5),
+                          child: InkWell(
+                            onTap: widget.onAddNewCard,
+                            borderRadius: BorderRadius.circular(22),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8),
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(22),
+                                border: Border.all(
+                                  color: Colors.white.withValues(alpha: 0.22),
+                                  width: 1.0,
                                 ),
-                                child: const Center(
-                                  child: FittedBox(
-                                    fit: BoxFit.scaleDown,
-                                    child: Row(
-                                      mainAxisAlignment: MainAxisAlignment.center,
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Icon(Icons.add_circle, color: Colors.white, size: 16),
-                                        SizedBox(width: 5),
-                                        Text(
-                                          "Add Card",
-                                          style: TextStyle(
-                                            color: Colors.white,
-                                            fontSize: 13,
-                                            fontWeight: FontWeight.w700,
-                                            letterSpacing: -0.2,
-                                          ),
+                              ),
+                              child: const Center(
+                                child: FittedBox(
+                                  fit: BoxFit.scaleDown,
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(Icons.add_circle, color: Colors.white, size: 15),
+                                      SizedBox(width: 4),
+                                      Text(
+                                        "Add Card",
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w700,
+                                          letterSpacing: -0.2,
                                         ),
-                                      ],
-                                    ),
+                                      ),
+                                    ],
                                   ),
                                 ),
                               ),
                             ),
                           ),
                         ),
-                      ],
+                      ),
+                    );
+
+                    return Stack(
+                      clipBehavior: Clip.none,
+                      children: stackChildren,
                     );
                   },
                 ),
               ),
             ),
 
-            // Card Switcher Indicator Pills (Clean, modern UI/UX on Web & Mobile)
-            if (hasRealAccounts && accounts.length > 1) ...[
-              const SizedBox(height: 6),
+            const SizedBox(height: 10),
+
+            // Bank Account Interactive Selector Row (Phone-optimized 1-tap switching)
+            _buildBankAccountSelectorRow(accounts, _activeIndex),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  /// Renders a real, fully styled bank card with its designated bank colors, watermark,
+  /// EMV chip, balance, brand logos, and action buttons.
+  Widget _buildCardFace({
+    required BuildContext context,
+    required BankAccount bank,
+    required int cardIndex,
+    required bool isFront,
+    required double cardWidth,
+    required double cardHeight,
+    required double cutoutWidth,
+    required double cutoutHeight,
+  }) {
+    final profile = _BankCardProfile.forBank(bank);
+    final state = widget.state;
+    final userName = state.userName.isNotEmpty
+        ? state.userName.toUpperCase()
+        : "DAILYFLUTTERUI";
+    final last4 = _cleanLast4(bank.accountNumber, "8921");
+
+    final textColor = profile.isLight ? const Color(0xFF111827) : Colors.white;
+    final textMuted = profile.isLight ? const Color(0xFF374151) : Colors.white70;
+    final textSubtle = profile.isLight ? const Color(0xFF4B5563) : Colors.white60;
+    final chipBg = profile.isLight
+        ? Colors.black.withValues(alpha: 0.12)
+        : Colors.white.withValues(alpha: 0.18);
+    final btnBg = profile.isLight
+        ? Colors.black.withValues(alpha: 0.10)
+        : Colors.white.withValues(alpha: 0.22);
+    final btnBorder = profile.isLight
+        ? Colors.black.withValues(alpha: 0.22)
+        : Colors.white.withValues(alpha: 0.32);
+    final watermarkColor = profile.isLight
+        ? Colors.black.withValues(alpha: 0.08)
+        : Colors.white.withValues(alpha: 0.10);
+
+    final cardContent = Stack(
+      children: [
+        // 1. Bank Custom Watermark (Stripes for Maybank, Mesh for CIMB, Star for Bank Islam, etc.)
+        Positioned.fill(
+          child: CustomPaint(
+            painter: _CardWatermarkPainter(
+              type: profile.watermark,
+              color: watermarkColor,
+            ),
+          ),
+        ),
+
+        // 2. Card Content Layout
+        Padding(
+          padding: const EdgeInsets.fromLTRB(18, 12, 18, 11),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              // Top Row: Brand pill badge + Palette icon + Last 4 digits + Network Brand Logo
               Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: List.generate(accounts.length, (index) {
-                  final isSelected = index == activeIndex;
-                  final bank = accounts[index];
-                  return MouseRegion(
-                    cursor: SystemMouseCursors.click,
-                    child: GestureDetector(
-                      onTap: () => _bringToFront(index),
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 240),
-                        margin: const EdgeInsets.symmetric(horizontal: 4),
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                        decoration: BoxDecoration(
-                          color: isSelected
-                              ? bank.color.withValues(alpha: 0.22)
-                              : AppTheme.surfaceLight,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: isSelected
-                                ? bank.color.withValues(alpha: 0.6)
-                                : AppTheme.surfaceBorder.withValues(alpha: 0.5),
-                            width: isSelected ? 1.4 : 1.0,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3.5),
+                          decoration: BoxDecoration(
+                            color: chipBg,
+                            borderRadius: BorderRadius.circular(7),
+                            border: Border.all(
+                              color: profile.isLight
+                                  ? Colors.black.withValues(alpha: 0.15)
+                                  : Colors.white.withValues(alpha: 0.20),
+                              width: 0.8,
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(profile.brandIcon, size: 13, color: textColor),
+                              const SizedBox(width: 5),
+                              Flexible(
+                                child: Text(
+                                  profile.brandName,
+                                  style: TextStyle(
+                                    color: textColor,
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w800,
+                                    letterSpacing: 0.4,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Container(
-                              width: 6,
-                              height: 6,
-                              decoration: BoxDecoration(
-                                color: bank.color,
-                                shape: BoxShape.circle,
+                        const SizedBox(width: 6),
+                        if (isFront)
+                          InkWell(
+                            onTap: () => widget.onManageBank(bank),
+                            borderRadius: BorderRadius.circular(10),
+                            child: Padding(
+                              padding: const EdgeInsets.all(3),
+                              child: Icon(
+                                Icons.palette_outlined,
+                                size: 14,
+                                color: textMuted,
                               ),
                             ),
+                          ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        "•••• $last4",
+                        style: TextStyle(
+                          color: textMuted,
+                          fontSize: 12.5,
+                          letterSpacing: 1.5,
+                          fontWeight: FontWeight.w600,
+                          fontFamily: 'monospace',
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      _buildNetworkBrandLogo(profile.cardNetwork, textColor),
+                    ],
+                  ),
+                ],
+              ),
+
+              // Middle Row: Metallic Chip + Balance Metric + Quick Actions (Add/Minus)
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Row(
+                          children: [
+                            _buildMetallicEMVChip(profile.isGoldChip),
+                            const SizedBox(width: 6),
+                            Icon(Icons.contactless_rounded, size: 14, color: textMuted),
                             const SizedBox(width: 6),
                             Text(
-                              bank.name,
+                              "Balance",
                               style: TextStyle(
-                                color: isSelected ? AppTheme.textPrimary : AppTheme.textMuted,
-                                fontSize: 11,
-                                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                                color: textMuted,
+                                fontSize: 10.5,
+                                fontWeight: FontWeight.w600,
                               ),
                             ),
                           ],
                         ),
-                      ),
-                    ),
-                  );
-                }),
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildBackCard({
-    required BankAccount? bank,
-    required Color color,
-    required String brand,
-    required String last4,
-    required VoidCallback onTap,
-  }) {
-    return MouseRegion(
-      cursor: SystemMouseCursors.click,
-      child: GestureDetector(
-        onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 14),
-          decoration: BoxDecoration(
-            color: color,
-            borderRadius: BorderRadius.circular(24),
-            boxShadow: [
-              BoxShadow(
-                color: color.withValues(alpha: 0.4),
-                blurRadius: 12,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              _buildVisaBrandLogo(),
-              Text(
-                "•••• •••• $last4",
-                style: const TextStyle(
-                  color: Colors.white70,
-                  fontSize: 13,
-                  letterSpacing: 2.0,
-                  fontWeight: FontWeight.w600,
-                  fontFamily: 'monospace',
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildMiddleCard({
-    required BankAccount? bank,
-    required Color color,
-    required String brand,
-    required String last4,
-    required VoidCallback onTap,
-  }) {
-    return MouseRegion(
-      cursor: SystemMouseCursors.click,
-      child: GestureDetector(
-        onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 14),
-          decoration: BoxDecoration(
-            color: color,
-            borderRadius: BorderRadius.circular(24),
-            boxShadow: [
-              BoxShadow(
-                color: color.withValues(alpha: 0.4),
-                blurRadius: 14,
-                offset: const Offset(0, 6),
-              ),
-            ],
-          ),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              _buildMastercardLogo(),
-              Text(
-                "•••• •••• $last4",
-                style: const TextStyle(
-                  color: Colors.white70,
-                  fontSize: 13,
-                  letterSpacing: 2.0,
-                  fontWeight: FontWeight.w600,
-                  fontFamily: 'monospace',
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildFrontCard({
-    required BankAccount bank,
-    required Color color,
-    required String brand,
-    required String last4,
-    required double cutoutWidth,
-    required double cutoutHeight,
-  }) {
-    final state = widget.state;
-    final userName = state.userName.isNotEmpty ? state.userName : "dailyflutterui";
-
-    return ClipPath(
-      clipper: BankCardCutoutClipper(
-        cutoutWidth: cutoutWidth,
-        cutoutHeight: cutoutHeight,
-        cornerRadius: 24,
-      ),
-      child: Container(
-        decoration: BoxDecoration(
-          color: color,
-          boxShadow: [
-            BoxShadow(
-              color: color.withValues(alpha: 0.45),
-              blurRadius: 18,
-              offset: const Offset(0, 8),
-            ),
-          ],
-        ),
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            onTap: () => widget.onManageBank(bank),
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(22, 16, 22, 14),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  // Top Row: VISA Brand Logo + Bank Name & Masked Digits
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Row(
-                        children: [
-                          _buildVisaBrandLogo(),
-                          const SizedBox(width: 10),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.18),
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                            child: Text(
-                              bank.name,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 11,
-                                fontWeight: FontWeight.w600,
-                              ),
+                        const SizedBox(height: 3),
+                        FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            AppTheme.formatCurrency(bank.balance),
+                            style: TextStyle(
+                              color: textColor,
+                              fontSize: 25,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: -0.6,
                             ),
                           ),
-                        ],
-                      ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  // Quick Add / Minus action buttons on front card
+                  if (isFront)
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        InkWell(
+                          onTap: () => widget.onAddMoney(bank),
+                          borderRadius: BorderRadius.circular(8),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4.5),
+                            decoration: BoxDecoration(
+                              color: btnBg,
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: btnBorder),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.add_rounded, size: 12, color: textColor),
+                                const SizedBox(width: 3),
+                                Text(
+                                  "Add",
+                                  style: TextStyle(
+                                    color: textColor,
+                                    fontSize: 10.5,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 5),
+                        InkWell(
+                          onTap: () => widget.onMinusMoney(bank),
+                          borderRadius: BorderRadius.circular(8),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4.5),
+                            decoration: BoxDecoration(
+                              color: btnBg,
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: btnBorder),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.remove_rounded, size: 12, color: textColor),
+                                const SizedBox(width: 3),
+                                Text(
+                                  "Minus",
+                                  style: TextStyle(
+                                    color: textColor,
+                                    fontSize: 10.5,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                ],
+              ),
+
+              // Bottom Row: Cardholder Name + Expiry Date + Card Tier
+              Row(
+                children: [
+                  Flexible(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          "CARDHOLDER",
+                          style: TextStyle(
+                            color: textSubtle,
+                            fontSize: 8.5,
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                        const SizedBox(height: 1),
+                        Text(
+                          userName,
+                          style: TextStyle(
+                            color: textColor,
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 0.5,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 14),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
                       Text(
-                        "•••• •••• $last4",
-                        style: const TextStyle(
-                          color: Colors.white70,
-                          fontSize: 13,
-                          letterSpacing: 2.0,
+                        "EXPIRES",
+                        style: TextStyle(
+                          color: textSubtle,
+                          fontSize: 8.5,
                           fontWeight: FontWeight.w600,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                      const SizedBox(height: 1),
+                      Text(
+                        profile.expiry,
+                        style: TextStyle(
+                          color: textColor,
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w700,
                           fontFamily: 'monospace',
                         ),
                       ),
                     ],
                   ),
-
-                  // Middle: Balance Header + Balance Value + Quick Actions (Add/Minus)
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Text(
-                              "Balance",
-                              style: TextStyle(
-                                color: Colors.white70,
-                                fontSize: 11,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                            const SizedBox(height: 2),
-                            FittedBox(
-                              fit: BoxFit.scaleDown,
-                              alignment: Alignment.centerLeft,
-                              child: Text(
-                                AppTheme.formatCurrency(bank.balance),
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 27,
-                                  fontWeight: FontWeight.w800,
-                                  letterSpacing: -0.6,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      // Quick Add / Minus action buttons embedded right on the card
-                      Row(
-                          children: [
-                            InkWell(
-                              onTap: () => widget.onAddMoney(bank),
-                              borderRadius: BorderRadius.circular(8),
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                decoration: BoxDecoration(
-                                  color: Colors.white.withValues(alpha: 0.22),
-                                  borderRadius: BorderRadius.circular(8),
-                                  border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
-                                ),
-                                child: const Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(Icons.add_rounded, size: 12, color: Colors.white),
-                                    SizedBox(width: 3),
-                                    Text(
-                                      "Add",
-                                      style: TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 11,
-                                        fontWeight: FontWeight.w700,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 6),
-                            InkWell(
-                              onTap: () => widget.onMinusMoney(bank),
-                              borderRadius: BorderRadius.circular(8),
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                decoration: BoxDecoration(
-                                  color: Colors.white.withValues(alpha: 0.22),
-                                  borderRadius: BorderRadius.circular(8),
-                                  border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
-                                ),
-                                child: const Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(Icons.remove_rounded, size: 12, color: Colors.white),
-                                    SizedBox(width: 3),
-                                    Text(
-                                      "Minus",
-                                      style: TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 11,
-                                        fontWeight: FontWeight.w700,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
+                  const SizedBox(width: 12),
+                  Text(
+                    profile.cardTier,
+                    style: TextStyle(
+                      color: textSubtle,
+                      fontSize: 9.5,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 0.8,
                     ),
-
-                  // Bottom Row: Name on Left, Exp. Date towards Middle
-                  Row(
-                    children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            "Name",
-                            style: TextStyle(
-                              color: Colors.white60,
-                              fontSize: 10,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                          const SizedBox(height: 1),
-                          Text(
-                            userName,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(width: 28),
-                      const Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            "Exp. Date",
-                            style: TextStyle(
-                              color: Colors.white60,
-                              fontSize: 10,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                          SizedBox(height: 1),
-                          Text(
-                            "08/26",
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
-                              fontFamily: 'monospace',
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
                   ),
+                  const SizedBox(width: 10),
                 ],
               ),
+            ],
+          ),
+        ),
+      ],
+    );
+
+    // Front card uses BankCardCutoutClipper for the docked notch
+    // Rear cards use clean rounded corners
+    final Widget cardShape = isFront
+        ? ClipPath(
+            clipper: BankCardCutoutClipper(
+              cutoutWidth: cutoutWidth,
+              cutoutHeight: cutoutHeight,
+              cornerRadius: 22,
             ),
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: profile.gradient,
+              ),
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: () => widget.onManageBank(bank),
+                  child: cardContent,
+                ),
+              ),
+            ),
+          )
+        : ClipRRect(
+            borderRadius: BorderRadius.circular(22),
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: profile.gradient,
+              ),
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: () => _bringToFront(cardIndex),
+                  child: cardContent,
+                ),
+              ),
+            ),
+          );
+
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(22),
+        boxShadow: [
+          BoxShadow(
+            color: profile.accentColor.withValues(alpha: profile.isLight ? 0.35 : 0.45),
+            blurRadius: isFront ? 18 : 10,
+            offset: Offset(0, isFront ? 8 : 4),
+          ),
+        ],
+      ),
+      child: cardShape,
+    );
+  }
+
+  /// Authentic metallic EMV chip with internal circuit contact pads
+  Widget _buildMetallicEMVChip(bool isGoldChip) {
+    final chipBorder = isGoldChip ? const Color(0xFFB3923C) : const Color(0xFF9E9E9E);
+    final chipInnerBorder = isGoldChip ? const Color(0xFF8C7126) : const Color(0xFF757575);
+    final chipColors = isGoldChip
+        ? const [Color(0xFFFFEEA8), Color(0xFFDFBF66), Color(0xFFB89638)]
+        : const [Color(0xFFF5F5F5), Color(0xFFD6D6D6), Color(0xFFA8A8A8)];
+
+    return Container(
+      width: 24,
+      height: 18,
+      decoration: BoxDecoration(
+        color: isGoldChip ? const Color(0xFFE0C475) : const Color(0xFFCCCCCC),
+        borderRadius: BorderRadius.circular(4),
+        border: Border.all(color: chipBorder, width: 0.8),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: chipColors,
+        ),
+      ),
+      child: Center(
+        child: Container(
+          width: 14,
+          height: 10,
+          decoration: BoxDecoration(
+            border: Border.all(color: chipInnerBorder, width: 0.6),
+            borderRadius: BorderRadius.circular(2),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              Container(width: 0.6, color: chipInnerBorder),
+              Container(width: 0.6, color: chipInnerBorder),
+            ],
           ),
         ),
       ),
     );
   }
 
-  Widget _buildVisaBrandLogo() {
-    return const Text(
+  Widget _buildNetworkBrandLogo(String network, Color textColor) {
+    if (network == 'MASTERCARD') {
+      return SizedBox(
+        width: 30,
+        height: 18,
+        child: Stack(
+          children: [
+            Container(
+              width: 18,
+              height: 18,
+              decoration: const BoxDecoration(
+                color: Color(0xFFEB001B),
+                shape: BoxShape.circle,
+              ),
+            ),
+            Positioned(
+              left: 11,
+              child: Container(
+                width: 18,
+                height: 18,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF79E1B).withValues(alpha: 0.95),
+                  shape: BoxShape.circle,
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Text(
       "VISA",
       style: TextStyle(
-        color: Colors.white,
-        fontSize: 20,
+        color: textColor,
+        fontSize: 17,
         fontWeight: FontWeight.w900,
         fontStyle: FontStyle.italic,
         letterSpacing: -0.5,
@@ -766,32 +1329,84 @@ class _BluppBankWalletState extends State<BluppBankWallet>
     );
   }
 
-  Widget _buildMastercardLogo() {
-    return SizedBox(
-      width: 36,
-      height: 22,
-      child: Stack(
-        children: [
-          Container(
-            width: 22,
-            height: 22,
-            decoration: const BoxDecoration(
-              color: Color(0xFFEB001B),
-              shape: BoxShape.circle,
-            ),
-          ),
-          Positioned(
-            left: 14,
-            child: Container(
-              width: 22,
-              height: 22,
-              decoration: BoxDecoration(
-                color: const Color(0xFFF79E1B).withValues(alpha: 0.9),
-                shape: BoxShape.circle,
+  /// Clean, modern horizontal selector showing each designated bank account.
+  /// Tapping ANY bank brings that designated card directly to the front!
+  Widget _buildBankAccountSelectorRow(List<BankAccount> accounts, int activeIndex) {
+    if (accounts.isEmpty) return const SizedBox.shrink();
+
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      physics: const BouncingScrollPhysics(),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: List.generate(accounts.length, (index) {
+          final isSelected = index == activeIndex;
+          final bank = accounts[index];
+
+          return Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4),
+            child: InkWell(
+              onTap: () => _bringToFront(index),
+              borderRadius: BorderRadius.circular(12),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 220),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(
+                  color: isSelected
+                      ? bank.color.withValues(alpha: 0.18)
+                      : AppTheme.surfaceLight,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: isSelected
+                        ? bank.color.withValues(alpha: 0.85)
+                        : AppTheme.surfaceBorder.withValues(alpha: 0.5),
+                    width: isSelected ? 1.5 : 1.0,
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 7,
+                      height: 7,
+                      decoration: BoxDecoration(
+                        color: bank.color,
+                        shape: BoxShape.circle,
+                        boxShadow: isSelected
+                            ? [
+                                BoxShadow(
+                                  color: bank.color.withValues(alpha: 0.7),
+                                  blurRadius: 5,
+                                  spreadRadius: 0.5,
+                                )
+                              ]
+                            : null,
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      bank.name,
+                      style: TextStyle(
+                        color: isSelected ? AppTheme.textPrimary : AppTheme.textSecondary,
+                        fontSize: 11.5,
+                        fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(width: 5),
+                    Text(
+                      AppTheme.formatCurrency(bank.balance),
+                      style: TextStyle(
+                        color: isSelected ? bank.color : AppTheme.textMuted,
+                        fontSize: 11,
+                        fontWeight: isSelected ? FontWeight.w700 : FontWeight.w400,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
-          ),
-        ],
+          );
+        }),
       ),
     );
   }

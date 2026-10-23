@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import '../models/finance_state.dart';
 import '../theme/app_theme.dart';
 import '../widgets/blupp_states.dart';
@@ -73,9 +72,9 @@ class _HomeScreenState extends State<HomeScreen> {
                 physics: const AlwaysScrollableScrollPhysics(),
                 padding: EdgeInsets.symmetric(horizontal: horizontalPadding, vertical: 16),
                 child: Center(
-                  child: ConstrainedBox(
+                    child: ConstrainedBox(
                     constraints: BoxConstraints(
-                      maxWidth: state.isFullScreenLayout ? double.infinity : 1080,
+                      maxWidth: state.isFullScreenLayout ? 1380.0 : 1080.0,
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -85,11 +84,11 @@ class _HomeScreenState extends State<HomeScreen> {
                         const SizedBox(height: 20),
 
                         if (isWide)
-                          // Wide Screen 2-Column Responsive Dashboard for Web
+                          // Wide Screen 2-Column Balanced Dashboard for Web
                           Row(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              // Left Column: Net Worth, Radar, AI Dock, Quick Actions
+                              // Left Column: Net Worth Hero, Safe to Spend, Quick Actions, and Activity Feed
                               Expanded(
                                 flex: 6,
                                 child: Column(
@@ -99,26 +98,26 @@ class _HomeScreenState extends State<HomeScreen> {
                                     const SizedBox(height: 16),
                                     AiSafeToSpendCard(state: state),
                                     const SizedBox(height: 16),
-                                    _buildAiFeatureDock(context),
-                                    const SizedBox(height: 16),
                                     _buildQuickActions(context),
+                                    const SizedBox(height: 24),
+                                    _buildRecentTransactionsSection(context),
                                   ],
                                 ),
                               ),
                               const SizedBox(width: 28),
-                              // Right Column: Bank Accounts Wallet, Investments, Loans, Activity
+                              // Right Column: Bank Accounts Wallet, AI Intelligence Dock, Investments, Loans
                               Expanded(
                                 flex: 6,
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     _buildBankAccountsSection(context),
+                                    const SizedBox(height: 20),
+                                    _buildAiFeatureDock(context),
                                     const SizedBox(height: 24),
                                     _buildInvestmentsSection(context),
                                     const SizedBox(height: 24),
                                     _buildLoansSection(context),
-                                    const SizedBox(height: 24),
-                                    _buildRecentTransactionsSection(context),
                                   ],
                                 ),
                               ),
@@ -170,67 +169,80 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildHeader(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isCompact = screenWidth < 680;
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Row(
-          children: [
-            // Clickable Logo (requirement: clickable logo)
-            MouseRegion(
-              cursor: SystemMouseCursors.click,
-              child: GestureDetector(
-                onTap: () {
-                  _scrollToTop();
-                  state.refreshData();
-                },
-                child: Container(
-                  width: 44,
-                  height: 44,
-                  padding: const EdgeInsets.all(7),
-                  decoration: BoxDecoration(
-                    color: AppTheme.isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: AppTheme.isDark
-                          ? Colors.white.withValues(alpha: 0.10)
-                          : Colors.black.withValues(alpha: 0.08),
+        Expanded(
+          child: Row(
+            children: [
+              // Clickable Logo (requirement: clickable logo)
+              MouseRegion(
+                cursor: SystemMouseCursors.click,
+                child: GestureDetector(
+                  onTap: () {
+                    _scrollToTop();
+                    state.refreshData();
+                  },
+                  child: Container(
+                    width: 42,
+                    height: 42,
+                    padding: const EdgeInsets.all(7),
+                    decoration: BoxDecoration(
+                      color: AppTheme.isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: AppTheme.isDark
+                            ? Colors.white.withValues(alpha: 0.10)
+                            : Colors.black.withValues(alpha: 0.08),
+                      ),
                     ),
-                  ),
-                  child: BluppLogo(
-                    size: 28,
-                    iconOnly: true,
-                    isDark: AppTheme.isDark,
+                    child: BluppLogo(
+                      size: 26,
+                      iconOnly: true,
+                      isDark: AppTheme.isDark,
+                    ),
                   ),
                 ),
               ),
-            ),
-            const SizedBox(width: 12),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  "Hello ${state.userName.isNotEmpty ? state.userName : 'DailyFlutterUI'}",
-                  style: TextStyle(
-                    color: AppTheme.textPrimary,
-                    fontSize: 22,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: -0.6,
-                  ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      "Hello ${state.userName.isNotEmpty ? state.userName : 'DailyFlutterUI'}",
+                      style: TextStyle(
+                        color: AppTheme.textPrimary,
+                        fontSize: isCompact ? 18 : 22,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: -0.5,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      "Let's save your money.",
+                      style: TextStyle(
+                        color: AppTheme.textMuted,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w400,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  "Let's save your money.",
-                  style: TextStyle(
-                    color: AppTheme.textMuted,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w400,
-                  ),
-                ),
-              ],
-            ),
-          ],
+              ),
+            ],
+          ),
         ),
+        const SizedBox(width: 8),
         Row(
+          mainAxisSize: MainAxisSize.min,
           children: [
             // Site Search button (requirement: site search)
             MouseRegion(
@@ -239,7 +251,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 onTap: () => BluppSearchDialog.show(context, state: state, onNavigateTab: onNavigateTab),
                 borderRadius: BorderRadius.circular(10),
                 child: Container(
-                  padding: const EdgeInsets.all(9),
+                  padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
                     color: AppTheme.surfaceLight,
                     borderRadius: BorderRadius.circular(10),
@@ -248,12 +260,12 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: Icon(
                     Icons.search_rounded,
                     color: AppTheme.textSecondary,
-                    size: 18,
+                    size: 17,
                   ),
                 ),
               ),
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: 6),
 
             // 1-tap Dark Mode Toggle (requirement: dark mode toggle)
             MouseRegion(
@@ -262,7 +274,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 onTap: state.toggleThemeMode,
                 borderRadius: BorderRadius.circular(10),
                 child: Container(
-                  padding: const EdgeInsets.all(9),
+                  padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
                     color: AppTheme.surfaceLight,
                     borderRadius: BorderRadius.circular(10),
@@ -271,69 +283,71 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: Icon(
                     AppTheme.isDark ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
                     color: AppTheme.isDark ? const Color(0xFFFBBF24) : AppTheme.primaryTeal,
-                    size: 18,
+                    size: 17,
                   ),
                 ),
               ),
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: 6),
 
-            // Screen Width / Layout Customization Toggle (Full Screen on Web vs Standard)
-            MouseRegion(
-              cursor: SystemMouseCursors.click,
-              child: Tooltip(
-                message: state.isFullScreenLayout ? "Switch to Standard View" : "Switch to Full Screen View",
-                child: InkWell(
-                  onTap: () => setState(() => state.toggleFullScreenLayout()),
-                  borderRadius: BorderRadius.circular(10),
-                  child: Container(
-                    padding: const EdgeInsets.all(9),
-                    decoration: BoxDecoration(
-                      color: state.isFullScreenLayout
-                          ? AppTheme.primaryTeal.withValues(alpha: 0.15)
-                          : AppTheme.surfaceLight,
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(
+            if (!isCompact) ...[
+              // Screen Width / Layout Customization Toggle (Desktop only)
+              MouseRegion(
+                cursor: SystemMouseCursors.click,
+                child: Tooltip(
+                  message: state.isFullScreenLayout ? "Switch to Standard View" : "Switch to Full Screen View",
+                  child: InkWell(
+                    onTap: () => setState(() => state.toggleFullScreenLayout()),
+                    borderRadius: BorderRadius.circular(10),
+                    child: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
                         color: state.isFullScreenLayout
-                            ? AppTheme.primaryTeal.withValues(alpha: 0.5)
-                            : AppTheme.surfaceBorder.withValues(alpha: 0.5),
+                            ? AppTheme.primaryTeal.withValues(alpha: 0.15)
+                            : AppTheme.surfaceLight,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                          color: state.isFullScreenLayout
+                              ? AppTheme.primaryTeal.withValues(alpha: 0.5)
+                              : AppTheme.surfaceBorder.withValues(alpha: 0.5),
+                        ),
+                      ),
+                      child: Icon(
+                        state.isFullScreenLayout ? Icons.fullscreen_rounded : Icons.crop_free_rounded,
+                        color: state.isFullScreenLayout ? AppTheme.primaryTeal : AppTheme.textSecondary,
+                        size: 17,
                       ),
                     ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 6),
+
+              // Mobile Menu / Quick Drawer trigger
+              MouseRegion(
+                cursor: SystemMouseCursors.click,
+                child: InkWell(
+                  onTap: () => BluppMobileMenu.show(context, state: state, currentTabIndex: 0, onNavigateTab: onNavigateTab),
+                  borderRadius: BorderRadius.circular(10),
+                  child: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: AppTheme.surfaceLight,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: AppTheme.surfaceBorder.withValues(alpha: 0.5)),
+                    ),
                     child: Icon(
-                      state.isFullScreenLayout ? Icons.fullscreen_rounded : Icons.crop_free_rounded,
-                      color: state.isFullScreenLayout ? AppTheme.primaryTeal : AppTheme.textSecondary,
-                      size: 18,
+                      Icons.menu_rounded,
+                      color: AppTheme.textSecondary,
+                      size: 17,
                     ),
                   ),
                 ),
               ),
-            ),
-            const SizedBox(width: 8),
+              const SizedBox(width: 6),
+            ],
 
-            // Mobile Menu / Quick Drawer trigger (requirement: add mobile menu)
-            MouseRegion(
-              cursor: SystemMouseCursors.click,
-              child: InkWell(
-                onTap: () => BluppMobileMenu.show(context, state: state, currentTabIndex: 0, onNavigateTab: onNavigateTab),
-                borderRadius: BorderRadius.circular(10),
-                child: Container(
-                  padding: const EdgeInsets.all(9),
-                  decoration: BoxDecoration(
-                    color: AppTheme.surfaceLight,
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: AppTheme.surfaceBorder.withValues(alpha: 0.5)),
-                  ),
-                  child: Icon(
-                    Icons.menu_rounded,
-                    color: AppTheme.textSecondary,
-                    size: 18,
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(width: 8),
-
-            // Notification Bell with Red Dot badge matching dailyflutterui reference
+            // Notification Bell with Red Dot badge
             Stack(
               clipBehavior: Clip.none,
               children: [
@@ -350,7 +364,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   },
                   borderRadius: BorderRadius.circular(10),
                   child: Container(
-                    padding: const EdgeInsets.all(9),
+                    padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
                       color: AppTheme.surfaceLight,
                       borderRadius: BorderRadius.circular(10),
@@ -359,7 +373,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     child: Icon(
                       Icons.notifications_none_rounded,
                       color: AppTheme.textSecondary,
-                      size: 18,
+                      size: 17,
                     ),
                   ),
                 ),
@@ -377,11 +391,11 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ],
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: 6),
 
             BluppAvatar(
               state: state,
-              size: 40,
+              size: isCompact ? 36 : 40,
               showEditBadge: false,
               onTap: () => onNavigateTab(5),
             ),
@@ -614,15 +628,18 @@ class _HomeScreenState extends State<HomeScreen> {
             overflow: TextOverflow.ellipsis,
           ),
           const SizedBox(height: 2),
-          Text(
-            value,
-            style: TextStyle(
-              color: color,
-              fontSize: 11,
-              fontWeight: FontWeight.w500,
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(
+              value,
+              style: TextStyle(
+                color: color,
+                fontSize: 11,
+                fontWeight: FontWeight.w500,
+              ),
+              maxLines: 1,
             ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
           ),
         ],
       ),
@@ -1144,9 +1161,7 @@ class _HomeScreenState extends State<HomeScreen> {
           )
         else
           Column(
-            children: state.loans.asMap().entries.map((entry) {
-              final index = entry.key;
-              final loan = entry.value;
+            children: state.loans.map((loan) {
               return InteractiveCard(
                 onTap: () => _showManageLoanSheet(context, loan),
                 margin: const EdgeInsets.only(bottom: 10),
@@ -1274,7 +1289,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ],
                 ),
-              ).animate().fadeIn(duration: 300.ms, delay: Duration(milliseconds: 60 * index)).slideY(begin: 0.08, end: 0);
+              );
             }).toList(),
           ),
       ],

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import '../models/finance_state.dart';
 import '../models/currency_model.dart';
 import '../theme/app_theme.dart';
@@ -359,12 +358,12 @@ class _CalendarScreenState extends State<CalendarScreen> {
             onAction: () => _showAddPlannedExpenseModal(context, preselectedDate: _selectedDate),
           )
         else
-          ...plans.asMap().entries.map((e) => _buildPlanItemCard(e.value, e.key)),
+          ...plans.map((p) => _buildPlanItemCard(p)),
       ],
     );
   }
 
-  Widget _buildPlanItemCard(PlannedExpense plan, [int index = 0]) {
+  Widget _buildPlanItemCard(PlannedExpense plan) {
     final category = widget.state.getCategoryById(plan.categoryId);
 
     return InteractiveCard(
@@ -492,7 +491,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
           ),
         ],
       ),
-    ).animate().fadeIn(duration: 220.ms, delay: Duration(milliseconds: (30 * index).clamp(0, 300))).slideY(begin: 0.05, end: 0);
+    );
   }
 
   void _confirmDeletePlan(BuildContext context, PlannedExpense plan) {
@@ -600,7 +599,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
             onAction: () => _showAddPlannedExpenseModal(context),
           )
         else
-          ...upcoming.asMap().entries.map((e) => _buildPlanItemCard(e.value, e.key)),
+          ...upcoming.map((p) => _buildPlanItemCard(p)),
       ],
     );
   }

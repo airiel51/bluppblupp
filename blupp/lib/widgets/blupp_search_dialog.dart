@@ -252,6 +252,7 @@ class _BluppSearchDialogState extends State<BluppSearchDialog> {
                               ),
                             ),
                             onTap: () {
+                              widget.state.setSelectedBankId(a.id);
                               Navigator.pop(context);
                               widget.onNavigateTab?.call(0);
                             },

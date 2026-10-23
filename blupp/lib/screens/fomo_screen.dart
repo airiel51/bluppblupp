@@ -1,6 +1,5 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import '../models/finance_state.dart';
 import '../models/currency_model.dart';
 import '../theme/app_theme.dart';
@@ -1240,9 +1239,7 @@ class _FomoScreenState extends State<FomoScreen> {
             onAction: () => FocusScope.of(context).unfocus(),
           )
         else
-          ...wishlist.asMap().entries.map((entry) {
-            final index = entry.key;
-            final item = entry.value;
+          ...wishlist.map((item) {
             return InteractiveCard(
               margin: const EdgeInsets.only(bottom: 10),
               padding: const EdgeInsets.all(14),
@@ -1318,7 +1315,7 @@ class _FomoScreenState extends State<FomoScreen> {
                   ),
                 ],
               ),
-            ).animate().fadeIn(duration: 220.ms, delay: Duration(milliseconds: (30 * index).clamp(0, 300))).slideY(begin: 0.05, end: 0);
+            );
           }),
       ],
     );

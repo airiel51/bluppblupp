@@ -442,6 +442,7 @@ class FinanceState extends ChangeNotifier {
     _initUtmTracking();
     _loadSavedProfileImage();
     _loadSavedLayoutPreference();
+    _restoreSavedBankColors();
   }
 
   bool get isAuthenticated => _isAuthenticated;
@@ -494,6 +495,17 @@ class FinanceState extends ChangeNotifier {
   void toggleNetWorthVisibility() {
     _isNetWorthHidden = !_isNetWorthHidden;
     notifyListeners();
+  }
+
+  // Selected Bank Account (for bringing designated card to front)
+  String? _selectedBankId;
+  String? get selectedBankId => _selectedBankId;
+
+  void setSelectedBankId(String? id) {
+    if (_selectedBankId != id) {
+      _selectedBankId = id;
+      notifyListeners();
+    }
   }
 
   // Profile Picture (Custom Gallery Upload or Default)
@@ -2230,15 +2242,35 @@ class FinanceState extends ChangeNotifier {
     notifyListeners();
   }
 
-  // Update bank account color
+  // Update bank account color and persist locally & remotely
   void updateBankAccountColor(String id, Color newColor) {
     final index = _bankAccounts.indexWhere((b) => b.id == id);
     if (index != -1) {
       final old = _bankAccounts[index];
       _bankAccounts[index] = old.copyWith(color: newColor);
       SupabaseService.instance.updateBankAccountColor(id, newColor);
+      SharedPreferences.getInstance().then((prefs) {
+        prefs.setInt('blupp_bank_color_$id', newColor.toARGB32());
+      }).catchError((_) {});
       notifyListeners();
     }
+  }
+
+  void _restoreSavedBankColors() {
+    SharedPreferences.getInstance().then((prefs) {
+      bool changed = false;
+      for (int i = 0; i < _bankAccounts.length; i++) {
+        final key = 'blupp_bank_color_${_bankAccounts[i].id}';
+        if (prefs.containsKey(key)) {
+          final colorVal = prefs.getInt(key);
+          if (colorVal != null) {
+            _bankAccounts[i] = _bankAccounts[i].copyWith(color: Color(colorVal));
+            changed = true;
+          }
+        }
+      }
+      if (changed) notifyListeners();
+    }).catchError((_) {});
   }
 
   // Inter-bank transfer: Moves money from one bank to another without counting as an expense
