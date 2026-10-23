@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../models/finance_state.dart';
 import '../theme/app_theme.dart';
@@ -72,6 +73,7 @@ class BankCardCutoutClipper extends CustomClipper<Path> {
 }
 
 /// Tiered stacked bank cards wallet matching the user-requested reference image
+/// with smooth physics-inspired "bring card to front" animation.
 class BluppBankWallet extends StatefulWidget {
   final FinanceState state;
   final Function(BankAccount) onManageBank;
@@ -92,13 +94,78 @@ class BluppBankWallet extends StatefulWidget {
   State<BluppBankWallet> createState() => _BluppBankWalletState();
 }
 
-class _BluppBankWalletState extends State<BluppBankWallet> {
+class _BluppBankWalletState extends State<BluppBankWallet>
+    with SingleTickerProviderStateMixin {
   int _frontIndex = 0;
+  int? _animatingTargetIndex;
+  late final AnimationController _animController;
+  late final Animation<double> _curvedAnim;
+
+  @override
+  void initState() {
+    super.initState();
+    _animController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 360),
+    );
+    _curvedAnim = CurvedAnimation(
+      parent: _animController,
+      curve: Curves.easeOutCubic,
+    );
+  }
+
+  @override
+  void dispose() {
+    _animController.dispose();
+    super.dispose();
+  }
+
+  void _bringToFront(int targetIndex) {
+    final accounts = widget.state.bankAccounts;
+    if (accounts.isEmpty && targetIndex == _frontIndex) return;
+    if (accounts.isNotEmpty && (targetIndex % accounts.length) == _frontIndex) return;
+    if (_animController.isAnimating) return;
+
+    setState(() {
+      _animatingTargetIndex = targetIndex;
+    });
+
+    _animController.forward(from: 0.0).then((_) {
+      if (mounted) {
+        setState(() {
+          _frontIndex = targetIndex;
+          _animatingTargetIndex = null;
+        });
+        _animController.reset();
+      }
+    });
+  }
+
+  void _nextCard() {
+    final accounts = widget.state.bankAccounts;
+    final total = accounts.isNotEmpty ? accounts.length : 3;
+    _bringToFront((_frontIndex + 1) % total);
+  }
+
+  void _prevCard() {
+    final accounts = widget.state.bankAccounts;
+    final total = accounts.isNotEmpty ? accounts.length : 3;
+    _bringToFront((_frontIndex - 1 + total) % total);
+  }
+
+  String _cleanLast4(String raw, String fallback) {
+    final digits = raw.replaceAll(RegExp(r'[^0-9]'), '');
+    if (digits.length >= 4) {
+      return digits.substring(digits.length - 4);
+    }
+    return fallback;
+  }
 
   @override
   Widget build(BuildContext context) {
     final accounts = widget.state.bankAccounts;
     final bool hasRealAccounts = accounts.isNotEmpty;
+
     final activeIndex = hasRealAccounts ? (_frontIndex % accounts.length) : 0;
     final activeBank = hasRealAccounts
         ? accounts[activeIndex]
@@ -119,139 +186,242 @@ class _BluppBankWalletState extends State<BluppBankWallet> {
         ? accounts[(activeIndex + 1) % accounts.length]
         : null;
 
-    const deckHeight = 270.0;
+    const deckHeight = 280.0;
     const cardHeight = 200.0;
-    const cutoutWidth = 142.0;
+    const cutoutWidth = 144.0;
     const cutoutHeight = 52.0;
 
-    return SizedBox(
-      height: deckHeight,
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          // 1. BACK CARD (Green VISA)
-          Positioned(
-            top: 0,
-            left: 0,
-            right: 0,
-            height: cardHeight,
-            child: _buildBackCard(
-              bank: backBank,
-              color: const Color(0xFF0D5C46), // Deep Emerald
-              brand: "VISA",
-              last4: backBank?.accountNumber.isNotEmpty == true
-                  ? backBank!.accountNumber.replaceAll(RegExp(r'[^0-9]'), '').padLeft(4, '0').substring(
-                      (backBank.accountNumber.replaceAll(RegExp(r'[^0-9]'), '').length >= 4)
-                          ? backBank.accountNumber.replaceAll(RegExp(r'[^0-9]'), '').length - 4
-                          : 0,
-                    )
-                  : "9312",
-              onTap: () {
-                if (backBank != null) {
-                  setState(() {
-                    _frontIndex = accounts.indexOf(backBank);
-                  });
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 520),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // Gesture-enabled stacked card deck
+            GestureDetector(
+              onHorizontalDragEnd: (details) {
+                if (details.primaryVelocity != null) {
+                  if (details.primaryVelocity! < -180) {
+                    _nextCard();
+                  } else if (details.primaryVelocity! > 180) {
+                    _prevCard();
+                  }
                 }
               },
-            ),
-          ),
+              child: SizedBox(
+                height: deckHeight,
+                child: AnimatedBuilder(
+                  animation: _curvedAnim,
+                  builder: (context, _) {
+                    final t = _curvedAnim.value;
+                    final isSwitching = _animatingTargetIndex != null;
 
-          // 2. MIDDLE CARD (Amber / Bronze Mastercard)
-          Positioned(
-            top: 36,
-            left: 0,
-            right: 0,
-            height: cardHeight,
-            child: _buildMiddleCard(
-              bank: middleBank,
-              color: const Color(0xFFB45309), // Warm Amber Bronze
-              brand: "MASTERCARD",
-              last4: middleBank?.accountNumber.isNotEmpty == true
-                  ? middleBank!.accountNumber.replaceAll(RegExp(r'[^0-9]'), '').padLeft(4, '0').substring(
-                      (middleBank.accountNumber.replaceAll(RegExp(r'[^0-9]'), '').length >= 4)
-                          ? middleBank.accountNumber.replaceAll(RegExp(r'[^0-9]'), '').length - 4
-                          : 0,
-                    )
-                  : "2585",
-              onTap: () {
-                if (middleBank != null) {
-                  setState(() {
-                    _frontIndex = accounts.indexOf(middleBank);
-                  });
-                }
-              },
-            ),
-          ),
+                    // Compute dynamic positions during card-switch animation
+                    double backTop = 0;
+                    double middleTop = 36;
+                    double frontTop = 72;
 
-          // 3. FRONT ACTIVE CARD (Vibrant Purple / Indigo)
-          Positioned(
-            top: 72,
-            left: 0,
-            right: 0,
-            height: cardHeight,
-            child: _buildFrontCard(
-              bank: activeBank,
-              color: const Color(0xFF5856D6), // Vibrant Purple/Indigo
-              brand: "VISA",
-              last4: activeBank.accountNumber.isNotEmpty
-                  ? activeBank.accountNumber.replaceAll(RegExp(r'[^0-9]'), '').padLeft(4, '0').substring(
-                      (activeBank.accountNumber.replaceAll(RegExp(r'[^0-9]'), '').length >= 4)
-                          ? activeBank.accountNumber.replaceAll(RegExp(r'[^0-9]'), '').length - 4
-                          : 0,
-                    )
-                  : "7845",
-              cutoutWidth: cutoutWidth,
-              cutoutHeight: cutoutHeight,
-            ),
-          ),
+                    double backScale = 0.95;
+                    double middleScale = 0.98;
+                    double frontScale = 1.0;
 
-          // 4. DOCKED "+ Add Card" PILL BUTTON (Nestled in the notch)
-          Positioned(
-            top: 72 + (cardHeight - cutoutHeight) + 4,
-            right: 4,
-            width: cutoutWidth - 8,
-            height: cutoutHeight - 8,
-            child: Material(
-              color: Colors.black,
-              borderRadius: BorderRadius.circular(24),
-              elevation: 4,
-              shadowColor: Colors.black.withValues(alpha: 0.4),
-              child: InkWell(
-                onTap: widget.onAddNewCard,
-                borderRadius: BorderRadius.circular(24),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(24),
-                    border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
-                  ),
-                  child: const Center(
-                    child: FittedBox(
-                      fit: BoxFit.scaleDown,
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.add_circle, color: Colors.white, size: 16),
-                          SizedBox(width: 5),
-                          Text(
-                            "Add Card",
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 13,
-                              fontWeight: FontWeight.w700,
-                              letterSpacing: -0.2,
+                    // If a switch is in progress, smoothly interpolate positions
+                    if (isSwitching) {
+                      // Front card glides back
+                      frontTop = 72 - (36 * t);
+                      frontScale = 1.0 - (0.02 * t);
+
+                      // Middle card arcs up into the air and drops into the front slot
+                      final arcLift = math.sin(t * math.pi) * 28.0;
+                      middleTop = 36 + (36 * t) - arcLift;
+                      middleScale = 0.98 + (0.02 * t);
+                    }
+
+                    return Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        // 1. BACK CARD (Green VISA)
+                        Positioned(
+                          top: backTop,
+                          left: 0,
+                          right: 0,
+                          height: cardHeight,
+                          child: Transform.scale(
+                            scale: backScale,
+                            child: _buildBackCard(
+                              bank: backBank,
+                              color: const Color(0xFF0D5C46), // Deep Emerald
+                              brand: "VISA",
+                              last4: backBank != null
+                                  ? _cleanLast4(backBank.accountNumber, "9312")
+                                  : "9312",
+                              onTap: () {
+                                if (hasRealAccounts && backBank != null) {
+                                  _bringToFront(accounts.indexOf(backBank));
+                                } else {
+                                  _nextCard();
+                                }
+                              },
                             ),
                           ),
-                        ],
-                      ),
-                    ),
-                  ),
+                        ),
+
+                        // 2. MIDDLE CARD (Amber / Bronze Mastercard)
+                        Positioned(
+                          top: middleTop,
+                          left: 0,
+                          right: 0,
+                          height: cardHeight,
+                          child: Transform.scale(
+                            scale: middleScale,
+                            child: _buildMiddleCard(
+                              bank: middleBank,
+                              color: const Color(0xFFB45309), // Warm Amber Bronze
+                              brand: "MASTERCARD",
+                              last4: middleBank != null
+                                  ? _cleanLast4(middleBank.accountNumber, "2585")
+                                  : "2585",
+                              onTap: () {
+                                if (hasRealAccounts && middleBank != null) {
+                                  _bringToFront(accounts.indexOf(middleBank));
+                                } else {
+                                  _nextCard();
+                                }
+                              },
+                            ),
+                          ),
+                        ),
+
+                        // 3. FRONT ACTIVE CARD (Vibrant Purple / Indigo)
+                        Positioned(
+                          top: frontTop,
+                          left: 0,
+                          right: 0,
+                          height: cardHeight,
+                          child: Transform.scale(
+                            scale: frontScale,
+                            child: _buildFrontCard(
+                              bank: activeBank,
+                              color: const Color(0xFF5856D6), // Vibrant Purple/Indigo
+                              brand: "VISA",
+                              last4: _cleanLast4(activeBank.accountNumber, "7845"),
+                              cutoutWidth: cutoutWidth,
+                              cutoutHeight: cutoutHeight,
+                            ),
+                          ),
+                        ),
+
+                        // 4. DOCKED "+ Add Card" PILL BUTTON (Nestled in the notch)
+                        Positioned(
+                          top: 72 + (cardHeight - cutoutHeight) + 4,
+                          right: 4,
+                          width: cutoutWidth - 8,
+                          height: cutoutHeight - 8,
+                          child: Material(
+                            color: Colors.black,
+                            borderRadius: BorderRadius.circular(24),
+                            elevation: 4,
+                            shadowColor: Colors.black.withValues(alpha: 0.4),
+                            child: InkWell(
+                              onTap: widget.onAddNewCard,
+                              borderRadius: BorderRadius.circular(24),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 10),
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(24),
+                                  border: Border.all(color: Colors.white.withValues(alpha: 0.18)),
+                                ),
+                                child: const Center(
+                                  child: FittedBox(
+                                    fit: BoxFit.scaleDown,
+                                    child: Row(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(Icons.add_circle, color: Colors.white, size: 16),
+                                        SizedBox(width: 5),
+                                        Text(
+                                          "Add Card",
+                                          style: TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.w700,
+                                            letterSpacing: -0.2,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    );
+                  },
                 ),
               ),
             ),
-          ),
-        ],
+
+            // Card Switcher Indicator Pills (Clean, modern UI/UX on Web & Mobile)
+            if (hasRealAccounts && accounts.length > 1) ...[
+              const SizedBox(height: 6),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: List.generate(accounts.length, (index) {
+                  final isSelected = index == activeIndex;
+                  final bank = accounts[index];
+                  return MouseRegion(
+                    cursor: SystemMouseCursors.click,
+                    child: GestureDetector(
+                      onTap: () => _bringToFront(index),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 240),
+                        margin: const EdgeInsets.symmetric(horizontal: 4),
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                        decoration: BoxDecoration(
+                          color: isSelected
+                              ? bank.color.withValues(alpha: 0.22)
+                              : AppTheme.surfaceLight,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: isSelected
+                                ? bank.color.withValues(alpha: 0.6)
+                                : AppTheme.surfaceBorder.withValues(alpha: 0.5),
+                            width: isSelected ? 1.4 : 1.0,
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              width: 6,
+                              height: 6,
+                              decoration: BoxDecoration(
+                                color: bank.color,
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              bank.name,
+                              style: TextStyle(
+                                color: isSelected ? AppTheme.textPrimary : AppTheme.textMuted,
+                                fontSize: 11,
+                                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  );
+                }),
+              ),
+            ],
+          ],
+        ),
       ),
     );
   }
@@ -263,37 +433,40 @@ class _BluppBankWalletState extends State<BluppBankWallet> {
     required String last4,
     required VoidCallback onTap,
   }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 14),
-        decoration: BoxDecoration(
-          color: color,
-          borderRadius: BorderRadius.circular(24),
-          boxShadow: [
-            BoxShadow(
-              color: color.withValues(alpha: 0.4),
-              blurRadius: 12,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            _buildVisaBrandLogo(),
-            Text(
-              "•••• •••• $last4",
-              style: const TextStyle(
-                color: Colors.white70,
-                fontSize: 13,
-                letterSpacing: 2.0,
-                fontWeight: FontWeight.w600,
-                fontFamily: 'monospace',
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 14),
+          decoration: BoxDecoration(
+            color: color,
+            borderRadius: BorderRadius.circular(24),
+            boxShadow: [
+              BoxShadow(
+                color: color.withValues(alpha: 0.4),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
               ),
-            ),
-          ],
+            ],
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              _buildVisaBrandLogo(),
+              Text(
+                "•••• •••• $last4",
+                style: const TextStyle(
+                  color: Colors.white70,
+                  fontSize: 13,
+                  letterSpacing: 2.0,
+                  fontWeight: FontWeight.w600,
+                  fontFamily: 'monospace',
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -306,37 +479,40 @@ class _BluppBankWalletState extends State<BluppBankWallet> {
     required String last4,
     required VoidCallback onTap,
   }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 14),
-        decoration: BoxDecoration(
-          color: color,
-          borderRadius: BorderRadius.circular(24),
-          boxShadow: [
-            BoxShadow(
-              color: color.withValues(alpha: 0.4),
-              blurRadius: 14,
-              offset: const Offset(0, 6),
-            ),
-          ],
-        ),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            _buildMastercardLogo(),
-            Text(
-              "•••• •••• $last4",
-              style: const TextStyle(
-                color: Colors.white70,
-                fontSize: 13,
-                letterSpacing: 2.0,
-                fontWeight: FontWeight.w600,
-                fontFamily: 'monospace',
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 14),
+          decoration: BoxDecoration(
+            color: color,
+            borderRadius: BorderRadius.circular(24),
+            boxShadow: [
+              BoxShadow(
+                color: color.withValues(alpha: 0.4),
+                blurRadius: 14,
+                offset: const Offset(0, 6),
               ),
-            ),
-          ],
+            ],
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              _buildMastercardLogo(),
+              Text(
+                "•••• •••• $last4",
+                style: const TextStyle(
+                  color: Colors.white70,
+                  fontSize: 13,
+                  letterSpacing: 2.0,
+                  fontWeight: FontWeight.w600,
+                  fontFamily: 'monospace',
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -423,33 +599,39 @@ class _BluppBankWalletState extends State<BluppBankWallet> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            "Balance",
-                            style: TextStyle(
-                              color: Colors.white70,
-                              fontSize: 11,
-                              fontWeight: FontWeight.w500,
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Text(
+                              "Balance",
+                              style: TextStyle(
+                                color: Colors.white70,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w500,
+                              ),
                             ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            AppTheme.formatCurrency(bank.balance),
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 27,
-                              fontWeight: FontWeight.w800,
-                              letterSpacing: -0.6,
+                            const SizedBox(height: 2),
+                            FittedBox(
+                              fit: BoxFit.scaleDown,
+                              alignment: Alignment.centerLeft,
+                              child: Text(
+                                AppTheme.formatCurrency(bank.balance),
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 27,
+                                  fontWeight: FontWeight.w800,
+                                  letterSpacing: -0.6,
+                                ),
+                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
+                      const SizedBox(width: 8),
                       // Quick Add / Minus action buttons embedded right on the card
-                      Padding(
-                        padding: EdgeInsets.only(right: cutoutWidth - 36),
-                        child: Row(
+                      Row(
                           children: [
                             InkWell(
                               onTap: () => widget.onAddMoney(bank),
@@ -508,9 +690,8 @@ class _BluppBankWalletState extends State<BluppBankWallet> {
                             ),
                           ],
                         ),
-                      ),
-                    ],
-                  ),
+                      ],
+                    ),
 
                   // Bottom Row: Name on Left, Exp. Date towards Middle
                   Row(
@@ -521,7 +702,7 @@ class _BluppBankWalletState extends State<BluppBankWallet> {
                           const Text(
                             "Name",
                             style: TextStyle(
-                              color: Colors.white70,
+                              color: Colors.white60,
                               fontSize: 10,
                               fontWeight: FontWeight.w500,
                             ),
@@ -531,20 +712,20 @@ class _BluppBankWalletState extends State<BluppBankWallet> {
                             userName,
                             style: const TextStyle(
                               color: Colors.white,
-                              fontSize: 12.5,
+                              fontSize: 13,
                               fontWeight: FontWeight.w600,
                             ),
                           ),
                         ],
                       ),
-                      const SizedBox(width: 48),
+                      const SizedBox(width: 28),
                       const Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
                             "Exp. Date",
                             style: TextStyle(
-                              color: Colors.white70,
+                              color: Colors.white60,
                               fontSize: 10,
                               fontWeight: FontWeight.w500,
                             ),
@@ -554,8 +735,9 @@ class _BluppBankWalletState extends State<BluppBankWallet> {
                             "08/26",
                             style: TextStyle(
                               color: Colors.white,
-                              fontSize: 12.5,
+                              fontSize: 13,
                               fontWeight: FontWeight.w600,
+                              fontFamily: 'monospace',
                             ),
                           ),
                         ],
@@ -607,52 +789,6 @@ class _BluppBankWalletState extends State<BluppBankWallet> {
                 color: const Color(0xFFF79E1B).withValues(alpha: 0.9),
                 shape: BoxShape.circle,
               ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildEmptyDeck() {
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: AppTheme.surfaceLight,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: AppTheme.surfaceBorder),
-      ),
-      child: Column(
-        children: [
-          Icon(Icons.credit_card_rounded, size: 48, color: AppTheme.primaryTeal),
-          const SizedBox(height: 12),
-          Text(
-            "No Cards Linked Yet",
-            style: TextStyle(
-              color: AppTheme.textPrimary,
-              fontSize: 16,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            "Add your bank cards to activate the interactive stacked wallet.",
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: AppTheme.textMuted,
-              fontSize: 13,
-            ),
-          ),
-          const SizedBox(height: 16),
-          ElevatedButton.icon(
-            onPressed: widget.onAddNewCard,
-            icon: const Icon(Icons.add_rounded, size: 18),
-            label: const Text("Add Card"),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.textPrimary,
-              foregroundColor: AppTheme.surface,
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
             ),
           ),
         ],

@@ -218,343 +218,631 @@ class _SignInScreenState extends State<SignInScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isDesktop = screenWidth >= 880;
+
     return Scaffold(
-      backgroundColor: AppTheme.isDark ? const Color(0xFF0A0A0E) : Colors.white,
-      body: _buildTikTokLoginScreen(),
+      backgroundColor: AppTheme.isDark ? const Color(0xFF08090E) : const Color(0xFFF3F4F6),
+      body: isDesktop ? _buildDesktopLoginScreen() : _buildMobileLoginScreen(),
     );
   }
 
-  Widget _buildTikTokLoginScreen() {
-    final isDesktop = MediaQuery.of(context).size.width > 600;
+  /// Responsive Desktop Web Layout (Dual-Pane Luxury Showcase)
+  Widget _buildDesktopLoginScreen() {
+    final isSignUp = _currentView == AuthView.signUp;
+
+    return Container(
+      width: double.infinity,
+      height: double.infinity,
+      decoration: BoxDecoration(
+        color: AppTheme.isDark ? const Color(0xFF07090F) : const Color(0xFFF1F5F9),
+        gradient: RadialGradient(
+          center: const Alignment(-0.5, -0.6),
+          radius: 1.2,
+          colors: [
+            AppTheme.primaryTeal.withValues(alpha: AppTheme.isDark ? 0.08 : 0.05),
+            const Color(0xFF5856D6).withValues(alpha: AppTheme.isDark ? 0.06 : 0.03),
+            Colors.transparent,
+          ],
+        ),
+      ),
+      child: Center(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 1020, minHeight: 660),
+            child: Container(
+              decoration: BoxDecoration(
+                color: AppTheme.isDark ? const Color(0xFF0F111A) : Colors.white,
+                borderRadius: BorderRadius.circular(28),
+                border: Border.all(
+                  color: AppTheme.isDark
+                      ? Colors.white.withValues(alpha: 0.10)
+                      : Colors.black.withValues(alpha: 0.08),
+                  width: 1.2,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: AppTheme.isDark ? 0.55 : 0.12),
+                    blurRadius: 36,
+                    offset: const Offset(0, 16),
+                  ),
+                ],
+              ),
+              clipBehavior: Clip.antiAlias,
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // LEFT: Brand & Feature Showcase Pane
+                  Expanded(
+                    flex: 5,
+                    child: Container(
+                      padding: const EdgeInsets.all(42),
+                      decoration: BoxDecoration(
+                        color: AppTheme.isDark ? const Color(0xFF0A0C14) : const Color(0xFF0F172A),
+                        border: Border(
+                          right: BorderSide(
+                            color: Colors.white.withValues(alpha: 0.08),
+                            width: 1,
+                          ),
+                        ),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          // Header: Logo & Suite Tag
+                          Row(
+                            children: [
+                              Container(
+                                width: 40,
+                                height: 40,
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withValues(alpha: 0.12),
+                                  shape: BoxShape.circle,
+                                  border: Border.all(color: Colors.white.withValues(alpha: 0.25)),
+                                ),
+                                child: const BluppLogo(
+                                  size: 24,
+                                  iconOnly: true,
+                                  isDark: true,
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              const Text(
+                                'Blupp',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 24,
+                                  fontWeight: FontWeight.w900,
+                                  letterSpacing: 4.0,
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                decoration: BoxDecoration(
+                                  color: AppTheme.primaryTeal.withValues(alpha: 0.2),
+                                  borderRadius: BorderRadius.circular(6),
+                                  border: Border.all(color: AppTheme.primaryTeal.withValues(alpha: 0.5)),
+                                ),
+                                child: Text(
+                                  'AI WEALTH',
+                                  style: TextStyle(
+                                    color: AppTheme.primaryTeal,
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w800,
+                                    letterSpacing: 1.0,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+
+                          const SizedBox(height: 36),
+
+                          // Hero Title & Subtitle
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'Smart Wealth\nManagement,\nEffortless Clarity.',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 32,
+                                  fontWeight: FontWeight.w800,
+                                  height: 1.2,
+                                  letterSpacing: -0.8,
+                                ),
+                              ),
+                              const SizedBox(height: 14),
+                              Text(
+                                'Experience automated net worth tracking, stacked wallet cards, and intelligent FOMO impulse control in one sleek, private workspace.',
+                                style: TextStyle(
+                                  color: Colors.white.withValues(alpha: 0.7),
+                                  fontSize: 14,
+                                  height: 1.5,
+                                ),
+                              ),
+                            ],
+                          ),
+
+                          const SizedBox(height: 32),
+
+                          // Mini Glowing 3-Card Stack Preview (matching the in-app wallet!)
+                          Container(
+                            height: 120,
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            child: Stack(
+                              clipBehavior: Clip.none,
+                              children: [
+                                // Back: Green VISA
+                                Positioned(
+                                  top: 0,
+                                  left: 16,
+                                  right: 16,
+                                  height: 80,
+                                  child: Container(
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFF0D5C46),
+                                      borderRadius: BorderRadius.circular(14),
+                                    ),
+                                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                                    child: const Text("VISA •••• 9312", style: TextStyle(color: Colors.white60, fontSize: 10, fontWeight: FontWeight.w600)),
+                                  ),
+                                ),
+                                // Middle: Bronze Mastercard
+                                Positioned(
+                                  top: 18,
+                                  left: 8,
+                                  right: 8,
+                                  height: 80,
+                                  child: Container(
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFB45309),
+                                      borderRadius: BorderRadius.circular(14),
+                                    ),
+                                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                                    child: const Text("MASTERCARD •••• 2585", style: TextStyle(color: Colors.white70, fontSize: 10, fontWeight: FontWeight.w600)),
+                                  ),
+                                ),
+                                // Front: Purple VISA
+                                Positioned(
+                                  top: 36,
+                                  left: 0,
+                                  right: 0,
+                                  height: 80,
+                                  child: Container(
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFF5856D6),
+                                      borderRadius: BorderRadius.circular(14),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: const Color(0xFF5856D6).withValues(alpha: 0.45),
+                                          blurRadius: 14,
+                                          offset: const Offset(0, 6),
+                                        ),
+                                      ],
+                                    ),
+                                    padding: const EdgeInsets.all(12),
+                                    child: const Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          mainAxisAlignment: MainAxisAlignment.center,
+                                          children: [
+                                            Text("Blupp Active Card", style: TextStyle(color: Colors.white70, fontSize: 10)),
+                                            Text("\$56,782.80", style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w800)),
+                                          ],
+                                        ),
+                                        Text("•••• 7845", style: TextStyle(color: Colors.white70, fontSize: 11, fontFamily: 'monospace')),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+
+                          const SizedBox(height: 28),
+
+                          // Trust Highlights
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              _buildShowcaseBadge(Icons.shield_rounded, "Bank-grade 256-bit encryption & Supabase auth"),
+                              const SizedBox(height: 8),
+                              _buildShowcaseBadge(Icons.auto_awesome_rounded, "Real-time automated liquidity & budget tracking"),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+
+                  // RIGHT: TikTok-Style Form Card
+                  Expanded(
+                    flex: 5,
+                    child: Container(
+                      color: AppTheme.isDark ? const Color(0xFF0F111A) : Colors.white,
+                      child: Column(
+                        children: [
+                          _buildTopSwoopBanner(topPadding: 16),
+                          Padding(
+                            padding: const EdgeInsets.fromLTRB(36, 16, 36, 28),
+                            child: _buildFormBody(isSignUp),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildShowcaseBadge(IconData icon, String text) {
+    return Row(
+      children: [
+        Icon(icon, size: 15, color: AppTheme.primaryTeal),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            text,
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.65),
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// Clean Mobile-First Layout (Matching TikTok Video Reference with Blupp Logo)
+  Widget _buildMobileLoginScreen() {
     final topPadding = MediaQuery.paddingOf(context).top;
     final bottomPadding = MediaQuery.paddingOf(context).bottom;
     final isSignUp = _currentView == AuthView.signUp;
 
     return Center(
       child: ConstrainedBox(
-        constraints: BoxConstraints(maxWidth: isDesktop ? 460 : double.infinity),
+        constraints: const BoxConstraints(maxWidth: 480),
         child: Container(
           color: AppTheme.isDark ? const Color(0xFF0D0E15) : Colors.white,
           child: Column(
             children: [
-              // 1. TOP CURVED BLACK SWOOP BANNER (matching TikTok reference with Blupp logo)
-              ClipPath(
-                clipper: OrganicTopSwoopClipper(),
-                child: Container(
-                  width: double.infinity,
-                  color: Colors.black,
-                  padding: EdgeInsets.only(
-                    top: topPadding + 16,
-                    bottom: 46,
-                    left: 28,
-                    right: 28,
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Wordmark Row: Fish Logo Icon + BLUPP Spaced Bold Text
-                      Row(
-                        children: [
-                          Container(
-                            width: 36,
-                            height: 36,
-                            padding: const EdgeInsets.all(7),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.12),
-                              shape: BoxShape.circle,
-                              border: Border.all(color: Colors.white.withValues(alpha: 0.22)),
-                            ),
-                            child: const BluppLogo(
-                              size: 22,
-                              iconOnly: true,
-                              isDark: true,
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          const Text(
-                            'blupp',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 22,
-                              fontWeight: FontWeight.w900,
-                              letterSpacing: 4.0,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      // Subtitle matching reference: "Welcome Back!" and "Login to continue"
-                      const Text(
-                        'Welcome Back!',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: -0.2,
-                        ),
-                      ),
-                      const SizedBox(height: 3),
-                      Text(
-                        'Login to continue',
-                        style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.65),
-                          fontSize: 13,
-                          fontWeight: FontWeight.w400,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-
-              // 2. SCROLLABLE FORM BODY
+              _buildTopSwoopBanner(topPadding: topPadding),
               Expanded(
                 child: SingleChildScrollView(
                   physics: const BouncingScrollPhysics(),
                   padding: EdgeInsets.fromLTRB(28, 8, 28, bottomPadding + 18),
-                  child: Form(
-                    key: _formKey,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          isSignUp ? "Sign Up" : "Login",
-                          style: TextStyle(
-                            color: AppTheme.isDark ? Colors.white : const Color(0xFF111827),
-                            fontSize: 30,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: -0.8,
-                          ),
-                        ),
-                        const SizedBox(height: 20),
-
-                        // Error Banners
-                        if (widget.state.authError != null) ...[
-                          BluppErrorCard(
-                            where: "Authentication",
-                            why: widget.state.authError!,
-                            onRetry: () => _handleSubmit(),
-                            onDismiss: () => widget.state.clearAuthError(),
-                          ),
-                          const SizedBox(height: 16),
-                        ],
-                        if (_formErrorWhere != null && _formErrorWhy != null) ...[
-                          BluppFieldError(
-                            where: _formErrorWhere!,
-                            why: _formErrorWhy!,
-                          ),
-                          const SizedBox(height: 16),
-                        ],
-
-                        // Full Name (Only for Sign Up)
-                        if (isSignUp) ...[
-                          _buildSoftInputField(
-                            label: "Full Name",
-                            hint: "Enter your full name",
-                            controller: _nameController,
-                            keyboardType: TextInputType.name,
-                            textInputAction: TextInputAction.next,
-                          ),
-                          const SizedBox(height: 16),
-                        ],
-
-                        // Email Field
-                        _buildSoftInputField(
-                          label: "Email",
-                          hint: "Enter your email",
-                          controller: _emailController,
-                          keyboardType: TextInputType.emailAddress,
-                          textInputAction: TextInputAction.next,
-                        ),
-                        const SizedBox(height: 16),
-
-                        // Password Field
-                        _buildSoftInputField(
-                          label: "Password",
-                          hint: "••••••••",
-                          controller: _passwordController,
-                          obscureText: _obscurePassword,
-                          textInputAction: TextInputAction.done,
-                          onSubmitted: (_) => _handleSubmit(),
-                          suffix: IconButton(
-                            icon: Icon(
-                              _obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
-                              color: AppTheme.textMuted,
-                              size: 20,
-                            ),
-                            onPressed: () {
-                              setState(() {
-                                _obscurePassword = !_obscurePassword;
-                              });
-                            },
-                          ),
-                        ),
-
-                        // Forgot Password Link (right-aligned)
-                        if (!isSignUp) ...[
-                          const SizedBox(height: 8),
-                          Align(
-                            alignment: Alignment.centerRight,
-                            child: GestureDetector(
-                              onTap: _showForgotPasswordDialog,
-                              child: Text(
-                                "Forgot password?",
-                                style: TextStyle(
-                                  color: AppTheme.textMuted,
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-
-                        const SizedBox(height: 22),
-
-                        // Solid Black Pill Button: "Login" / "Sign Up"
-                        SizedBox(
-                          width: double.infinity,
-                          height: 52,
-                          child: ElevatedButton(
-                            onPressed: widget.state.isAuthLoading ? null : _handleSubmit,
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.black,
-                              foregroundColor: Colors.white,
-                              elevation: 0,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(26),
-                                side: BorderSide(
-                                  color: AppTheme.isDark ? Colors.white.withValues(alpha: 0.15) : Colors.transparent,
-                                ),
-                              ),
-                            ),
-                            child: widget.state.isAuthLoading
-                                ? const SizedBox(
-                                    width: 22,
-                                    height: 22,
-                                    child: CircularProgressIndicator(strokeWidth: 2.2, color: Colors.white),
-                                  )
-                                : Text(
-                                    isSignUp ? "Sign Up" : "Login",
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                                  ),
-                          ),
-                        ),
-
-                        const SizedBox(height: 22),
-
-                        // "Or" Divider
-                        Row(
-                          children: [
-                            Expanded(child: Divider(color: AppTheme.surfaceBorder, thickness: 1)),
-                            Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 14),
-                              child: Text(
-                                "Or",
-                                style: TextStyle(
-                                  color: AppTheme.textMuted,
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ),
-                            Expanded(child: Divider(color: AppTheme.surfaceBorder, thickness: 1)),
-                          ],
-                        ),
-
-                        const SizedBox(height: 20),
-
-                        // 3 Circular Social Auth Buttons
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            _buildSocialAuthCircle(
-                              icon: Icons.facebook,
-                              color: const Color(0xFF1877F2),
-                              tooltip: "Facebook",
-                              onTap: () => _handleSocialLogin("Facebook"),
-                            ),
-                            const SizedBox(width: 18),
-                            _buildGoogleCircle(
-                              tooltip: "Google",
-                              onTap: () => _handleSocialLogin("Google"),
-                            ),
-                            const SizedBox(width: 18),
-                            _buildSocialAuthCircle(
-                              icon: Icons.apple,
-                              color: AppTheme.isDark ? Colors.white : Colors.black,
-                              tooltip: "Apple",
-                              onTap: () => _handleSocialLogin("Apple"),
-                            ),
-                          ],
-                        ),
-
-                        const SizedBox(height: 18),
-
-                        // Instant Demo Mode Pill (Seamless testing & preview)
-                        Center(
-                          child: TextButton.icon(
-                            onPressed: widget.state.isAuthLoading
-                                ? null
-                                : () => widget.state.signInDemo(),
-                            icon: Icon(Icons.flash_on_rounded, size: 16, color: AppTheme.primaryTeal),
-                            label: Text(
-                              "Try Instant Demo Mode",
-                              style: TextStyle(
-                                color: AppTheme.primaryTeal,
-                                fontSize: 13.5,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ),
-                        ),
-
-                        const SizedBox(height: 14),
-
-                        // Footer Toggle Link
-                        Wrap(
-                          alignment: WrapAlignment.center,
-                          crossAxisAlignment: WrapCrossAlignment.center,
-                          children: [
-                            Text(
-                              isSignUp ? "Already have an account? " : "Don't have an account? ",
-                              style: TextStyle(
-                                color: AppTheme.textMuted,
-                                fontSize: 13.5,
-                              ),
-                            ),
-                            GestureDetector(
-                              onTap: () {
-                                setState(() {
-                                  _currentView = isSignUp ? AuthView.signIn : AuthView.signUp;
-                                  widget.state.clearAuthError();
-                                  _formErrorWhere = null;
-                                  _formErrorWhy = null;
-                                });
-                              },
-                              child: Text(
-                                isSignUp ? "Log in" : "Sign up",
-                                style: TextStyle(
-                                  color: AppTheme.isDark ? Colors.white : Colors.black,
-                                  fontSize: 13.5,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
+                  child: _buildFormBody(isSignUp),
                 ),
               ),
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  /// Curved Organic Black Swoop Banner (Shared across Desktop & Mobile)
+  Widget _buildTopSwoopBanner({required double topPadding}) {
+    return ClipPath(
+      clipper: OrganicTopSwoopClipper(),
+      child: Container(
+        width: double.infinity,
+        color: Colors.black,
+        padding: EdgeInsets.only(
+          top: topPadding + 16,
+          bottom: 46,
+          left: 28,
+          right: 28,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Wordmark Row: Fish Logo Icon + BLUPP Spaced Bold Text
+            Row(
+              children: [
+                Container(
+                  width: 36,
+                  height: 36,
+                  padding: const EdgeInsets.all(7),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.12),
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.white.withValues(alpha: 0.22)),
+                  ),
+                  child: const BluppLogo(
+                    size: 22,
+                    iconOnly: true,
+                    isDark: true,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                const Text(
+                  'blupp',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 22,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 4.0,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'Welcome Back!',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+                letterSpacing: -0.2,
+              ),
+            ),
+            const SizedBox(height: 3),
+            Text(
+              'Login to continue',
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.65),
+                fontSize: 13,
+                fontWeight: FontWeight.w400,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Authentication Form Body (Shared across Desktop & Mobile views)
+  Widget _buildFormBody(bool isSignUp) {
+    return Form(
+      key: _formKey,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            isSignUp ? "Sign Up" : "Login",
+            style: TextStyle(
+              color: AppTheme.isDark ? Colors.white : const Color(0xFF111827),
+              fontSize: 30,
+              fontWeight: FontWeight.w800,
+              letterSpacing: -0.8,
+            ),
+          ),
+          const SizedBox(height: 20),
+
+          // Error Banners
+          if (widget.state.authError != null) ...[
+            BluppErrorCard(
+              where: "Authentication",
+              why: widget.state.authError!,
+              onRetry: () => _handleSubmit(),
+              onDismiss: () => widget.state.clearAuthError(),
+            ),
+            const SizedBox(height: 16),
+          ],
+          if (_formErrorWhere != null && _formErrorWhy != null) ...[
+            BluppFieldError(
+              where: _formErrorWhere!,
+              why: _formErrorWhy!,
+            ),
+            const SizedBox(height: 16),
+          ],
+
+          // Full Name (Only for Sign Up)
+          if (isSignUp) ...[
+            _buildSoftInputField(
+              label: "Full Name",
+              hint: "Enter your full name",
+              controller: _nameController,
+              keyboardType: TextInputType.name,
+              textInputAction: TextInputAction.next,
+            ),
+            const SizedBox(height: 16),
+          ],
+
+          // Email Field
+          _buildSoftInputField(
+            label: "Email",
+            hint: "Enter your email",
+            controller: _emailController,
+            keyboardType: TextInputType.emailAddress,
+            textInputAction: TextInputAction.next,
+          ),
+          const SizedBox(height: 16),
+
+          // Password Field
+          _buildSoftInputField(
+            label: "Password",
+            hint: "••••••••",
+            controller: _passwordController,
+            obscureText: _obscurePassword,
+            textInputAction: TextInputAction.done,
+            onSubmitted: (_) => _handleSubmit(),
+            suffix: IconButton(
+              icon: Icon(
+                _obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                color: AppTheme.textMuted,
+                size: 20,
+              ),
+              onPressed: () {
+                setState(() {
+                  _obscurePassword = !_obscurePassword;
+                });
+              },
+            ),
+          ),
+
+          // Forgot Password Link (right-aligned)
+          if (!isSignUp) ...[
+            const SizedBox(height: 8),
+            Align(
+              alignment: Alignment.centerRight,
+              child: GestureDetector(
+                onTap: _showForgotPasswordDialog,
+                child: Text(
+                  "Forgot password?",
+                  style: TextStyle(
+                    color: AppTheme.textMuted,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+            ),
+          ],
+
+          const SizedBox(height: 22),
+
+          // Solid Black Pill Button: "Login" / "Sign Up"
+          SizedBox(
+            width: double.infinity,
+            height: 52,
+            child: ElevatedButton(
+              onPressed: widget.state.isAuthLoading ? null : _handleSubmit,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.black,
+                foregroundColor: Colors.white,
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(26),
+                  side: BorderSide(
+                    color: AppTheme.isDark ? Colors.white.withValues(alpha: 0.15) : Colors.transparent,
+                  ),
+                ),
+              ),
+              child: widget.state.isAuthLoading
+                  ? const SizedBox(
+                      width: 22,
+                      height: 22,
+                      child: CircularProgressIndicator(strokeWidth: 2.2, color: Colors.white),
+                    )
+                  : Text(
+                      isSignUp ? "Sign Up" : "Login",
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+            ),
+          ),
+
+          const SizedBox(height: 22),
+
+          // "Or" Divider
+          Row(
+            children: [
+              Expanded(child: Divider(color: AppTheme.surfaceBorder, thickness: 1)),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 14),
+                child: Text(
+                  "Or",
+                  style: TextStyle(
+                    color: AppTheme.textMuted,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+              Expanded(child: Divider(color: AppTheme.surfaceBorder, thickness: 1)),
+            ],
+          ),
+
+          const SizedBox(height: 20),
+
+          // 3 Circular Social Auth Buttons
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              _buildSocialAuthCircle(
+                icon: Icons.facebook,
+                color: const Color(0xFF1877F2),
+                tooltip: "Facebook",
+                onTap: () => _handleSocialLogin("Facebook"),
+              ),
+              const SizedBox(width: 18),
+              _buildGoogleCircle(
+                tooltip: "Google",
+                onTap: () => _handleSocialLogin("Google"),
+              ),
+              const SizedBox(width: 18),
+              _buildSocialAuthCircle(
+                icon: Icons.apple,
+                color: AppTheme.isDark ? Colors.white : Colors.black,
+                tooltip: "Apple",
+                onTap: () => _handleSocialLogin("Apple"),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 18),
+
+          // Instant Demo Mode Pill (Seamless testing & preview)
+          Center(
+            child: TextButton.icon(
+              onPressed: widget.state.isAuthLoading
+                  ? null
+                  : () => widget.state.signInDemo(),
+              icon: Icon(Icons.flash_on_rounded, size: 16, color: AppTheme.primaryTeal),
+              label: Text(
+                "Try Instant Demo Mode",
+                style: TextStyle(
+                  color: AppTheme.primaryTeal,
+                  fontSize: 13.5,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 14),
+
+          // Footer Toggle Link
+          Wrap(
+            alignment: WrapAlignment.center,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              Text(
+                isSignUp ? "Already have an account? " : "Don't have an account? ",
+                style: TextStyle(
+                  color: AppTheme.textMuted,
+                  fontSize: 13.5,
+                ),
+              ),
+              GestureDetector(
+                onTap: () {
+                  setState(() {
+                    _currentView = isSignUp ? AuthView.signIn : AuthView.signUp;
+                    widget.state.clearAuthError();
+                    _formErrorWhere = null;
+                    _formErrorWhy = null;
+                  });
+                },
+                child: Text(
+                  isSignUp ? "Log in" : "Sign up",
+                  style: TextStyle(
+                    color: AppTheme.isDark ? Colors.white : Colors.black,
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
