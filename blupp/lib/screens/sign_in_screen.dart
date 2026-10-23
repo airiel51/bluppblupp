@@ -219,323 +219,95 @@ class _SignInScreenState extends State<SignInScreen> {
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
-    final isDesktop = screenWidth >= 880;
-
-    return Scaffold(
-      backgroundColor: AppTheme.isDark ? const Color(0xFF08090E) : const Color(0xFFF3F4F6),
-      body: isDesktop ? _buildDesktopLoginScreen() : _buildMobileLoginScreen(),
-    );
-  }
-
-  /// Responsive Desktop Web Layout (Dual-Pane Luxury Showcase)
-  Widget _buildDesktopLoginScreen() {
+    final isDesktop = screenWidth >= 600;
     final isSignUp = _currentView == AuthView.signUp;
-
-    return Container(
-      width: double.infinity,
-      height: double.infinity,
-      decoration: BoxDecoration(
-        color: AppTheme.isDark ? const Color(0xFF07090F) : const Color(0xFFF1F5F9),
-        gradient: RadialGradient(
-          center: const Alignment(-0.5, -0.6),
-          radius: 1.2,
-          colors: [
-            AppTheme.primaryTeal.withValues(alpha: AppTheme.isDark ? 0.08 : 0.05),
-            const Color(0xFF5856D6).withValues(alpha: AppTheme.isDark ? 0.06 : 0.03),
-            Colors.transparent,
-          ],
-        ),
-      ),
-      child: Center(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 1020, minHeight: 660),
-            child: Container(
-              decoration: BoxDecoration(
-                color: AppTheme.isDark ? const Color(0xFF0F111A) : Colors.white,
-                borderRadius: BorderRadius.circular(28),
-                border: Border.all(
-                  color: AppTheme.isDark
-                      ? Colors.white.withValues(alpha: 0.10)
-                      : Colors.black.withValues(alpha: 0.08),
-                  width: 1.2,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: AppTheme.isDark ? 0.55 : 0.12),
-                    blurRadius: 36,
-                    offset: const Offset(0, 16),
-                  ),
-                ],
-              ),
-              clipBehavior: Clip.antiAlias,
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // LEFT: Brand & Feature Showcase Pane
-                  Expanded(
-                    flex: 5,
-                    child: Container(
-                      padding: const EdgeInsets.all(42),
-                      decoration: BoxDecoration(
-                        color: AppTheme.isDark ? const Color(0xFF0A0C14) : const Color(0xFF0F172A),
-                        border: Border(
-                          right: BorderSide(
-                            color: Colors.white.withValues(alpha: 0.08),
-                            width: 1,
-                          ),
-                        ),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          // Header: Logo & Suite Tag
-                          Row(
-                            children: [
-                              Container(
-                                width: 40,
-                                height: 40,
-                                padding: const EdgeInsets.all(8),
-                                decoration: BoxDecoration(
-                                  color: Colors.white.withValues(alpha: 0.12),
-                                  shape: BoxShape.circle,
-                                  border: Border.all(color: Colors.white.withValues(alpha: 0.25)),
-                                ),
-                                child: const BluppLogo(
-                                  size: 24,
-                                  iconOnly: true,
-                                  isDark: true,
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              const Text(
-                                'Blupp',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 24,
-                                  fontWeight: FontWeight.w900,
-                                  letterSpacing: 4.0,
-                                ),
-                              ),
-                              const SizedBox(width: 10),
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                                decoration: BoxDecoration(
-                                  color: AppTheme.primaryTeal.withValues(alpha: 0.2),
-                                  borderRadius: BorderRadius.circular(6),
-                                  border: Border.all(color: AppTheme.primaryTeal.withValues(alpha: 0.5)),
-                                ),
-                                child: Text(
-                                  'AI WEALTH',
-                                  style: TextStyle(
-                                    color: AppTheme.primaryTeal,
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.w800,
-                                    letterSpacing: 1.0,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-
-                          const SizedBox(height: 36),
-
-                          // Hero Title & Subtitle
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text(
-                                'Smart Wealth\nManagement,\nEffortless Clarity.',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 32,
-                                  fontWeight: FontWeight.w800,
-                                  height: 1.2,
-                                  letterSpacing: -0.8,
-                                ),
-                              ),
-                              const SizedBox(height: 14),
-                              Text(
-                                'Experience automated net worth tracking, stacked wallet cards, and intelligent FOMO impulse control in one sleek, private workspace.',
-                                style: TextStyle(
-                                  color: Colors.white.withValues(alpha: 0.7),
-                                  fontSize: 14,
-                                  height: 1.5,
-                                ),
-                              ),
-                            ],
-                          ),
-
-                          const SizedBox(height: 32),
-
-                          // Mini Glowing 3-Card Stack Preview (matching the in-app wallet!)
-                          Container(
-                            height: 120,
-                            padding: const EdgeInsets.symmetric(horizontal: 16),
-                            child: Stack(
-                              clipBehavior: Clip.none,
-                              children: [
-                                // Back: Green VISA
-                                Positioned(
-                                  top: 0,
-                                  left: 16,
-                                  right: 16,
-                                  height: 80,
-                                  child: Container(
-                                    decoration: BoxDecoration(
-                                      color: const Color(0xFF0D5C46),
-                                      borderRadius: BorderRadius.circular(14),
-                                    ),
-                                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                                    child: const Text("VISA •••• 9312", style: TextStyle(color: Colors.white60, fontSize: 10, fontWeight: FontWeight.w600)),
-                                  ),
-                                ),
-                                // Middle: Bronze Mastercard
-                                Positioned(
-                                  top: 18,
-                                  left: 8,
-                                  right: 8,
-                                  height: 80,
-                                  child: Container(
-                                    decoration: BoxDecoration(
-                                      color: const Color(0xFFB45309),
-                                      borderRadius: BorderRadius.circular(14),
-                                    ),
-                                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                                    child: const Text("MASTERCARD •••• 2585", style: TextStyle(color: Colors.white70, fontSize: 10, fontWeight: FontWeight.w600)),
-                                  ),
-                                ),
-                                // Front: Purple VISA
-                                Positioned(
-                                  top: 36,
-                                  left: 0,
-                                  right: 0,
-                                  height: 80,
-                                  child: Container(
-                                    decoration: BoxDecoration(
-                                      color: const Color(0xFF5856D6),
-                                      borderRadius: BorderRadius.circular(14),
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: const Color(0xFF5856D6).withValues(alpha: 0.45),
-                                          blurRadius: 14,
-                                          offset: const Offset(0, 6),
-                                        ),
-                                      ],
-                                    ),
-                                    padding: const EdgeInsets.all(12),
-                                    child: const Row(
-                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                      children: [
-                                        Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                          mainAxisAlignment: MainAxisAlignment.center,
-                                          children: [
-                                            Text("Blupp Active Card", style: TextStyle(color: Colors.white70, fontSize: 10)),
-                                            Text("\$56,782.80", style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w800)),
-                                          ],
-                                        ),
-                                        Text("•••• 7845", style: TextStyle(color: Colors.white70, fontSize: 11, fontFamily: 'monospace')),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-
-                          const SizedBox(height: 28),
-
-                          // Trust Highlights
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              _buildShowcaseBadge(Icons.shield_rounded, "Bank-grade 256-bit encryption & Supabase auth"),
-                              const SizedBox(height: 8),
-                              _buildShowcaseBadge(Icons.auto_awesome_rounded, "Real-time automated liquidity & budget tracking"),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-
-                  // RIGHT: TikTok-Style Form Card
-                  Expanded(
-                    flex: 5,
-                    child: Container(
-                      color: AppTheme.isDark ? const Color(0xFF0F111A) : Colors.white,
-                      child: Column(
-                        children: [
-                          _buildTopSwoopBanner(topPadding: 16),
-                          Padding(
-                            padding: const EdgeInsets.fromLTRB(36, 16, 36, 28),
-                            child: _buildFormBody(isSignUp),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildShowcaseBadge(IconData icon, String text) {
-    return Row(
-      children: [
-        Icon(icon, size: 15, color: AppTheme.primaryTeal),
-        const SizedBox(width: 8),
-        Expanded(
-          child: Text(
-            text,
-            style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.65),
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  /// Clean Mobile-First Layout (Matching TikTok Video Reference with Blupp Logo)
-  Widget _buildMobileLoginScreen() {
     final topPadding = MediaQuery.paddingOf(context).top;
     final bottomPadding = MediaQuery.paddingOf(context).bottom;
-    final isSignUp = _currentView == AuthView.signUp;
 
-    return Center(
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 480),
-        child: Container(
-          color: AppTheme.isDark ? const Color(0xFF0D0E15) : Colors.white,
-          child: Column(
-            children: [
-              _buildTopSwoopBanner(topPadding: topPadding),
-              Expanded(
-                child: SingleChildScrollView(
-                  physics: const BouncingScrollPhysics(),
-                  padding: EdgeInsets.fromLTRB(28, 8, 28, bottomPadding + 18),
-                  child: _buildFormBody(isSignUp),
-                ),
-              ),
+    return Scaffold(
+      backgroundColor: AppTheme.isDark ? const Color(0xFF08090D) : const Color(0xFFF3F4F6),
+      body: Container(
+        width: double.infinity,
+        height: double.infinity,
+        decoration: BoxDecoration(
+          color: AppTheme.isDark ? const Color(0xFF08090D) : const Color(0xFFF1F5F9),
+          gradient: RadialGradient(
+            center: const Alignment(0.0, -0.3),
+            radius: 1.2,
+            colors: [
+              AppTheme.primaryTeal.withValues(alpha: AppTheme.isDark ? 0.07 : 0.04),
+              const Color(0xFF5856D6).withValues(alpha: AppTheme.isDark ? 0.05 : 0.02),
+              Colors.transparent,
             ],
           ),
         ),
+        child: Center(
+          child: SingleChildScrollView(
+            physics: const BouncingScrollPhysics(),
+            padding: EdgeInsets.symmetric(
+              horizontal: isDesktop ? 20 : 0,
+              vertical: isDesktop ? 36 : 0,
+            ),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 460),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: AppTheme.isDark ? const Color(0xFF0D0E15) : Colors.white,
+                  borderRadius: isDesktop ? BorderRadius.circular(28) : BorderRadius.zero,
+                  border: isDesktop
+                      ? Border.all(
+                          color: AppTheme.isDark
+                              ? Colors.white.withValues(alpha: 0.09)
+                              : Colors.black.withValues(alpha: 0.08),
+                          width: 1.2,
+                        )
+                      : null,
+                  boxShadow: isDesktop
+                      ? [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: AppTheme.isDark ? 0.55 : 0.12),
+                            blurRadius: 40,
+                            offset: const Offset(0, 18),
+                          ),
+                          if (AppTheme.isDark)
+                            BoxShadow(
+                              color: AppTheme.primaryTeal.withValues(alpha: AppTheme.isDark ? 0.04 : 0.01),
+                              blurRadius: 32,
+                              spreadRadius: -4,
+                            ),
+                        ]
+                      : null,
+                ),
+                clipBehavior: Clip.antiAlias,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    _buildTopSwoopBanner(
+                      topPadding: isDesktop ? 16 : topPadding,
+                      isSignUp: isSignUp,
+                    ),
+                    Padding(
+                      padding: EdgeInsets.fromLTRB(
+                        isDesktop ? 32 : 28,
+                        14,
+                        isDesktop ? 32 : 28,
+                        isDesktop ? 28 : (bottomPadding + 20),
+                      ),
+                      child: _buildFormBody(isSignUp),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }
 
-  /// Curved Organic Black Swoop Banner (Shared across Desktop & Mobile)
-  Widget _buildTopSwoopBanner({required double topPadding}) {
+  /// Curved Organic Black Swoop Banner (Shared seamlessly across Desktop & Mobile)
+  Widget _buildTopSwoopBanner({required double topPadding, required bool isSignUp}) {
     return ClipPath(
       clipper: OrganicTopSwoopClipper(),
       child: Container(
@@ -581,9 +353,9 @@ class _SignInScreenState extends State<SignInScreen> {
               ],
             ),
             const SizedBox(height: 16),
-            const Text(
-              'Welcome Back!',
-              style: TextStyle(
+            Text(
+              isSignUp ? 'Create Account' : 'Welcome Back!',
+              style: const TextStyle(
                 color: Colors.white,
                 fontSize: 16,
                 fontWeight: FontWeight.w700,
@@ -592,7 +364,7 @@ class _SignInScreenState extends State<SignInScreen> {
             ),
             const SizedBox(height: 3),
             Text(
-              'Login to continue',
+              isSignUp ? 'Sign up to start tracking' : 'Login to continue',
               style: TextStyle(
                 color: Colors.white.withValues(alpha: 0.65),
                 fontSize: 13,
