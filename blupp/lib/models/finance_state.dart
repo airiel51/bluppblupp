@@ -1399,7 +1399,7 @@ class FinanceState extends ChangeNotifier {
         name: 'Bank Islam',
         accountNumber: '•••• 6742',
         balance: 1450.00,
-        color: const Color(0xFF00897B),
+        color: const Color(0xFF991B1B),
         icon: Icons.account_balance,
       ),
     ]);

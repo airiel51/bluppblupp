@@ -211,160 +211,128 @@ class _BankCardProfile {
     required this.brandIcon,
   });
 
+  static LinearGradient _createGradient(Color baseColor) {
+    final hsl = HSLColor.fromColor(baseColor);
+    final midColor = hsl.withLightness((hsl.lightness * 0.72).clamp(0.12, 0.6)).toColor();
+    final darkColor = hsl.withLightness((hsl.lightness * 0.40).clamp(0.06, 0.35)).toColor();
+    const deepShadow = Color(0xFF0D1117);
+
+    return LinearGradient(
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+      colors: [
+        baseColor,
+        midColor,
+        darkColor,
+        deepShadow,
+      ],
+      stops: const [0.0, 0.45, 0.85, 1.0],
+    );
+  }
+
   static _BankCardProfile forBank(BankAccount bank) {
     final nameLower = bank.name.toLowerCase();
     final baseColor = bank.color;
+    final isLuminanceLight = baseColor.computeLuminance() > 0.42;
+    final cardGradient = _createGradient(baseColor);
 
-    // 1. Maybank - Signature Yellow Card
+    // 1. Maybank - Signature Striped Card
     if (nameLower.contains('maybank') || nameLower.contains('harimau')) {
       return _BankCardProfile(
         brandName: bank.name,
         cardNetwork: 'VISA',
         expiry: '08/28',
-        accentColor: const Color(0xFFFFC000),
-        isLight: true,
+        accentColor: baseColor,
+        isLight: isLuminanceLight,
         isGoldChip: true,
         watermark: _WatermarkType.stripes,
         cardTier: 'VISA PLATINUM',
         brandIcon: Icons.account_balance_rounded,
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            Color(0xFFFFD54F),
-            Color(0xFFFFB300),
-            Color(0xFFF57F17),
-          ],
-        ),
+        gradient: cardGradient,
       );
     }
 
-    // 2. CIMB Bank - Signature Crimson & Carbon Card
+    // 2. CIMB Bank - Signature Carbon Mesh Card
     if (nameLower.contains('cimb')) {
       return _BankCardProfile(
         brandName: bank.name,
         cardNetwork: 'MASTERCARD',
         expiry: '04/27',
-        accentColor: const Color(0xFFED1C24),
-        isLight: false,
+        accentColor: baseColor,
+        isLight: isLuminanceLight,
         isGoldChip: false,
         watermark: _WatermarkType.mesh,
         cardTier: 'MASTERCARD WORLD',
         brandIcon: Icons.account_balance_rounded,
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            Color(0xFFE53935),
-            Color(0xFFB71C1C),
-            Color(0xFF1E1E24),
-          ],
-        ),
+        gradient: cardGradient,
       );
     }
 
-    // 3. Bank Islam - Signature Emerald Green Card
+    // 3. Bank Islam / Muamalat - Concentric Arch Geometric Card
     if (nameLower.contains('islam') || nameLower.contains('muamalat')) {
       return _BankCardProfile(
         brandName: bank.name,
         cardNetwork: 'VISA',
         expiry: '11/29',
-        accentColor: const Color(0xFF00897B),
-        isLight: false,
+        accentColor: baseColor,
+        isLight: isLuminanceLight,
         isGoldChip: true,
         watermark: _WatermarkType.islamic,
         cardTier: 'VISA DEBIT-i',
         brandIcon: Icons.account_balance_rounded,
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            Color(0xFF00897B),
-            Color(0xFF004D40),
-            Color(0xFF0A2E28),
-          ],
-        ),
+        gradient: cardGradient,
       );
     }
 
-    // 4. RHB Bank - Signature Royal Blue Card
+    // 4. RHB Bank - Fluid Wave Card
     if (nameLower.contains('rhb')) {
       return _BankCardProfile(
         brandName: bank.name,
         cardNetwork: 'VISA',
         expiry: '06/28',
-        accentColor: const Color(0xFF0067B1),
-        isLight: false,
+        accentColor: baseColor,
+        isLight: isLuminanceLight,
         isGoldChip: false,
         watermark: _WatermarkType.waves,
         cardTier: 'VISA SIGNATURE',
         brandIcon: Icons.account_balance_rounded,
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            Color(0xFF0284C7),
-            Color(0xFF0067B1),
-            Color(0xFF0F172A),
-          ],
-        ),
+        gradient: cardGradient,
       );
     }
 
-    // 5. GXBank - Cyber Neon Violet Card
+    // 5. GXBank - Cyber Neon Circuit Card
     if (nameLower.contains('gx') || nameLower.contains('gxbank')) {
       return _BankCardProfile(
         brandName: bank.name,
         cardNetwork: 'MASTERCARD',
         expiry: '01/30',
-        accentColor: const Color(0xFF8B5CF6),
-        isLight: false,
+        accentColor: baseColor,
+        isLight: isLuminanceLight,
         isGoldChip: false,
         watermark: _WatermarkType.cyber,
         cardTier: 'DIGITAL DEBIT',
         brandIcon: Icons.bolt_rounded,
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            Color(0xFF8B5CF6),
-            Color(0xFF6D28D9),
-            Color(0xFF1E1B4B),
-          ],
-        ),
+        gradient: cardGradient,
       );
     }
 
-    // 6. Touch 'n Go - Electric Cyan Card
+    // 6. Touch 'n Go - Contactless Wave Card
     if (nameLower.contains('touch') || nameLower.contains('tng')) {
       return _BankCardProfile(
         brandName: bank.name,
         cardNetwork: 'VISA',
         expiry: '09/27',
-        accentColor: const Color(0xFF0284C7),
-        isLight: false,
+        accentColor: baseColor,
+        isLight: isLuminanceLight,
         isGoldChip: false,
         watermark: _WatermarkType.waves,
         cardTier: 'VISA PREPAID',
         brandIcon: Icons.contactless_rounded,
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            Color(0xFF0284C7),
-            Color(0xFF0369A1),
-            Color(0xFF082F49),
-          ],
-        ),
+        gradient: cardGradient,
       );
     }
 
-    // Dynamic tailored profile based on bank color
-    final isLuminanceLight = baseColor.computeLuminance() > 0.42;
-    final darkenedColor = HSLColor.fromColor(baseColor)
-        .withLightness((HSLColor.fromColor(baseColor).lightness * 0.65).clamp(0.12, 0.5))
-        .toColor();
-
+    // Dynamic tailored profile for any custom bank (Aeon Bank, Public Bank, HSBC, etc.)
     return _BankCardProfile(
       brandName: bank.name,
       cardNetwork: (bank.name.length % 2 == 0) ? 'VISA' : 'MASTERCARD',
@@ -375,15 +343,7 @@ class _BankCardProfile {
       watermark: _WatermarkType.standard,
       cardTier: 'DEBIT CARD',
       brandIcon: bank.icon,
-      gradient: LinearGradient(
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-        colors: [
-          baseColor,
-          darkenedColor,
-          const Color(0xFF111827),
-        ],
-      ),
+      gradient: cardGradient,
     );
   }
 }
