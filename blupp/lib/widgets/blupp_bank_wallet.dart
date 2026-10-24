@@ -568,7 +568,7 @@ class _BluppBankWalletState extends State<BluppBankWallet>
         final cardHeight = (cardWidth * 0.56).clamp(168.0, 215.0);
         final cutoutWidth = (cardWidth * 0.35).clamp(115.0, 140.0);
         const cutoutHeight = 46.0;
-        final deckHeight = cardHeight + 64.0;
+        final deckHeight = cardHeight + 72.0;
 
         return Center(
           child: ConstrainedBox(
@@ -576,32 +576,33 @@ class _BluppBankWalletState extends State<BluppBankWallet>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // Gesture-enabled interactive swipe & stacked card deck (Dannndi-style pan drag)
+                // Gesture-enabled horizontal swipe & stacked card deck (clean drag with zero tap conflict)
                 GestureDetector(
-                  onPanStart: (details) {
+                  behavior: HitTestBehavior.translucent,
+                  onHorizontalDragStart: (_) {
+                    if (_animController.isAnimating) return;
+                    _dragOffset = Offset.zero;
+                  },
+                  onHorizontalDragUpdate: (details) {
                     if (_animController.isAnimating) return;
                     setState(() {
-                      _dragOffset = Offset.zero;
+                      _dragOffset = Offset(_dragOffset.dx + details.delta.dx, 0.0);
                     });
                   },
-                  onPanUpdate: (details) {
-                    if (_animController.isAnimating) return;
-                    setState(() {
-                      _dragOffset += details.delta;
-                    });
-                  },
-                  onPanEnd: (details) {
+                  onHorizontalDragEnd: (details) {
                     if (_animController.isAnimating) return;
                     final dx = _dragOffset.dx;
-                    final vx = details.velocity.pixelsPerSecond.dx;
-                    if (dx < -65 || vx < -260) {
+                    final vx = details.primaryVelocity ?? 0.0;
+                    if (dx < -55 || vx < -220) {
                       _nextCard();
-                    } else if (dx > 65 || vx > 260) {
+                    } else if (dx > 55 || vx > 220) {
                       _prevCard();
                     }
-                    setState(() {
-                      _dragOffset = Offset.zero;
-                    });
+                    if (_dragOffset != Offset.zero) {
+                      setState(() {
+                        _dragOffset = Offset.zero;
+                      });
+                    }
                   },
                   child: SizedBox(
                     height: deckHeight,
@@ -805,41 +806,43 @@ class _BluppBankWalletState extends State<BluppBankWallet>
                     // 4. DOCKED "+ Add Card" PILL BUTTON (Nestled in the front card's notch)
                     stackChildren.add(
                       Positioned(
-                        top: 56.0 + (cardHeight - cutoutHeight) + 3,
+                        top: 56.0 + (cardHeight - cutoutHeight) + 2,
                         right: 3,
                         width: cutoutWidth - 6,
-                        height: cutoutHeight - 6,
-                        child: Material(
-                          color: Colors.black,
-                          borderRadius: BorderRadius.circular(22),
-                          elevation: 6,
-                          shadowColor: Colors.black.withValues(alpha: 0.5),
-                          child: InkWell(
-                            onTap: widget.onAddNewCard,
+                        height: cutoutHeight - 4,
+                        child: MouseRegion(
+                          cursor: SystemMouseCursors.click,
+                          child: Material(
+                            color: Colors.black,
                             borderRadius: BorderRadius.circular(22),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8),
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(22),
-                                border: Border.all(
-                                  color: Colors.white.withValues(alpha: 0.22),
-                                  width: 1.0,
+                            elevation: 6,
+                            shadowColor: Colors.black.withValues(alpha: 0.5),
+                            child: InkWell(
+                              onTap: widget.onAddNewCard,
+                              borderRadius: BorderRadius.circular(22),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 10),
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(22),
+                                  border: Border.all(
+                                    color: Colors.white.withValues(alpha: 0.25),
+                                    width: 1.0,
+                                  ),
                                 ),
-                              ),
-                              child: const Center(
-                                child: FittedBox(
+                                alignment: Alignment.center,
+                                child: const FittedBox(
                                   fit: BoxFit.scaleDown,
                                   child: Row(
                                     mainAxisAlignment: MainAxisAlignment.center,
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
                                       Icon(Icons.add_circle, color: Colors.white, size: 15),
-                                      SizedBox(width: 4),
+                                      SizedBox(width: 5),
                                       Text(
                                         "Add Card",
                                         style: TextStyle(
                                           color: Colors.white,
-                                          fontSize: 12,
+                                          fontSize: 12.5,
                                           fontWeight: FontWeight.w700,
                                           letterSpacing: -0.2,
                                         ),
@@ -1057,58 +1060,64 @@ class _BluppBankWalletState extends State<BluppBankWallet>
                     Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        InkWell(
-                          onTap: () => widget.onAddMoney(bank),
-                          borderRadius: BorderRadius.circular(8),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4.5),
-                            decoration: BoxDecoration(
-                              color: btnBg,
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(color: btnBorder),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(Icons.add_rounded, size: 12, color: textColor),
-                                const SizedBox(width: 3),
-                                Text(
-                                  "Add",
-                                  style: TextStyle(
-                                    color: textColor,
-                                    fontSize: 10.5,
-                                    fontWeight: FontWeight.w700,
+                        MouseRegion(
+                          cursor: SystemMouseCursors.click,
+                          child: GestureDetector(
+                            behavior: HitTestBehavior.opaque,
+                            onTap: () => widget.onAddMoney(bank),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                              decoration: BoxDecoration(
+                                color: btnBg,
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: btnBorder),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.add_rounded, size: 13, color: textColor),
+                                  const SizedBox(width: 3),
+                                  Text(
+                                    "Add",
+                                    style: TextStyle(
+                                      color: textColor,
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w700,
+                                    ),
                                   ),
-                                ),
-                              ],
+                                ],
+                              ),
                             ),
                           ),
                         ),
-                        const SizedBox(width: 5),
-                        InkWell(
-                          onTap: () => widget.onMinusMoney(bank),
-                          borderRadius: BorderRadius.circular(8),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4.5),
-                            decoration: BoxDecoration(
-                              color: btnBg,
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(color: btnBorder),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(Icons.remove_rounded, size: 12, color: textColor),
-                                const SizedBox(width: 3),
-                                Text(
-                                  "Minus",
-                                  style: TextStyle(
-                                    color: textColor,
-                                    fontSize: 10.5,
-                                    fontWeight: FontWeight.w700,
+                        const SizedBox(width: 6),
+                        MouseRegion(
+                          cursor: SystemMouseCursors.click,
+                          child: GestureDetector(
+                            behavior: HitTestBehavior.opaque,
+                            onTap: () => widget.onMinusMoney(bank),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                              decoration: BoxDecoration(
+                                color: btnBg,
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: btnBorder),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.remove_rounded, size: 13, color: textColor),
+                                  const SizedBox(width: 3),
+                                  Text(
+                                    "Minus",
+                                    style: TextStyle(
+                                      color: textColor,
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w700,
+                                    ),
                                   ),
-                                ),
-                              ],
+                                ],
+                              ),
                             ),
                           ),
                         ),
@@ -1344,64 +1353,71 @@ class _BluppBankWalletState extends State<BluppBankWallet>
           final bank = accounts[index];
 
           return Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4),
-            child: InkWell(
-              onTap: () => _bringToFront(index),
-              borderRadius: BorderRadius.circular(12),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 220),
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                decoration: BoxDecoration(
-                  color: isSelected
-                      ? bank.color.withValues(alpha: 0.18)
-                      : AppTheme.surfaceLight,
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+            child: MouseRegion(
+              cursor: SystemMouseCursors.click,
+              child: Material(
+                color: Colors.transparent,
+                borderRadius: BorderRadius.circular(12),
+                child: InkWell(
+                  onTap: () => _bringToFront(index),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: isSelected
-                        ? bank.color.withValues(alpha: 0.85)
-                        : AppTheme.surfaceBorder.withValues(alpha: 0.5),
-                    width: isSelected ? 1.5 : 1.0,
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 220),
+                    padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 7),
+                    decoration: BoxDecoration(
+                      color: isSelected
+                          ? bank.color.withValues(alpha: 0.18)
+                          : AppTheme.surfaceLight,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: isSelected
+                            ? bank.color.withValues(alpha: 0.85)
+                            : AppTheme.surfaceBorder.withValues(alpha: 0.5),
+                        width: isSelected ? 1.5 : 1.0,
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          width: 7,
+                          height: 7,
+                          decoration: BoxDecoration(
+                            color: bank.color,
+                            shape: BoxShape.circle,
+                            boxShadow: isSelected
+                                ? [
+                                    BoxShadow(
+                                      color: bank.color.withValues(alpha: 0.7),
+                                      blurRadius: 5,
+                                      spreadRadius: 0.5,
+                                    )
+                                  ]
+                                : null,
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          bank.name,
+                          style: TextStyle(
+                            color: isSelected ? AppTheme.textPrimary : AppTheme.textSecondary,
+                            fontSize: 11.5,
+                            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                          ),
+                        ),
+                        const SizedBox(width: 5),
+                        Text(
+                          AppTheme.formatCurrency(bank.balance),
+                          style: TextStyle(
+                            color: isSelected ? bank.color : AppTheme.textMuted,
+                            fontSize: 11,
+                            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w400,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      width: 7,
-                      height: 7,
-                      decoration: BoxDecoration(
-                        color: bank.color,
-                        shape: BoxShape.circle,
-                        boxShadow: isSelected
-                            ? [
-                                BoxShadow(
-                                  color: bank.color.withValues(alpha: 0.7),
-                                  blurRadius: 5,
-                                  spreadRadius: 0.5,
-                                )
-                              ]
-                            : null,
-                      ),
-                    ),
-                    const SizedBox(width: 6),
-                    Text(
-                      bank.name,
-                      style: TextStyle(
-                        color: isSelected ? AppTheme.textPrimary : AppTheme.textSecondary,
-                        fontSize: 11.5,
-                        fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                      ),
-                    ),
-                    const SizedBox(width: 5),
-                    Text(
-                      AppTheme.formatCurrency(bank.balance),
-                      style: TextStyle(
-                        color: isSelected ? bank.color : AppTheme.textMuted,
-                        fontSize: 11,
-                        fontWeight: isSelected ? FontWeight.w700 : FontWeight.w400,
-                      ),
-                    ),
-                  ],
                 ),
               ),
             ),

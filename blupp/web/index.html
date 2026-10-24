@@ -5,8 +5,8 @@
 
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-  <!-- viewport: optimized for mobile responsiveness with safe area support and no horizontal scroll -->
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no, viewport-fit=cover">
+  <!-- viewport: standard viewport with no viewport-fit=cover to avoid touch/click coordinate offset -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, shrink-to-fit=no">
   
   <!-- SEO: High-ranking title & compelling meta description -->
   <title>Blupp AI Finance — Smart Personal Wealth & Expense Tracking</title>
@@ -74,40 +74,19 @@
   </script>
 
   <style>
-    /* Prevent white flash on load — match app dark background */
+    /* Prevent white flash on load — lock html & body to prevent browser scroll & touch coordinate offset */
     html, body {
       background-color: #09090B;
       color: #FAFAFA;
       margin: 0;
       padding: 0;
-      height: 100%;
       width: 100%;
-      max-width: 100vw;
-      overflow-x: hidden; /* Prevent horizontal scroll */
+      height: 100%;
+      overflow: hidden;
+      position: fixed;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Inter", sans-serif;
       -webkit-font-smoothing: antialiased;
       -moz-osx-font-smoothing: grayscale;
-    }
-
-    /* Accessibility: Skip to Content Link */
-    .skip-to-content {
-      position: absolute;
-      top: -100px;
-      left: 16px;
-      background: #10B981;
-      color: #09090B;
-      padding: 10px 18px;
-      font-weight: 700;
-      font-size: 14px;
-      border-radius: 8px;
-      z-index: 99999;
-      text-decoration: none;
-      transition: top 0.2s ease-in-out;
-      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
-    }
-    .skip-to-content:focus {
-      top: 16px;
-      outline: 2px solid #FFFFFF;
     }
 
     /* Print Stylesheet: clean report format without app chrome */
@@ -115,8 +94,9 @@
       body {
         background: #FFFFFF !important;
         color: #09090B !important;
+        position: static !important;
+        overflow: auto !important;
       }
-      .skip-to-content,
       .no-print {
         display: none !important;
       }
@@ -124,21 +104,16 @@
   </style>
 </head>
 <body>
-  <!-- Accessibility Skip Link -->
-  <a href="#flutter-app-host" class="skip-to-content">Skip to content</a>
-
-  <div id="flutter-app-host" role="main" style="width: 100%; height: 100%;">
-    <script>
-      // Unregister old service workers to prevent stale cache on iOS
-      if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.getRegistrations().then(function(registrations) {
-          for (let registration of registrations) {
-            registration.unregister();
-          }
-        });
-      }
-    </script>
-    <script src="flutter_bootstrap.js" async></script>
-  </div>
+  <script>
+    // Unregister old service workers to prevent stale cache on iOS
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then(function(registrations) {
+        for (let registration of registrations) {
+          registration.unregister();
+        }
+      });
+    }
+  </script>
+  <script src="flutter_bootstrap.js" async></script>
 </body>
 </html>
