@@ -104,7 +104,40 @@
   </style>
 </head>
 <body>
+  <!-- Instant pre-boot splash loader for Web & PWA -->
+  <div id="app-splash" style="position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background-color:#09090B;z-index:999999;font-family:-apple-system,BlinkMacSystemFont,'Inter',sans-serif;user-select:none;">
+    <div style="position:relative;width:96px;height:96px;display:flex;align-items:center;justify-content:center;background:#141418;border-radius:26px;border:1.2px solid rgba(255,255,255,0.12);box-shadow:0 8px 28px rgba(16,185,129,0.25);">
+      <img src="assets/images/blupp_fish_white.png" alt="Blupp" style="width:58px;height:58px;object-fit:contain;" onerror="this.style.display='none';document.getElementById('web-splash-fallback').style.display='block';" />
+      <div id="web-splash-fallback" style="display:none;color:#10B981;font-size:32px;">🐟</div>
+    </div>
+    <div style="margin-top:28px;display:flex;align-items:center;gap:8px;">
+      <span style="font-size:38px;font-weight:800;letter-spacing:-1px;color:#FAFAFA;">blupp</span>
+      <span style="font-size:11.5px;font-weight:800;color:#FFFFFF;background:linear-gradient(135deg,#10B981,#06B6D4);padding:2px 7px;border-radius:6px;letter-spacing:0.8px;">AI</span>
+    </div>
+    <div style="margin-top:8px;font-size:11px;font-weight:600;letter-spacing:3.2px;color:#71717A;">INTELLIGENT WEALTH OS</div>
+    <div style="margin-top:34px;width:170px;height:4.5px;background:rgba(255,255,255,0.08);border-radius:3px;overflow:hidden;position:relative;">
+      <div style="width:45%;height:100%;background:linear-gradient(90deg,#10B981,#06B6D4);border-radius:3px;animation:webSplashBar 1.6s ease-in-out infinite;"></div>
+    </div>
+  </div>
+  <style>
+    @keyframes webSplashBar {
+      0% { transform: translateX(-100%); }
+      50% { transform: translateX(110%); }
+      100% { transform: translateX(250%); }
+    }
+  </style>
+
   <script>
+    // Remove web pre-boot splash once Flutter renders its initial frame
+    window.addEventListener('flutter-first-frame', function () {
+      var splash = document.getElementById('app-splash');
+      if (splash) {
+        splash.style.transition = 'opacity 0.25s ease-out';
+        splash.style.opacity = '0';
+        setTimeout(function() { splash.remove(); }, 250);
+      }
+    });
+
     // Unregister old service workers to prevent stale cache on iOS
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.getRegistrations().then(function(registrations) {
