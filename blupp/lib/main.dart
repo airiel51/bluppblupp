@@ -19,6 +19,7 @@ import 'widgets/ai_quick_log_sheet.dart';
 import 'widgets/blupp_search_dialog.dart';
 import 'widgets/blupp_cookie_banner.dart';
 import 'screens/not_found_screen.dart';
+import 'screens/splash_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -37,8 +38,13 @@ void main() async {
 
 class BluppApp extends StatefulWidget {
   final bool? initialAuthenticated;
+  final bool? showSplash;
 
-  const BluppApp({super.key, this.initialAuthenticated});
+  const BluppApp({
+    super.key,
+    this.initialAuthenticated,
+    this.showSplash,
+  });
 
   @override
   State<BluppApp> createState() => _BluppAppState();
@@ -46,12 +52,24 @@ class BluppApp extends StatefulWidget {
 
 class _BluppAppState extends State<BluppApp> {
   late final FinanceState _financeState;
+  late bool _isSplashVisible;
 
   @override
   void initState() {
     super.initState();
     _financeState = FinanceState(initialAuthenticated: widget.initialAuthenticated);
     _financeState.syncWithSupabase();
+    // Default to true for standard app launch (initialAuthenticated == null),
+    // or when explicitly enabled via widget.showSplash.
+    _isSplashVisible = widget.showSplash ?? (widget.initialAuthenticated == null);
+  }
+
+  void _onSplashFinished() {
+    if (mounted) {
+      setState(() {
+        _isSplashVisible = false;
+      });
+    }
   }
 
   @override
@@ -84,16 +102,22 @@ class _BluppAppState extends State<BluppApp> {
             builder: (_) => const BluppNotFoundScreen(),
           ),
           home: AnimatedSwitcher(
-            duration: const Duration(milliseconds: 250),
-            child: _financeState.isAuthenticated
-                ? MainNavigationShell(
-                    key: const ValueKey('authenticated_shell'),
+            duration: const Duration(milliseconds: 320),
+            child: _isSplashVisible
+                ? SplashScreen(
+                    key: const ValueKey('splash_screen'),
                     state: _financeState,
+                    onFinish: _onSplashFinished,
                   )
-                : SignInScreen(
-                    key: const ValueKey('sign_in_screen'),
-                    state: _financeState,
-                  ),
+                : (_financeState.isAuthenticated
+                    ? MainNavigationShell(
+                        key: const ValueKey('authenticated_shell'),
+                        state: _financeState,
+                      )
+                    : SignInScreen(
+                        key: const ValueKey('sign_in_screen'),
+                        state: _financeState,
+                      )),
           ),
         );
       },
