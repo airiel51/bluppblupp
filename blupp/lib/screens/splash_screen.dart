@@ -24,7 +24,7 @@ class SplashScreen extends StatefulWidget {
     super.key,
     required this.state,
     required this.onFinish,
-    this.duration = const Duration(milliseconds: 2200),
+    this.duration = const Duration(milliseconds: 1100),
     this.autoNavigate = true,
   });
 
@@ -58,7 +58,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
     // 1. Entry Animation (Logo & Title entrance)
     _entryController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 900),
+      duration: const Duration(milliseconds: 700),
     );
 
     _fadeIn = CurvedAnimation(
@@ -106,6 +106,24 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
       _progressController.forward().then((_) {
         if (mounted && !_isExiting) {
           _completeSplash();
+        }
+      });
+
+      // When initial data sync finishes from Supabase, smoothly accelerate to finish
+      widget.state.syncFuture.then((_) {
+        if (mounted && !_isExiting && widget.autoNavigate) {
+          final remaining = 1.0 - _progressController.value;
+          if (remaining > 0.05 && _progressController.isAnimating) {
+            _progressController.animateTo(
+              1.0,
+              duration: const Duration(milliseconds: 200),
+              curve: Curves.easeOut,
+            ).then((_) {
+              if (mounted && !_isExiting) {
+                _completeSplash();
+              }
+            });
+          }
         }
       });
     }

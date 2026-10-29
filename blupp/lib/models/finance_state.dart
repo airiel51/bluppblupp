@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
@@ -1970,18 +1971,48 @@ class FinanceState extends ChangeNotifier {
   // --- SUPABASE SYNCHRONIZATION ---
   bool _isLoadingFromSupabase = false;
   bool get isLoadingFromSupabase => _isLoadingFromSupabase;
+  Completer<void>? _syncCompleter;
+  Future<void> get syncFuture => _syncCompleter?.future ?? Future.value();
+  bool _isInitialSyncDone = false;
+  bool get isInitialSyncDone => _isInitialSyncDone;
 
   Future<void> syncWithSupabase() async {
-    if (!SupabaseService.instance.isConfigured) return;
-    // When running in default demo account, do not take previous user information from Supabase
-    if (_isDemoAccount) return;
+    if (!SupabaseService.instance.isConfigured || _isDemoAccount) {
+      _isInitialSyncDone = true;
+      if (_syncCompleter != null && !_syncCompleter!.isCompleted) {
+        _syncCompleter!.complete();
+      }
+      return;
+    }
+
+    if (_syncCompleter == null || _syncCompleter!.isCompleted) {
+      _syncCompleter = Completer<void>();
+    }
 
     _isLoadingFromSupabase = true;
     notifyListeners();
 
     try {
-      // 1. Fetch User Profile & Settings
-      final profile = await SupabaseService.instance.fetchUserProfile();
+      // Execute all 7 Supabase table queries concurrently in parallel with Future.wait
+      final results = await Future.wait([
+        SupabaseService.instance.fetchUserProfile(),
+        SupabaseService.instance.fetchBankAccounts(),
+        SupabaseService.instance.fetchTransactions(),
+        SupabaseService.instance.fetchInvestments(),
+        SupabaseService.instance.fetchLoans(),
+        SupabaseService.instance.fetchPlannedExpenses(),
+        SupabaseService.instance.fetchWishlist(),
+      ]);
+
+      final profile = results[0] as Map<String, dynamic>?;
+      final supaBanks = results[1] as List<BankAccount>;
+      final supaTransactions = results[2] as List<TransactionItem>;
+      final supaInvestments = results[3] as List<InvestmentItem>;
+      final supaLoans = results[4] as List<LoanItem>;
+      final supaPlans = results[5] as List<PlannedExpense>;
+      final supaWishlist = results[6] as List<WishlistItem>;
+
+      // 1. Process User Profile & Settings
       if (profile != null) {
         if (profile['full_name'] != null && (profile['full_name'] as String).isNotEmpty) {
           _userName = profile['full_name'];
@@ -2026,7 +2057,6 @@ class FinanceState extends ChangeNotifier {
               _cachedProfileBytes = base64Decode(authImg);
             } catch (_) {}
           } else if (_profileImageBase64 != null && _profileImageBase64!.isNotEmpty) {
-            // Local exists, push to Supabase
             SupabaseService.instance.updateUserProfileImage(_profileImageBase64);
           } else {
             _loadSavedProfileImage();
@@ -2047,33 +2077,27 @@ class FinanceState extends ChangeNotifier {
         }
       }
 
-      // 2. Fetch Bank Accounts (Empty for new users)
-      final supaBanks = await SupabaseService.instance.fetchBankAccounts();
+      // 2. Populate Bank Accounts
       _bankAccounts.clear();
       _bankAccounts.addAll(supaBanks);
 
-      // 3. Fetch Transactions
-      final supaTransactions = await SupabaseService.instance.fetchTransactions();
+      // 3. Populate Transactions
       _transactions.clear();
       _transactions.addAll(supaTransactions);
 
-      // 4. Fetch Investments
-      final supaInvestments = await SupabaseService.instance.fetchInvestments();
+      // 4. Populate Investments
       _investments.clear();
       _investments.addAll(supaInvestments);
 
-      // 5. Fetch Loans
-      final supaLoans = await SupabaseService.instance.fetchLoans();
+      // 5. Populate Loans
       _loans.clear();
       _loans.addAll(supaLoans);
 
-      // 6. Fetch Planned Expenses
-      final supaPlans = await SupabaseService.instance.fetchPlannedExpenses();
+      // 6. Populate Planned Expenses
       _plannedExpenses.clear();
       _plannedExpenses.addAll(supaPlans);
 
-      // 7. Fetch FOMO Wishlist
-      final supaWishlist = await SupabaseService.instance.fetchWishlist();
+      // 7. Populate FOMO Wishlist
       _fomoWishlist.clear();
       _fomoWishlist.addAll(supaWishlist);
       _totalFomoSaved = _fomoWishlist.where((w) => w.avoided).fold(0.0, (sum, w) => sum + w.cost);
@@ -2081,6 +2105,10 @@ class FinanceState extends ChangeNotifier {
       debugPrint('[FinanceState] Error syncing with Supabase: $e');
     } finally {
       _isLoadingFromSupabase = false;
+      _isInitialSyncDone = true;
+      if (_syncCompleter != null && !_syncCompleter!.isCompleted) {
+        _syncCompleter!.complete();
+      }
       notifyListeners();
     }
   }
