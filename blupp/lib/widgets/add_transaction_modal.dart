@@ -797,6 +797,11 @@ class _AddTransactionModalState extends State<AddTransactionModal> {
       _selectedTime.minute,
     );
 
+    final isTransferCategory = _selectedCatId == 'bank_transfer' ||
+        _selectedCatId == 'investment_deposit' ||
+        _selectedCatId == 'investment' ||
+        _selectedCatId == 'savings';
+
     if (widget.existingTx != null) {
       final oldTx = widget.existingTx!;
       final updatedTx = TransactionItem(
@@ -808,7 +813,7 @@ class _AddTransactionModalState extends State<AddTransactionModal> {
         date: combinedDateTime,
         bankAccountId: _selectedBankId,
         note: combinedNote,
-        isTransfer: oldTx.isTransfer,
+        isTransfer: oldTx.isTransfer || isTransferCategory,
       );
 
       widget.state.updateTransaction(
@@ -836,6 +841,7 @@ class _AddTransactionModalState extends State<AddTransactionModal> {
         date: combinedDateTime,
         bankAccountId: _selectedBankId,
         note: combinedNote,
+        isTransfer: isTransferCategory,
       );
 
       widget.state.addTransaction(

@@ -1666,13 +1666,32 @@ class FinanceState extends ChangeNotifier {
     return _loans.fold(0.0, (sum, l) => sum + l.remainingBalance);
   }
 
-  // Helper to detect if a transaction is an inter-bank transfer or top-up
-  // (Prevents top-ups from inflating monthly expenses or monthly salary income)
+  // Helper to detect if a transaction is an inter-bank transfer, top-up, or investment/savings funding
+  // (Prevents transfers & investments from inflating monthly expenses or monthly salary income)
   bool isTransferOrTopUp(TransactionItem t) {
-    if (t.isTransfer || t.categoryId == 'bank_transfer') return true;
+    if (t.isTransfer ||
+        t.categoryId == 'bank_transfer' ||
+        t.categoryId == 'investment_deposit' ||
+        t.categoryId == 'investment' ||
+        t.categoryId == 'savings') {
+      return true;
+    }
     final lowerTitle = t.title.toLowerCase();
     final lowerNote = (t.note ?? '').toLowerCase();
     final combined = '$lowerTitle $lowerNote';
+
+    // Investment / Savings deposits & funding
+    if (combined.contains('investment') ||
+        combined.contains('asnb') ||
+        combined.contains('tabung haji') ||
+        combined.contains('versa') ||
+        combined.contains('stashaway') ||
+        combined.contains('initial deposit') ||
+        combined.contains('deposit into') ||
+        combined.contains('funding for') ||
+        combined.contains('invest')) {
+      return true;
+    }
 
     // Match Bank Islam and inter-bank topups / transfers
     if (combined.contains('bank islam') &&
@@ -1699,6 +1718,17 @@ class FinanceState extends ChangeNotifier {
       return true;
     }
     return false;
+  }
+
+  // Total Transfers & Investments this month (Asset movements)
+  double get totalTransfersThisMonth {
+    final now = DateTime.now();
+    return _transactions
+        .where((t) =>
+            isTransferOrTopUp(t) &&
+            t.date.year == now.year &&
+            t.date.month == now.month)
+        .fold(0.0, (sum, t) => sum + t.amount);
   }
 
   // Monthly Expenses (calculated from transactions logged this month, excluding internal bank transfers / topups)
@@ -2604,6 +2634,7 @@ class FinanceState extends ChangeNotifier {
           date: date ?? DateTime.now(),
           bankAccountId: fromBankId,
           note: note ?? 'Initial funding for ${item.name} from ${bank.name}',
+          isTransfer: true,
         ), updateBankBalance: true);
       }
     }
@@ -2637,6 +2668,7 @@ class FinanceState extends ChangeNotifier {
             date: date ?? DateTime.now(),
             bankAccountId: toBankId,
             note: note ?? 'Withdrawn from ${inv.name} into ${bank.name}',
+            isTransfer: true,
           ), updateBankBalance: true);
         }
       }
@@ -2663,6 +2695,7 @@ class FinanceState extends ChangeNotifier {
             date: date ?? DateTime.now(),
             bankAccountId: fromBankId,
             note: note ?? 'Deposited into ${inv.name} from ${bank.name}',
+            isTransfer: true,
           ), updateBankBalance: true);
         }
       }

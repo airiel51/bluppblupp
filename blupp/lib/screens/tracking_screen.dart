@@ -28,7 +28,7 @@ class _TrackingScreenState extends State<TrackingScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
+    _tabController = TabController(length: 3, vsync: this);
   }
 
   @override
@@ -126,8 +126,8 @@ class _TrackingScreenState extends State<TrackingScreen>
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.arrow_upward_rounded, size: 16, color: AppTheme.expenseCoral),
-                        SizedBox(width: 6),
+                        Icon(Icons.arrow_downward_rounded, size: 15, color: AppTheme.expenseCoral),
+                        SizedBox(width: 5),
                         Text("Expenses"),
                       ],
                     ),
@@ -136,9 +136,19 @@ class _TrackingScreenState extends State<TrackingScreen>
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.arrow_downward_rounded, size: 16, color: AppTheme.incomeMint),
-                        SizedBox(width: 6),
+                        Icon(Icons.arrow_upward_rounded, size: 15, color: AppTheme.incomeMint),
+                        SizedBox(width: 5),
                         Text("Income"),
+                      ],
+                    ),
+                  ),
+                  Tab(
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.swap_horiz_rounded, size: 15, color: Color(0xFF38BDF8)),
+                        SizedBox(width: 5),
+                        Text("Transfers & Assets"),
                       ],
                     ),
                   ),
@@ -153,6 +163,7 @@ class _TrackingScreenState extends State<TrackingScreen>
         children: [
           _buildExpensesTab(context),
           _buildIncomeTab(context),
+          _buildTransfersTab(context),
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
@@ -194,6 +205,7 @@ class _TrackingScreenState extends State<TrackingScreen>
 
     final expenses = widget.state.transactions.where((t) {
       if (t.type != TransactionType.expense) return false;
+      if (widget.state.isTransferOrTopUp(t)) return false;
       if (_selectedCategoryFilter != 'all' && t.categoryId != _selectedCategoryFilter) {
         return false;
       }
@@ -1454,6 +1466,7 @@ class _TrackingScreenState extends State<TrackingScreen>
     final totalIncome = widget.state.totalIncomeThisMonth;
     final incomes = widget.state.transactions.where((t) {
       if (t.type != TransactionType.income) return false;
+      if (widget.state.isTransferOrTopUp(t)) return false;
       if (_searchQuery.isNotEmpty) {
         final q = _searchQuery.toLowerCase();
         final matchTitle = t.title.toLowerCase().contains(q);
@@ -1563,9 +1576,168 @@ class _TrackingScreenState extends State<TrackingScreen>
     );
   }
 
+  // --- TRANSFERS & INVESTMENTS TAB ---
+  Widget _buildTransfersTab(BuildContext context) {
+    final totalTransfers = widget.state.totalTransfersThisMonth;
+    final totalInvestments = widget.state.totalInvestmentsAndSavings;
+    final transfers = widget.state.transactions.where((t) {
+      if (!widget.state.isTransferOrTopUp(t)) return false;
+      if (_searchQuery.isNotEmpty) {
+        final q = _searchQuery.toLowerCase();
+        final matchTitle = t.title.toLowerCase().contains(q);
+        final matchNote = (t.note ?? '').toLowerCase().contains(q);
+        if (!matchTitle && !matchNote) return false;
+      }
+      return true;
+    }).toList();
+
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 90),
+      children: [
+        // Search Bar
+        TextField(
+          onChanged: (val) => setState(() => _searchQuery = val.trim()),
+          style: TextStyle(color: AppTheme.textPrimary, fontSize: 13),
+          decoration: InputDecoration(
+            hintText: "Search transfers & investments (e.g. ASNB, Versa, Bank Islam)...",
+            hintStyle: TextStyle(color: AppTheme.textMuted.withValues(alpha: 0.6), fontSize: 12),
+            prefixIcon: Icon(Icons.search_rounded, color: AppTheme.textMuted, size: 18),
+            filled: true,
+            fillColor: AppTheme.surface,
+            contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: BorderSide(color: AppTheme.surfaceBorder),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: BorderSide(color: AppTheme.surfaceBorder),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: const BorderSide(color: Color(0xFF38BDF8)),
+            ),
+          ),
+        ),
+        const SizedBox(height: 16),
+
+        // Summary Card
+        Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: AppTheme.surface,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: const Color(0xFF38BDF8).withValues(alpha: 0.3)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    "TRANSFERS & INVESTMENTS THIS MONTH",
+                    style: TextStyle(
+                      color: AppTheme.textSecondary,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 0.3,
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF38BDF8).withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Text(
+                      "ASSET MOVEMENTS",
+                      style: TextStyle(color: Color(0xFF38BDF8), fontSize: 10, fontWeight: FontWeight.w700),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Text(
+                AppTheme.formatCurrency(totalTransfers),
+                style: TextStyle(
+                  color: AppTheme.textPrimary,
+                  fontSize: 22,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  const Icon(Icons.info_outline_rounded, size: 14, color: Color(0xFF38BDF8)),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      "Internal bank transfers & investment deposits. Never counted as consumer expenses.",
+                      style: TextStyle(
+                        color: AppTheme.textMuted,
+                        fontSize: 11.5,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  color: AppTheme.surfaceLight,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: AppTheme.surfaceBorder),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      "Total Investments & Savings Portfolio",
+                      style: TextStyle(color: AppTheme.textMuted, fontSize: 11),
+                    ),
+                    Text(
+                      AppTheme.formatCurrency(totalInvestments),
+                      style: const TextStyle(color: Color(0xFF00E5FF), fontSize: 12, fontWeight: FontWeight.w700),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 20),
+
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              "Transfer & Asset Activity (${transfers.length})",
+              style: TextStyle(color: AppTheme.textPrimary, fontSize: 15, fontWeight: FontWeight.w600),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+
+        if (transfers.isEmpty)
+          _buildEmptyState("No transfers or investment records found.")
+        else
+          ...transfers.asMap().entries.map((e) => _buildTransactionCard(e.value, e.key)),
+      ],
+    );
+  }
+
   // Category filter scrollable row
   Widget _buildCategoryFilterRow(TransactionType type) {
-    final categories = widget.state.categories.where((c) => c.type == type).toList();
+    final categories = widget.state.categories
+        .where((c) =>
+            c.type == type &&
+            c.id != 'bank_transfer' &&
+            c.id != 'investment_deposit' &&
+            c.id != 'investment' &&
+            c.id != 'savings')
+        .toList();
 
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,

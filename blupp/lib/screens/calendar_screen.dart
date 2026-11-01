@@ -480,6 +480,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
   Widget _buildActualTransactionCard(TransactionItem tx) {
     final category = widget.state.getCategoryById(tx.categoryId);
     final bank = widget.state.getBankById(tx.bankAccountId);
+    final isTransfer = tx.isTransfer || widget.state.isTransferOrTopUp(tx);
     final isExpense = tx.type == TransactionType.expense;
 
     return InteractiveCard(
@@ -524,9 +525,13 @@ class _CalendarScreenState extends State<CalendarScreen> {
           ),
           const SizedBox(width: 8),
           Text(
-            "${isExpense ? '-' : '+'}${AppTheme.formatCurrency(tx.amount)}",
+            isTransfer
+                ? "⇄ ${AppTheme.formatCurrency(tx.amount)}"
+                : "${isExpense ? '-' : '+'}${AppTheme.formatCurrency(tx.amount)}",
             style: TextStyle(
-              color: isExpense ? AppTheme.expenseCoral : AppTheme.incomeMint,
+              color: isTransfer
+                  ? const Color(0xFF38BDF8)
+                  : (isExpense ? AppTheme.expenseCoral : AppTheme.incomeMint),
               fontSize: 13,
               fontWeight: FontWeight.w700,
             ),

@@ -383,11 +383,25 @@ class SupabaseService {
         final title = json['title'] ?? 'Expense';
         final note = json['note'];
         final isTf = (catId == 'bank_transfer') ||
+            (catId == 'investment_deposit') ||
+            (catId == 'investment') ||
+            (catId == 'savings') ||
             (title.toString().toLowerCase().contains('transfer')) ||
             (title.toString().toLowerCase().contains('top-up')) ||
             (title.toString().toLowerCase().contains('topup')) ||
             (title.toString().toLowerCase().contains('top up')) ||
-            (note != null && note.toString().toLowerCase().contains('transfer'));
+            (title.toString().toLowerCase().contains('investment')) ||
+            (title.toString().toLowerCase().contains('asnb')) ||
+            (title.toString().toLowerCase().contains('tabung haji')) ||
+            (title.toString().toLowerCase().contains('versa')) ||
+            (title.toString().toLowerCase().contains('initial deposit')) ||
+            (title.toString().toLowerCase().contains('deposit into')) ||
+            (title.toString().toLowerCase().contains('funding for')) ||
+            (note != null && note.toString().toLowerCase().contains('transfer')) ||
+            (note != null &&
+                (note.toString().toLowerCase().contains('investment') ||
+                    note.toString().toLowerCase().contains('initial funding') ||
+                    note.toString().toLowerCase().contains('deposited into')));
 
         return TransactionItem(
           id: json['id']?.toString() ?? '',

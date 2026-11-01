@@ -12,12 +12,14 @@ void main() {
   });
 
   group('Investment funding from existing bank account', () {
-    test('Adding new investment deducts money from selected bank account and logs deposit', () {
+    test('Adding new investment deducts money from selected bank account and does NOT count as expense', () {
       final state = FinanceState(initialAuthenticated: true);
       final bank = state.bankAccounts.first;
       final initialBankBal = bank.balance;
       final initialInvCount = state.investments.length;
       final initialTxCount = state.transactions.length;
+      final initialExpenses = state.totalExpensesThisMonth;
+      final initialSpendingLeft = state.spendingBalanceLeft;
 
       // Add new investment of RM 500 funded from the bank account
       final invItem = InvestmentItem(
@@ -40,14 +42,65 @@ void main() {
       // 2. Bank balance deducted
       expect(bank.balance, closeTo(initialBankBal - 500.0, 0.01));
 
-      // 3. Corresponding expense transaction recorded
+      // 3. Corresponding transfer transaction recorded
       expect(state.transactions.length, initialTxCount + 1);
       final tx = state.transactions.first;
       expect(tx.title, 'ASNB Amanah Saham Initial Deposit');
       expect(tx.amount, 500.0);
-      expect(tx.type, TransactionType.expense);
       expect(tx.categoryId, 'investment_deposit');
       expect(tx.bankAccountId, bank.id);
+      expect(tx.isTransfer, isTrue);
+      expect(state.isTransferOrTopUp(tx), isTrue);
+
+      // 4. USER REQUIREMENT: Don't count investment as expense!
+      expect(state.totalExpensesThisMonth, equals(initialExpenses));
+      expect(state.spendingBalanceLeft, equals(initialSpendingLeft));
+    });
+
+    test('Adding money to existing investment deducts bank but does NOT count as expense', () {
+      final state = FinanceState(initialAuthenticated: true);
+      final bank = state.bankAccounts.first;
+      final initialBankBal = bank.balance;
+      final initialExpenses = state.totalExpensesThisMonth;
+      final initialSpendingLeft = state.spendingBalanceLeft;
+
+      final inv = state.investments.first;
+      final initialInvBal = inv.balance;
+
+      state.addMoneyToInvestment(inv.id, 250.0, fromBankId: bank.id);
+
+      expect(inv.balance, closeTo(initialInvBal + 250.0, 0.01));
+      expect(bank.balance, closeTo(initialBankBal - 250.0, 0.01));
+
+      final tx = state.transactions.first;
+      expect(tx.isTransfer, isTrue);
+      expect(state.isTransferOrTopUp(tx), isTrue);
+
+      // Total expense must NOT increase
+      expect(state.totalExpensesThisMonth, equals(initialExpenses));
+      expect(state.spendingBalanceLeft, equals(initialSpendingLeft));
+    });
+
+    test('Withdrawing from investment adds to bank but does NOT inflate salary income', () {
+      final state = FinanceState(initialAuthenticated: true);
+      final bank = state.bankAccounts.first;
+      final initialBankBal = bank.balance;
+      final initialIncome = state.totalIncomeThisMonth;
+
+      final inv = state.investments.first;
+      final initialInvBal = inv.balance;
+
+      state.minusInvestmentBalance(inv.id, 100.0, toBankId: bank.id);
+
+      expect(inv.balance, closeTo(initialInvBal - 100.0, 0.01));
+      expect(bank.balance, closeTo(initialBankBal + 100.0, 0.01));
+
+      final tx = state.transactions.first;
+      expect(tx.isTransfer, isTrue);
+      expect(state.isTransferOrTopUp(tx), isTrue);
+
+      // Total income must NOT increase (internal asset movement)
+      expect(state.totalIncomeThisMonth, equals(initialIncome));
     });
 
     test('Adding investment with no bank selected does not deduct bank balance', () {

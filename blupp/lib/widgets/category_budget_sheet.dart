@@ -37,7 +37,12 @@ class _CategoryBudgetSheetState extends State<CategoryBudgetSheet> {
 
     _controllers = {};
     final expenseCategories = widget.state.categories
-        .where((c) => c.type == TransactionType.expense && c.id != 'bank_transfer')
+        .where((c) =>
+            c.type == TransactionType.expense &&
+            c.id != 'bank_transfer' &&
+            c.id != 'investment_deposit' &&
+            c.id != 'investment' &&
+            c.id != 'savings')
         .toList();
 
     for (final cat in expenseCategories) {
