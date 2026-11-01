@@ -120,36 +120,50 @@ class _TrackingScreenState extends State<TrackingScreen>
                 dividerColor: Colors.transparent,
                 labelColor: AppTheme.textPrimary,
                 unselectedLabelColor: AppTheme.textMuted,
-                labelStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                labelPadding: EdgeInsets.zero,
+                labelStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12),
+                unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w500, fontSize: 12),
                 tabs: const [
                   Tab(
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.arrow_downward_rounded, size: 15, color: AppTheme.expenseCoral),
-                        SizedBox(width: 5),
-                        Text("Expenses"),
-                      ],
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.arrow_downward_rounded, size: 14, color: AppTheme.expenseCoral),
+                          SizedBox(width: 4),
+                          Text("Expenses"),
+                        ],
+                      ),
                     ),
                   ),
                   Tab(
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.arrow_upward_rounded, size: 15, color: AppTheme.incomeMint),
-                        SizedBox(width: 5),
-                        Text("Income"),
-                      ],
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.arrow_upward_rounded, size: 14, color: AppTheme.incomeMint),
+                          SizedBox(width: 4),
+                          Text("Income"),
+                        ],
+                      ),
                     ),
                   ),
                   Tab(
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.swap_horiz_rounded, size: 15, color: Color(0xFF38BDF8)),
-                        SizedBox(width: 5),
-                        Text("Transfers & Assets"),
-                      ],
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.swap_horiz_rounded, size: 14, color: Color(0xFF38BDF8)),
+                          SizedBox(width: 4),
+                          Text("Transfers"),
+                        ],
+                      ),
                     ),
                   ),
                 ],
@@ -282,31 +296,38 @@ class _TrackingScreenState extends State<TrackingScreen>
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Row(
-                    children: [
-                      if (isCategoryFiltered && filteredCategory != null) ...[
-                        Container(
-                          padding: const EdgeInsets.all(5),
-                          decoration: BoxDecoration(
-                            color: filteredCategory.color.withValues(alpha: 0.18),
-                            borderRadius: BorderRadius.circular(6),
+                  Expanded(
+                    child: Row(
+                      children: [
+                        if (isCategoryFiltered && filteredCategory != null) ...[
+                          Container(
+                            padding: const EdgeInsets.all(5),
+                            decoration: BoxDecoration(
+                              color: filteredCategory.color.withValues(alpha: 0.18),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Icon(filteredCategory.icon, size: 13, color: filteredCategory.color),
                           ),
-                          child: Icon(filteredCategory.icon, size: 13, color: filteredCategory.color),
+                          const SizedBox(width: 8),
+                        ],
+                        Flexible(
+                          child: Text(
+                            displayedTitle,
+                            style: TextStyle(
+                              color: AppTheme.textSecondary,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              letterSpacing: 0.3,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ),
-                        const SizedBox(width: 8),
                       ],
-                      Text(
-                        displayedTitle,
-                        style: TextStyle(
-                          color: AppTheme.textSecondary,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                          letterSpacing: 0.3,
-                        ),
-                      ),
-                    ],
+                    ),
                   ),
-                  if (displayedBudget > 0)
+                  if (displayedBudget > 0) ...[
+                    const SizedBox(width: 8),
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                       decoration: BoxDecoration(
@@ -325,7 +346,8 @@ class _TrackingScreenState extends State<TrackingScreen>
                           fontWeight: FontWeight.w700,
                         ),
                       ),
-                    )
+                    ),
+                  ]
                   else
                     InkWell(
                       onTap: () => CategoryBudgetSheet.show(context, state: widget.state),
@@ -1634,25 +1656,31 @@ class _TrackingScreenState extends State<TrackingScreen>
             children: [
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  Text(
-                    "TRANSFERS & INVESTMENTS THIS MONTH",
-                    style: TextStyle(
-                      color: AppTheme.textSecondary,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                      letterSpacing: 0.3,
+                  Expanded(
+                    child: Text(
+                      "TRANSFERS & ASSETS",
+                      style: TextStyle(
+                        color: AppTheme.textSecondary,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 0.3,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
+                  const SizedBox(width: 8),
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                     decoration: BoxDecoration(
                       color: const Color(0xFF38BDF8).withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(6),
                     ),
                     child: const Text(
-                      "ASSET MOVEMENTS",
-                      style: TextStyle(color: Color(0xFF38BDF8), fontSize: 10, fontWeight: FontWeight.w700),
+                      "ASSETS",
+                      style: TextStyle(color: Color(0xFF38BDF8), fontSize: 9.5, fontWeight: FontWeight.w700),
                     ),
                   ),
                 ],
