@@ -14,6 +14,7 @@ import '../widgets/blupp_search_dialog.dart';
 import '../widgets/blupp_mobile_menu.dart';
 import '../widgets/blupp_scroll_progress.dart';
 import '../widgets/blupp_bank_wallet.dart';
+import '../widgets/add_transaction_modal.dart';
 
 class HomeScreen extends StatefulWidget {
   final FinanceState state;
@@ -1314,16 +1315,48 @@ class _HomeScreenState extends State<HomeScreen> {
                 fontWeight: FontWeight.w500,
               ),
             ),
-            GestureDetector(
-              onTap: () => onNavigateTab(1),
-              child: const Text(
-                "View All",
-                style: TextStyle(
-                  color: AppTheme.primaryTeal,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
+            Row(
+              children: [
+                InkWell(
+                  onTap: () => AddTransactionModal.show(context, state: state),
+                  borderRadius: BorderRadius.circular(8),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: AppTheme.primaryTeal.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: AppTheme.primaryTeal.withValues(alpha: 0.3)),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.add_rounded, size: 14, color: AppTheme.primaryTeal),
+                        const SizedBox(width: 4),
+                        Text(
+                          "Add Entry",
+                          style: TextStyle(
+                            color: AppTheme.primaryTeal,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
-              ),
+                const SizedBox(width: 12),
+                GestureDetector(
+                  onTap: () => onNavigateTab(1),
+                  child: const Text(
+                    "View All",
+                    style: TextStyle(
+                      color: AppTheme.primaryTeal,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ],
             ),
           ],
         ),
@@ -1333,11 +1366,14 @@ class _HomeScreenState extends State<HomeScreen> {
             final category = state.getCategoryById(tx.categoryId);
             final isExpense = tx.type == TransactionType.expense;
 
-            return Container(
-              margin: const EdgeInsets.only(bottom: 10),
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-              decoration: AppTheme.cardDecoration(),
-              child: Row(
+            return InkWell(
+              onTap: () => AddTransactionModal.show(context, state: state, existingTx: tx),
+              borderRadius: BorderRadius.circular(12),
+              child: Container(
+                margin: const EdgeInsets.only(bottom: 10),
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                decoration: AppTheme.cardDecoration(),
+                child: Row(
                 children: [
                   Container(
                     padding: const EdgeInsets.all(10),
@@ -1413,8 +1449,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ],
               ),
-            );
-          }).toList(),
+            ),
+          );
+        }).toList(),
         ),
       ],
     );
@@ -3950,6 +3987,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final balanceController = TextEditingController();
     final returnController = TextEditingController(text: "5.0");
     String assetType = 'Fixed/ASNB';
+    String? selectedBankId;
     String? errorWhere;
     String? errorWhy;
 
@@ -3965,6 +4003,9 @@ class _HomeScreenState extends State<HomeScreen> {
       builder: (ctx) {
         return StatefulBuilder(
           builder: (dialogCtx, setDialogState) {
+            final double initialBal = double.tryParse(balanceController.text.trim()) ?? 0.0;
+            final selectedBank = selectedBankId != null ? state.getBankById(selectedBankId!) : null;
+
             return AlertDialog(
               backgroundColor: AppTheme.surface,
               shape: RoundedRectangleBorder(
@@ -4046,6 +4087,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       controller: balanceController,
                       keyboardType: const TextInputType.numberWithOptions(decimal: true),
                       style: TextStyle(color: AppTheme.textPrimary),
+                      onChanged: (_) => setDialogState(() {}),
                       decoration: InputDecoration(
                         labelText: "Initial Balance (RM)",
                         hintText: "e.g. 5,000.00",
@@ -4056,6 +4098,76 @@ class _HomeScreenState extends State<HomeScreen> {
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
                       ),
                     ),
+                    const SizedBox(height: 12),
+
+                    // Deduct from existing Bank Account
+                    Text(
+                      "Fund From Bank Account (Optional)",
+                      style: TextStyle(color: AppTheme.textSecondary, fontSize: 12, fontWeight: FontWeight.w600),
+                    ),
+                    const SizedBox(height: 6),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      decoration: BoxDecoration(
+                        color: AppTheme.surfaceLight,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                          color: selectedBankId != null
+                              ? AppTheme.primaryTeal.withValues(alpha: 0.5)
+                              : AppTheme.surfaceBorder,
+                        ),
+                      ),
+                      child: DropdownButtonHideUnderline(
+                        child: DropdownButton<String?>(
+                          value: selectedBankId,
+                          isExpanded: true,
+                          dropdownColor: AppTheme.surface,
+                          style: TextStyle(color: AppTheme.textPrimary, fontSize: 13),
+                          items: [
+                            const DropdownMenuItem<String?>(
+                              value: null,
+                              child: Text("None / External Funds (No Bank Deduction)"),
+                            ),
+                            ...state.bankAccounts.map((bank) {
+                              return DropdownMenuItem<String?>(
+                                value: bank.id,
+                                child: Text("${bank.name} (${AppTheme.formatCurrency(bank.balance)})"),
+                              );
+                            }),
+                          ],
+                          onChanged: (val) {
+                            setDialogState(() {
+                              selectedBankId = val;
+                            });
+                          },
+                        ),
+                      ),
+                    ),
+                    if (selectedBank != null) ...[
+                      const SizedBox(height: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: AppTheme.primaryTeal.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: AppTheme.primaryTeal.withValues(alpha: 0.3)),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(Icons.sync_alt_rounded, color: AppTheme.primaryTeal, size: 16),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                initialBal > 0
+                                    ? "Deduct ${AppTheme.formatCurrency(initialBal)} from ${selectedBank.name}. New bank balance: ${AppTheme.formatCurrency((selectedBank.balance - initialBal).clamp(0.0, double.infinity))}"
+                                    : "Funds will be deducted from ${selectedBank.name} (${AppTheme.formatCurrency(selectedBank.balance)}).",
+                                style: TextStyle(color: AppTheme.primaryTeal, fontSize: 11, fontWeight: FontWeight.w500),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                     const SizedBox(height: 12),
                     TextField(
                       controller: returnController,
@@ -4111,17 +4223,42 @@ class _HomeScreenState extends State<HomeScreen> {
                     if (assetType == 'Crypto') assetIcon = Icons.currency_bitcoin_rounded;
                     if (assetType == 'Fixed/ASNB') assetIcon = Icons.account_balance_rounded;
 
-                    state.addInvestment(InvestmentItem(
-                      id: 'inv_${DateTime.now().millisecondsSinceEpoch}',
-                      name: name,
-                      institution: institution.isEmpty ? 'Financial Institution' : institution,
-                      balance: balance,
-                      returnRateAnnual: returnRate,
-                      notes: 'Added to portfolio',
-                      icon: assetIcon,
-                      color: AppTheme.primaryTeal,
-                    ));
+                    state.addInvestment(
+                      InvestmentItem(
+                        id: 'inv_${DateTime.now().millisecondsSinceEpoch}',
+                        name: name,
+                        institution: institution.isEmpty ? 'Financial Institution' : institution,
+                        balance: balance,
+                        returnRateAnnual: returnRate,
+                        notes: 'Added to portfolio',
+                        icon: assetIcon,
+                        color: AppTheme.primaryTeal,
+                      ),
+                      fromBankId: selectedBankId,
+                    );
                     Navigator.pop(ctx);
+
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        backgroundColor: AppTheme.surfaceLight,
+                        behavior: SnackBarBehavior.floating,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        content: Row(
+                          children: [
+                            Icon(Icons.check_circle_rounded, color: AppTheme.primaryTeal, size: 18),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                selectedBank != null
+                                    ? "Investment '$name' created & funded ${AppTheme.formatCurrency(balance)} from ${selectedBank.name}"
+                                    : "Investment '$name' created (${AppTheme.formatCurrency(balance)})",
+                                style: TextStyle(color: AppTheme.textPrimary, fontWeight: FontWeight.w500),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
                   },
                   child: const Text("Save Investment", style: TextStyle(fontWeight: FontWeight.w600)),
                 ),

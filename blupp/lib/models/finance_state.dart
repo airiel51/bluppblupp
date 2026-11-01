@@ -1290,6 +1290,13 @@ class FinanceState extends ChangeNotifier {
       type: TransactionType.expense,
     ),
     const CategoryItem(
+      id: 'investment_deposit',
+      name: 'Investment & Savings',
+      icon: Icons.savings_rounded,
+      color: Color(0xFF00E5FF),
+      type: TransactionType.expense,
+    ),
+    const CategoryItem(
       id: 'other_exp',
       name: 'Other Expense',
       icon: Icons.category_rounded,
@@ -1821,6 +1828,21 @@ class FinanceState extends ChangeNotifier {
         .fold(0.0, (sum, p) => sum + p.amount);
   }
 
+  // Transactions for a specific date (for calendar & historical tracking)
+  List<TransactionItem> getTransactionsForDate(DateTime date) {
+    return _transactions.where((t) {
+      return t.date.year == date.year &&
+          t.date.month == date.month &&
+          t.date.day == date.day;
+    }).toList();
+  }
+
+  double getTransactionsTotalForDate(DateTime date, {TransactionType type = TransactionType.expense}) {
+    return getTransactionsForDate(date)
+        .where((t) => t.type == type && !isTransferOrTopUp(t))
+        .fold(0.0, (sum, t) => sum + t.amount);
+  }
+
   // --- DAILY, WEEKLY, MONTHLY EXPENSES HISTORY ---
   List<DailyExpenseGroup> get dailyExpenseHistory {
     final expenses = _transactions
@@ -2203,25 +2225,69 @@ class FinanceState extends ChangeNotifier {
 
   // Add new transaction (Income or Expense)
   // Directly updates bank balance, spending balance, and total net worth!
-  void addTransaction(TransactionItem tx) {
-    _transactions.insert(0, tx);
+  // Supports backdated/past transactions with proper chronological sorting and optional bank adjustment
+  void addTransaction(TransactionItem tx, {bool updateBankBalance = true}) {
+    _transactions.add(tx);
+    _transactions.sort((a, b) => b.date.compareTo(a.date));
 
-    // Update target bank account
-    final bank = getBankById(tx.bankAccountId);
-    if (bank != null) {
-      if (tx.type == TransactionType.expense) {
-        bank.balance -= tx.amount;
-        if (bank.balance < 0) bank.balance = 0;
-      } else {
-        bank.balance += tx.amount;
+    if (updateBankBalance) {
+      // Update target bank account
+      final bank = getBankById(tx.bankAccountId);
+      if (bank != null) {
+        if (tx.type == TransactionType.expense) {
+          bank.balance -= tx.amount;
+          if (bank.balance < 0) bank.balance = 0;
+        } else {
+          bank.balance += tx.amount;
+        }
+        SupabaseService.instance.updateBankBalance(bank.id, bank.balance);
       }
-      SupabaseService.instance.updateBankBalance(bank.id, bank.balance);
     }
 
     // Background sync to Supabase
     SupabaseService.instance.insertTransaction(tx);
 
     notifyListeners();
+  }
+
+  // Update existing transaction (edit details, change date/backdate, or update amount)
+  void updateTransaction(TransactionItem oldTx, TransactionItem newTx, {bool updateBankBalance = true}) {
+    final index = _transactions.indexWhere((t) => t.id == oldTx.id);
+    if (index != -1) {
+      if (updateBankBalance) {
+        // Reverse old bank impact
+        final oldBank = getBankById(oldTx.bankAccountId);
+        if (oldBank != null) {
+          if (oldTx.type == TransactionType.expense) {
+            oldBank.balance += oldTx.amount;
+          } else {
+            oldBank.balance -= oldTx.amount;
+            if (oldBank.balance < 0) oldBank.balance = 0;
+          }
+          SupabaseService.instance.updateBankBalance(oldBank.id, oldBank.balance);
+        }
+
+        // Apply new bank impact
+        final newBank = getBankById(newTx.bankAccountId);
+        if (newBank != null) {
+          if (newTx.type == TransactionType.expense) {
+            newBank.balance -= newTx.amount;
+            if (newBank.balance < 0) newBank.balance = 0;
+          } else {
+            newBank.balance += newTx.amount;
+          }
+          SupabaseService.instance.updateBankBalance(newBank.id, newBank.balance);
+        }
+      }
+
+      _transactions[index] = newTx;
+      _transactions.sort((a, b) => b.date.compareTo(a.date));
+
+      // Background sync to Supabase
+      SupabaseService.instance.insertTransaction(newTx);
+
+      notifyListeners();
+    }
   }
 
   void deleteTransaction(String id) {
@@ -2521,9 +2587,27 @@ class FinanceState extends ChangeNotifier {
   }
 
   // --- INVESTMENTS & SAVINGS MANAGEMENT ---
-  void addInvestment(InvestmentItem item) {
+  void addInvestment(InvestmentItem item, {String? fromBankId, String? note, DateTime? date}) {
     _investments.add(item);
     SupabaseService.instance.insertInvestment(item);
+
+    if (fromBankId != null && fromBankId.isNotEmpty && item.balance > 0) {
+      final bank = getBankById(fromBankId);
+      if (bank != null) {
+        // addTransaction automatically deducts from bank.balance and syncs with Supabase
+        addTransaction(TransactionItem(
+          id: 'tx_inv_init_${DateTime.now().millisecondsSinceEpoch}',
+          title: '${item.name} Initial Deposit',
+          amount: item.balance,
+          type: TransactionType.expense,
+          categoryId: 'investment_deposit',
+          date: date ?? DateTime.now(),
+          bankAccountId: fromBankId,
+          note: note ?? 'Initial funding for ${item.name} from ${bank.name}',
+        ), updateBankBalance: true);
+      }
+    }
+
     notifyListeners();
   }
 
@@ -2533,7 +2617,7 @@ class FinanceState extends ChangeNotifier {
     notifyListeners();
   }
 
-  void minusInvestmentBalance(String id, double amount, {String? toBankId, String? note}) {
+  void minusInvestmentBalance(String id, double amount, {String? toBankId, String? note, DateTime? date}) {
     final inv = getInvestmentById(id);
     if (inv != null && amount > 0) {
       inv.balance -= amount;
@@ -2550,17 +2634,17 @@ class FinanceState extends ChangeNotifier {
             amount: amount,
             type: TransactionType.income,
             categoryId: 'income_general',
-            date: DateTime.now(),
+            date: date ?? DateTime.now(),
             bankAccountId: toBankId,
             note: note ?? 'Withdrawn from ${inv.name} into ${bank.name}',
-          ));
+          ), updateBankBalance: true);
         }
       }
       notifyListeners();
     }
   }
 
-  void addMoneyToInvestment(String id, double amount, {String? fromBankId, String? note}) {
+  void addMoneyToInvestment(String id, double amount, {String? fromBankId, String? note, DateTime? date}) {
     final inv = getInvestmentById(id);
     if (inv != null && amount > 0) {
       inv.balance += amount;
@@ -2568,7 +2652,7 @@ class FinanceState extends ChangeNotifier {
 
       if (fromBankId != null && fromBankId.isNotEmpty) {
         final bank = getBankById(fromBankId);
-        if (bank != null && bank.balance >= amount) {
+        if (bank != null) {
           // addTransaction automatically updates bank.balance and syncs with Supabase
           addTransaction(TransactionItem(
             id: 'tx_inv_dp_${DateTime.now().millisecondsSinceEpoch}',
@@ -2576,10 +2660,10 @@ class FinanceState extends ChangeNotifier {
             amount: amount,
             type: TransactionType.expense,
             categoryId: 'investment_deposit',
-            date: DateTime.now(),
+            date: date ?? DateTime.now(),
             bankAccountId: fromBankId,
             note: note ?? 'Deposited into ${inv.name} from ${bank.name}',
-          ));
+          ), updateBankBalance: true);
         }
       }
       notifyListeners();

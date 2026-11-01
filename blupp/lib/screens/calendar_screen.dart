@@ -4,6 +4,7 @@ import '../models/currency_model.dart';
 import '../theme/app_theme.dart';
 import '../widgets/blupp_states.dart';
 import '../widgets/blupp_forms.dart';
+import '../widgets/add_transaction_modal.dart';
 
 class CalendarScreen extends StatefulWidget {
   final FinanceState state;
@@ -313,53 +314,225 @@ class _CalendarScreenState extends State<CalendarScreen> {
     final formattedDate =
         "${weekdays[_selectedDate.weekday - 1]}, ${_selectedDate.day} ${months[_selectedDate.month - 1]} ${_selectedDate.year}";
 
+    final actualTransactions = widget.state.getTransactionsForDate(_selectedDate);
+    final actualSpent = widget.state.getTransactionsTotalForDate(_selectedDate);
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final targetDay = DateTime(_selectedDate.year, _selectedDate.month, _selectedDate.day);
+    final isPast = targetDay.isBefore(today);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    formattedDate,
+                    style: TextStyle(
+                      color: AppTheme.textPrimary,
+                      fontSize: 17,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Wrap(
+                    spacing: 8,
+                    children: [
+                      if (actualSpent > 0 || actualTransactions.isNotEmpty)
+                        Text(
+                          "Actual Spent: ${AppTheme.formatCurrency(actualSpent)}",
+                          style: const TextStyle(
+                            color: AppTheme.expenseCoral,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      if (dayTotal > 0 || plans.isNotEmpty)
+                        Text(
+                          "Planned: ${AppTheme.formatCurrency(dayTotal)}",
+                          style: TextStyle(
+                            color: AppTheme.warningAmber,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      if (actualTransactions.isEmpty && plans.isEmpty)
+                        Text(
+                          isPast ? "No past records" : "No plans set",
+                          style: TextStyle(color: AppTheme.textMuted, fontSize: 12),
+                        ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            Row(
               children: [
-                Text(
-                  formattedDate,
-                  style: TextStyle(
-                    color: AppTheme.textPrimary,
-                    fontSize: 17,
-                    fontWeight: FontWeight.w500,
+                // Button to log past/current transaction for this selected day
+                InkWell(
+                  onTap: () => AddTransactionModal.show(context, state: widget.state, preselectedDate: _selectedDate),
+                  borderRadius: BorderRadius.circular(8),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+                    decoration: BoxDecoration(
+                      color: isPast
+                          ? AppTheme.warningAmber.withValues(alpha: 0.15)
+                          : AppTheme.primaryTeal.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: isPast
+                            ? AppTheme.warningAmber.withValues(alpha: 0.4)
+                            : AppTheme.primaryTeal.withValues(alpha: 0.4),
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          isPast ? Icons.history_rounded : Icons.add_rounded,
+                          size: 14,
+                          color: isPast ? AppTheme.warningAmber : AppTheme.primaryTeal,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          isPast ? "Log Past Entry" : "Add Entry",
+                          style: TextStyle(
+                            color: isPast ? AppTheme.warningAmber : AppTheme.primaryTeal,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  "Planned Total for Day: ${AppTheme.formatCurrency(dayTotal)}",
-                  style: TextStyle(color: AppTheme.warningAmber,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                  ),
+                const SizedBox(width: 6),
+                IconButton(
+                  icon: Icon(Icons.add_task_rounded, color: AppTheme.textMuted, size: 20),
+                  tooltip: "Plan Expense for this Day",
+                  onPressed: () => _showAddPlannedExpenseModal(context, preselectedDate: _selectedDate),
                 ),
               ],
             ),
-            IconButton(
-              icon: Icon(Icons.add_circle, color: AppTheme.warningAmber),
-              tooltip: "Plan Expense for this Day",
-              onPressed: () => _showAddPlannedExpenseModal(context, preselectedDate: _selectedDate),
-            ),
           ],
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 14),
 
-        if (plans.isEmpty)
-          BluppEmptyState(
-            icon: Icons.event_available_rounded,
-            title: "No expenses on this day",
-            description: "You have no upcoming commitments planned for $formattedDate.",
-            actionLabel: "Plan for this Day",
-            onAction: () => _showAddPlannedExpenseModal(context, preselectedDate: _selectedDate),
-          )
-        else
+        // 1. Show Actual Transactions for this Day
+        if (actualTransactions.isNotEmpty) ...[
+          Row(
+            children: [
+              Icon(Icons.receipt_long_rounded, size: 14, color: AppTheme.textMuted),
+              const SizedBox(width: 6),
+              Text(
+                "Actual Activity (${actualTransactions.length})",
+                style: TextStyle(color: AppTheme.textSecondary, fontSize: 12, fontWeight: FontWeight.w600),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          ...actualTransactions.map((tx) => _buildActualTransactionCard(tx)),
+          const SizedBox(height: 12),
+        ],
+
+        // 2. Show Planned Expenses for this Day
+        if (plans.isNotEmpty) ...[
+          Row(
+            children: [
+              Icon(Icons.event_note_rounded, size: 14, color: AppTheme.warningAmber),
+              const SizedBox(width: 6),
+              Text(
+                "Planned Commitments (${plans.length})",
+                style: TextStyle(color: AppTheme.warningAmber, fontSize: 12, fontWeight: FontWeight.w600),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
           ...plans.map((p) => _buildPlanItemCard(p)),
+        ],
+
+        // 3. Empty State if nothing is recorded or planned
+        if (plans.isEmpty && actualTransactions.isEmpty)
+          BluppEmptyState(
+            icon: isPast ? Icons.history_toggle_off_rounded : Icons.event_available_rounded,
+            title: isPast ? "No entries recorded for this date" : "No expenses planned for this day",
+            description: isPast
+                ? "Forgot to log an expense or income on $formattedDate? You can add it now!"
+                : "You have no upcoming commitments planned for $formattedDate.",
+            actionLabel: isPast ? "Log Forgotten Transaction" : "Plan for this Day",
+            onAction: () {
+              if (isPast) {
+                AddTransactionModal.show(context, state: widget.state, preselectedDate: _selectedDate);
+              } else {
+                _showAddPlannedExpenseModal(context, preselectedDate: _selectedDate);
+              }
+            },
+          ),
       ],
+    );
+  }
+
+  Widget _buildActualTransactionCard(TransactionItem tx) {
+    final category = widget.state.getCategoryById(tx.categoryId);
+    final bank = widget.state.getBankById(tx.bankAccountId);
+    final isExpense = tx.type == TransactionType.expense;
+
+    return InteractiveCard(
+      onTap: () => AddTransactionModal.show(context, state: widget.state, existingTx: tx),
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      radius: 12,
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(9),
+            decoration: BoxDecoration(
+              color: category.color.withValues(alpha: 0.16),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(category.icon, color: category.color, size: 18),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  tx.title,
+                  style: TextStyle(
+                    color: AppTheme.textPrimary,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  "${category.name}${bank != null ? ' • ${bank.name}' : ''}${tx.note != null && tx.note!.isNotEmpty ? ' • ${tx.note}' : ''}",
+                  style: TextStyle(color: AppTheme.textMuted, fontSize: 11),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            "${isExpense ? '-' : '+'}${AppTheme.formatCurrency(tx.amount)}",
+            style: TextStyle(
+              color: isExpense ? AppTheme.expenseCoral : AppTheme.incomeMint,
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
